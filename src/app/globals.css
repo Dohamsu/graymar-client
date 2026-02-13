@@ -1,26 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Game UI Colors */
+  --bg-primary: #0F0F0F;
+  --bg-secondary: #0A0A0A;
+  --bg-card: #141414;
+  --border-primary: #1F1F1F;
+
+  /* Text Colors */
+  --text-primary: #FAF8F5;
+  --text-secondary: #888888;
+  --text-muted: #666666;
+
+  /* Accent Colors */
+  --gold: #C9A962;
+  --hp-red: #E74C3C;
+  --stamina-green: #27AE60;
+  --success-green: #4ADE80;
+  --info-blue: #60A5FA;
+  --purple: #A78BFA;
+  --orange: #F97316;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html, body {
+    height: 100%;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  .font-display {
+    font-family: "Playfair Display", serif;
+  }
+
+  .font-ui {
+    font-family: "Manrope", sans-serif;
+  }
 }
