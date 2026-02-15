@@ -3,10 +3,10 @@
 import { BookOpen, User, Backpack, ScrollText } from "lucide-react";
 
 const NAV_ITEMS = [
-  { id: "story", label: "Story", icon: BookOpen },
-  { id: "character", label: "Character", icon: User },
-  { id: "inventory", label: "Inventory", icon: Backpack },
-  { id: "quests", label: "Quests", icon: ScrollText },
+  { id: "story", label: "이야기", icon: BookOpen },
+  { id: "character", label: "캐릭터", icon: User },
+  { id: "inventory", label: "소지품", icon: Backpack },
+  { id: "quests", label: "퀘스트", icon: ScrollText },
 ] as const;
 
 interface MobileBottomNavProps {

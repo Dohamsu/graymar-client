@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useGameStore } from "@/store/game-store";
 import {
   Header,
   MobileHeader,
@@ -11,122 +12,153 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { NarrativePanel } from "@/components/narrative/NarrativePanel";
 import { InputSection, MobileInputSection } from "@/components/input/InputSection";
 import { SidePanel } from "@/components/side-panel/SidePanel";
-import type { StoryMessage, PlayerHud, CharacterInfo } from "@/types/game";
+import { BattlePanel } from "@/components/battle/BattlePanel";
+import { StartScreen } from "@/components/screens/StartScreen";
+import { NodeTransitionScreen } from "@/components/screens/NodeTransitionScreen";
+import { RunEndScreen } from "@/components/screens/RunEndScreen";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import type { CharacterInfo, BattleEnemy } from "@/types/game";
 
-// ---- Mock Data ----
-const MOCK_HUD: PlayerHud = {
-  hp: 78,
-  maxHp: 100,
-  stamina: 3,
-  maxStamina: 5,
-  gold: 1250,
+const PLACEHOLDER_CHARACTER: CharacterInfo = {
+  name: "용병",
+  class: "방랑 검사",
+  level: 1,
+  exp: 0,
+  maxExp: 100,
+  stats: [
+    { label: "ATK", value: 15, color: "var(--hp-red)" },
+    { label: "DEF", value: 10, color: "var(--info-blue)" },
+    { label: "ACC", value: 5, color: "var(--success-green)" },
+    { label: "EVA", value: 3, color: "var(--gold)" },
+  ],
+  equipment: [],
 };
 
-const MOCK_MESSAGES: StoryMessage[] = [
-  {
-    id: "msg-1",
-    type: "SYSTEM",
-    text: "You have entered the Abandoned Harbor. The air is thick with the scent of salt and decay. Broken ships creak in the distance.",
-  },
-  {
-    id: "msg-2",
-    type: "PLAYER",
-    text: "I cautiously approach the nearest ship, keeping my hand on my sword hilt.",
-  },
-  {
-    id: "msg-3",
-    type: "NARRATOR",
-    text: "As you step onto the weathered gangplank, it groans beneath your weight. Through the fog, you spot a faint golden glow emanating from within the ship's cabin. The sound of rattling chains echoes from somewhere below deck.\n\nA cold wind sweeps across the harbor, carrying whispers of those who came before and never returned.",
-  },
-  {
-    id: "msg-4",
-    type: "CHOICE",
-    text: "",
-    choices: [
-      { id: "c1", label: "Investigate the golden glow in the cabin" },
-      { id: "c2", label: "Descend below deck toward the chains" },
-      { id: "c3", label: "Search the deck for useful items" },
-      { id: "c4", label: "Leave the ship and explore elsewhere", disabled: true },
-    ],
-  },
-];
-
-const MOCK_CHARACTER: CharacterInfo = {
-  name: "Sir Aldric",
-  class: "Wandering Knight",
-  level: 12,
-  exp: 2450,
-  maxExp: 3000,
-  stats: [
-    { label: "STR", value: 18, color: "var(--hp-red)" },
-    { label: "DEX", value: 14, color: "var(--success-green)" },
-    { label: "INT", value: 12, color: "var(--info-blue)" },
-    { label: "DEF", value: 16, color: "var(--gold)" },
-  ],
-  equipment: [
-    { slot: "Head", name: "Iron Helm", icon: "hard-hat", color: "var(--gold)" },
-    { slot: "Body", name: "Chainmail", icon: "shirt", color: "var(--info-blue)" },
-    {
-      slot: "Weapon",
-      name: "Dawnbringer",
-      icon: "sword",
-      color: "var(--purple)",
-      rarity: "Rare",
-    },
-    { slot: "Accessory", name: "Emerald Ring", icon: "gem", color: "var(--success-green)" },
-  ],
+const NODE_LOCATION_LABELS: Record<string, string> = {
+  EVENT: "그레이마르 항만 — 이벤트",
+  COMBAT: "그레이마르 항만 — 전투",
+  REST: "그레이마르 항만 — 휴식처",
+  SHOP: "그레이마르 항만 — 상점",
+  EXIT: "그레이마르 항만 — 출구",
 };
 
 export default function GamePage() {
+  const phase = useGameStore((s) => s.phase);
+  const messages = useGameStore((s) => s.messages);
+  const choices = useGameStore((s) => s.choices);
+  const hud = useGameStore((s) => s.hud);
+  const currentNodeType = useGameStore((s) => s.currentNodeType);
+  const battleState = useGameStore((s) => s.battleState);
+  const isSubmitting = useGameStore((s) => s.isSubmitting);
+  const submitAction = useGameStore((s) => s.submitAction);
+  const submitChoice = useGameStore((s) => s.submitChoice);
+  const flushPending = useGameStore((s) => s.flushPending);
+
   const [mobileTab, setMobileTab] = useState("story");
 
+  // --- Phase routing ---
+  if (phase === "TITLE" || phase === "LOADING") {
+    return <StartScreen />;
+  }
+  if (phase === "RUN_ENDED") {
+    return <RunEndScreen />;
+  }
+
+  // Extract battle enemies for BattlePanel
+  const enemies: BattleEnemy[] =
+    battleState && typeof battleState === "object" && "enemies" in battleState
+      ? (battleState as { enemies: BattleEnemy[] }).enemies
+      : [];
+
+  // narrator가 아직 로딩 중이면 BattlePanel 숨김
+  const isNarratorLoading = messages.some(
+    (m) => m.type === "NARRATOR" && m.loading,
+  );
+
+  const location =
+    NODE_LOCATION_LABELS[currentNodeType ?? ""] ?? "그레이마르 항만";
+
+  // Combine choices into the message feed if not already there
+  const displayMessages =
+    choices.length > 0 &&
+    (messages.length === 0 || messages[messages.length - 1]?.type !== "CHOICE")
+      ? [
+          ...messages,
+          {
+            id: "live-choices",
+            type: "CHOICE" as const,
+            text: "",
+            choices,
+          },
+        ]
+      : messages;
+
   const handleSubmit = (text: string) => {
-    console.log("Submit:", text);
+    submitAction(text);
   };
 
   const handleQuickAction = (actionId: string) => {
-    console.log("Quick action:", actionId);
+    submitAction(actionId);
   };
 
   const handleChoiceSelect = (choiceId: string) => {
-    console.log("Choice:", choiceId);
+    submitChoice(choiceId);
   };
 
   return (
     <div className="flex h-full flex-col">
+      {/* Node transition overlay */}
+      {phase === "NODE_TRANSITION" && <NodeTransitionScreen />}
+
+      {/* Error banner */}
+      <ErrorBanner />
+
       {/* ===== Desktop Layout ===== */}
       <div className="hidden h-full flex-col lg:flex">
-        <Header location="Abandoned Harbor" hud={MOCK_HUD} />
+        <Header location={location} hud={hud} />
         <div className="flex flex-1 overflow-hidden">
           {/* Left Column - Narrative */}
           <div className="flex flex-1 flex-col bg-[var(--bg-primary)]">
+            {/* Battle panel (COMBAT only, narrator 완료 후 표시) */}
+            {currentNodeType === "COMBAT" &&
+              enemies.length > 0 &&
+              !isNarratorLoading && <BattlePanel enemies={enemies} />}
             <NarrativePanel
-              messages={MOCK_MESSAGES}
+              messages={displayMessages}
               onChoiceSelect={handleChoiceSelect}
+              onNarrationComplete={flushPending}
             />
             <InputSection
               onSubmit={handleSubmit}
               onQuickAction={handleQuickAction}
+              nodeType={currentNodeType}
+              disabled={isSubmitting}
             />
           </div>
 
           {/* Right Column - Side Panel */}
-          <SidePanel character={MOCK_CHARACTER} />
+          <SidePanel character={PLACEHOLDER_CHARACTER} />
         </div>
       </div>
 
       {/* ===== Mobile Layout ===== */}
       <div className="flex h-full flex-col lg:hidden">
         <MobileHeader />
-        <MobileLocationBar location="Abandoned Harbor" />
-        <MobileHudBar hud={MOCK_HUD} />
+        <MobileLocationBar location={location} />
+        <MobileHudBar hud={hud} />
 
         <div className="flex-1 overflow-y-auto">
           {mobileTab === "story" && (
-            <NarrativePanel
-              messages={MOCK_MESSAGES}
-              onChoiceSelect={handleChoiceSelect}
-            />
+            <>
+              {currentNodeType === "COMBAT" &&
+                enemies.length > 0 &&
+                !isNarratorLoading && <BattlePanel enemies={enemies} />}
+              <NarrativePanel
+                messages={displayMessages}
+                onChoiceSelect={handleChoiceSelect}
+                onNarrationComplete={flushPending}
+              />
+            </>
           )}
           {mobileTab === "character" && (
             <div className="p-4">
@@ -141,6 +173,8 @@ export default function GamePage() {
           <MobileInputSection
             onSubmit={handleSubmit}
             onQuickAction={handleQuickAction}
+            nodeType={currentNodeType}
+            disabled={isSubmitting}
           />
         )}
 
