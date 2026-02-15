@@ -1,4 +1,4 @@
-import type { PlayerHud, BattleEnemy } from '@/types/game';
+import type { PlayerHud, BattleEnemy, InventoryItem } from '@/types/game';
 
 export function applyDiffToHud(
   hud: PlayerHud,
@@ -16,6 +16,37 @@ export function applyDiffToHud(
     stamina: diff.player.stamina.delta !== 0 ? diff.player.stamina.to : hud.stamina,
     gold: hud.gold + diff.inventory.goldDelta,
   };
+}
+
+/**
+ * diff.inventory의 itemsAdded/Removed로 인벤토리를 갱신한 새 배열 반환
+ */
+export function applyInventoryDiff(
+  inventory: InventoryItem[],
+  diff: {
+    itemsAdded: Array<{ itemId: string; qty: number }>;
+    itemsRemoved: Array<{ itemId: string; qty: number }>;
+  },
+): InventoryItem[] {
+  const result = inventory.map((item) => ({ ...item }));
+
+  for (const added of diff.itemsAdded ?? []) {
+    const existing = result.find((i) => i.itemId === added.itemId);
+    if (existing) {
+      existing.qty += added.qty;
+    } else {
+      result.push({ itemId: added.itemId, qty: added.qty });
+    }
+  }
+
+  for (const removed of diff.itemsRemoved ?? []) {
+    const existing = result.find((i) => i.itemId === removed.itemId);
+    if (existing) {
+      existing.qty -= removed.qty;
+    }
+  }
+
+  return result.filter((i) => i.qty > 0);
 }
 
 /**

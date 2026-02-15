@@ -139,13 +139,18 @@ function findParagraphBreaks(text: string): Set<number> {
 
 function TypewriterText({ text, onComplete }: { text: string; onComplete?: () => void }) {
   const [displayLen, setDisplayLen] = useState(0);
+  const [prevText, setPrevText] = useState(text);
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
   const breaks = useMemo(() => findParagraphBreaks(text), [text]);
 
-  useEffect(() => {
+  // text 변경 시 displayLen 리셋 (derived state 패턴)
+  if (text !== prevText) {
+    setPrevText(text);
     setDisplayLen(0);
-  }, [text]);
+  }
 
   useEffect(() => {
     if (displayLen >= text.length) {
@@ -180,18 +185,20 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   const borderColor = isPlayer ? "var(--gold)" : "var(--border-primary)";
   const bgColor = message.type === "CHOICE" || isPlayer ? "var(--bg-secondary)" : "var(--bg-card)";
 
-  // NARRATOR가 loading → 텍스트로 전환될 때 타이핑 애니메이션 트리거
-  const wasLoadingRef = useRef(false);
+  // NARRATOR가 loading → 텍스트로 전환될 때 타이핑 애니메이션 트리거 (derived state 패턴)
   const [shouldAnimate, setShouldAnimate] = useState(false);
+  const [prevLoading, setPrevLoading] = useState(message.loading);
+  const [wasLoading, setWasLoading] = useState(false);
 
-  useEffect(() => {
+  if (prevLoading !== message.loading) {
+    setPrevLoading(message.loading);
     if (message.loading) {
-      wasLoadingRef.current = true;
-    } else if (wasLoadingRef.current && isNarrator && message.text) {
-      wasLoadingRef.current = false;
+      setWasLoading(true);
+    } else if (wasLoading && isNarrator && message.text) {
+      setWasLoading(false);
       setShouldAnimate(true);
     }
-  }, [message.loading, isNarrator, message.text]);
+  }
 
   const isNarratorTypewriting = isNarrator && shouldAnimate && !message.loading;
 

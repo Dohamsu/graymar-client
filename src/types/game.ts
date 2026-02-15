@@ -45,6 +45,34 @@ export interface EquipmentItem {
   color: string;
 }
 
+export interface CharacterPreset {
+  presetId: string;
+  name: string;
+  subtitle: string;
+  description: string;
+  playstyleHint: string;
+  portraits?: { male: string; female: string };
+  stats: {
+    MaxHP: number;
+    MaxStamina: number;
+    ATK: number;
+    DEF: number;
+    ACC: number;
+    EVA: number;
+    CRIT: number;
+    CRIT_DMG: number;
+    RESIST: number;
+    SPEED: number;
+  };
+  startingGold: number;
+  startingItems: Array<{ name: string; qty: number }>;
+}
+
+export interface InventoryItem {
+  itemId: string;
+  qty: number;
+}
+
 export type QuickAction = {
   id: string;
   label: string;

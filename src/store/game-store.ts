@@ -6,10 +6,11 @@ import type {
   ServerResultV1,
   SubmitTurnResponse,
   BattleEnemy,
+  InventoryItem,
 } from '@/types/game';
 import { createRun, getRun, submitTurn, getTurnDetail } from '@/lib/api-client';
 import { mapResultToMessages } from '@/lib/result-mapper';
-import { applyDiffToHud, applyEnemyDiffs } from '@/lib/hud-mapper';
+import { applyDiffToHud, applyEnemyDiffs, applyInventoryDiff } from '@/lib/hud-mapper';
 import { ApiError } from '@/lib/api-errors';
 
 // ---------------------------------------------------------------------------
@@ -29,6 +30,7 @@ export interface GameState {
   currentNodeIndex: number;
   currentTurnNo: number;
   hud: PlayerHud;
+  inventory: InventoryItem[];
   battleState: unknown | null;
   messages: StoryMessage[];
   pendingMessages: StoryMessage[];
@@ -38,7 +40,7 @@ export interface GameState {
   error: string | null;
 
   // actions
-  startNewGame: () => Promise<void>;
+  startNewGame: (presetId: string) => Promise<void>;
   submitAction: (text: string) => Promise<void>;
   submitChoice: (choiceId: string) => Promise<void>;
   flushPending: () => void;
@@ -151,6 +153,11 @@ function processTurnResponse(
     ? applyDiffToHud(get().hud, result.diff)
     : get().hud;
 
+  // Apply diff to inventory
+  const updatedInventory = result.diff?.inventory
+    ? applyInventoryDiff(get().inventory, result.diff.inventory)
+    : get().inventory;
+
   // Extract choices from result
   const newChoices: Choice[] = (result.choices ?? []).map((c) => ({
     id: c.id,
@@ -168,6 +175,7 @@ function processTurnResponse(
       messages: [...get().messages, ...narratorMsgs],
       pendingMessages: otherMsgs,
       hud: updatedHud,
+      inventory: updatedInventory,
       choices: [],
       pendingChoices: newChoices,
       currentTurnNo: turnRes.turnNo + 1,
@@ -184,6 +192,7 @@ function processTurnResponse(
       messages: [...get().messages, ...newMessages],
       pendingMessages: [],
       hud: updatedHud,
+      inventory: updatedInventory,
       choices: hasTransition ? [] : newChoices,
       pendingChoices: [],
       currentTurnNo: turnRes.turnNo + 1,
@@ -292,6 +301,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   currentNodeIndex: 0,
   currentTurnNo: 1,
   hud: { ...INITIAL_HUD },
+  inventory: [],
   battleState: null,
   messages: [],
   pendingMessages: [],
@@ -303,11 +313,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   // -----------------------------------------------------------------------
   // startNewGame
   // -----------------------------------------------------------------------
-  startNewGame: async () => {
+  startNewGame: async (presetId: string) => {
     set({ phase: 'LOADING', error: null });
 
     try {
-      const data = (await createRun()) as Record<string, unknown>;
+      const data = (await createRun(presetId)) as Record<string, unknown>;
 
       const run = data.run as Record<string, unknown>;
       const runId = run.id as string;
@@ -317,7 +327,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const serverResult = data.lastResult as ServerResultV1 | undefined;
       const battleState = data.battleState as unknown | undefined;
       const runState = data.runState as
-        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number }
+        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }> }
         | undefined;
 
       // Build initial messages / choices from the enter result
@@ -347,6 +357,11 @@ export const useGameStore = create<GameState>((set, get) => ({
           }
         : { ...INITIAL_HUD };
 
+      const initialInventory: InventoryItem[] = (runState?.inventory ?? []).map((i) => ({
+        itemId: i.itemId,
+        qty: i.qty,
+      }));
+
       set({
         phase: 'PLAYING',
         runId,
@@ -354,6 +369,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         currentNodeIndex: (currentNode?.nodeIndex as number) ?? 0,
         currentTurnNo: 1,
         hud,
+        inventory: initialInventory,
         battleState: battleState ?? null,
         // 내레이터가 로딩 중이면: 시스템 + 내레이터만 표시, 선택지는 pending
         messages: hasNarratorLoading
@@ -483,6 +499,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentNodeIndex: 0,
       currentTurnNo: 1,
       hud: { ...INITIAL_HUD },
+      inventory: [],
       battleState: null,
       messages: [],
       pendingMessages: [],
