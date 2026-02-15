@@ -26,11 +26,11 @@ export function CharacterTab({ character }: CharacterTabProps) {
             {character.name}
           </h2>
           <span className="text-xs text-[var(--text-secondary)]">
-            {character.class} &middot; Level {character.level}
+            {character.class} &middot; 레벨 {character.level}
           </span>
           <div className="mt-auto flex flex-col gap-1">
             <span className="text-[10px] font-medium text-[var(--text-muted)]">
-              Experience: {character.exp.toLocaleString()} / {character.maxExp.toLocaleString()}
+              경험치: {character.exp.toLocaleString()} / {character.maxExp.toLocaleString()}
             </span>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--border-primary)]">
               <div
@@ -45,7 +45,7 @@ export function CharacterTab({ character }: CharacterTabProps) {
       {/* Attributes */}
       <div className="flex flex-col gap-3">
         <span className="text-[10px] font-semibold tracking-[1px] text-[var(--text-secondary)]">
-          ATTRIBUTES
+          능력치
         </span>
         <div className="grid grid-cols-4 gap-2">
           {character.stats.map((stat) => (
@@ -67,7 +67,7 @@ export function CharacterTab({ character }: CharacterTabProps) {
       {/* Equipment */}
       <div className="flex flex-col gap-3">
         <span className="text-[10px] font-semibold tracking-[1px] text-[var(--text-secondary)]">
-          EQUIPMENT
+          장비
         </span>
         <div className="grid grid-cols-2 gap-2">
           {character.equipment.map((item) => {

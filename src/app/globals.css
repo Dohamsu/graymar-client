@@ -28,10 +28,25 @@
   }
 
   .font-display {
-    font-family: "Playfair Display", serif;
+    font-family: "Noto Serif KR", serif;
   }
 
   .font-ui {
-    font-family: "Manrope", sans-serif;
+    font-family: "Noto Sans KR", sans-serif;
+  }
+
+  .font-dialogue {
+    font-family: "IBM Plex Sans KR", sans-serif;
+  }
+
+  .choice-btn {
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+  }
+
+  .choice-btn:hover {
+    background-color: rgba(201, 169, 98, 0.1);
+    border-color: rgba(201, 169, 98, 0.4);
+    color: var(--gold);
   }
 }

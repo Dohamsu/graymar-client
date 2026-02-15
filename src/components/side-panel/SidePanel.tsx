@@ -4,14 +4,14 @@ import { useState } from "react";
 import { CharacterTab } from "./CharacterTab";
 import type { CharacterInfo } from "@/types/game";
 
-const TABS = ["Character", "Inventory", "Quests"] as const;
+const TABS = ["캐릭터", "소지품", "퀘스트"] as const;
 
 interface SidePanelProps {
   character: CharacterInfo;
 }
 
 export function SidePanel({ character }: SidePanelProps) {
-  const [activeTab, setActiveTab] = useState<string>("Character");
+  const [activeTab, setActiveTab] = useState<string>("캐릭터");
 
   return (
     <div className="flex h-full w-[420px] flex-col border-l border-[var(--border-primary)] bg-[var(--bg-secondary)]">
@@ -37,12 +37,12 @@ export function SidePanel({ character }: SidePanelProps) {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto p-5">
-        {activeTab === "Character" && <CharacterTab character={character} />}
-        {activeTab === "Inventory" && (
-          <p className="text-sm text-[var(--text-muted)]">Inventory coming soon...</p>
+        {activeTab === "캐릭터" && <CharacterTab character={character} />}
+        {activeTab === "소지품" && (
+          <p className="text-sm text-[var(--text-muted)]">소지품 기능 준비 중...</p>
         )}
-        {activeTab === "Quests" && (
-          <p className="text-sm text-[var(--text-muted)]">Quest log coming soon...</p>
+        {activeTab === "퀘스트" && (
+          <p className="text-sm text-[var(--text-muted)]">퀘스트 기록 준비 중...</p>
         )}
       </div>
     </div>
