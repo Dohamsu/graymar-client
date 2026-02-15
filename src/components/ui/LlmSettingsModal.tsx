@@ -95,8 +95,8 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
       setSettings(updated);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }

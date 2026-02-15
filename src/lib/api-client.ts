@@ -30,8 +30,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /** POST /v1/runs — create a new run and return the full run response. */
-export function createRun() {
-  return request<Record<string, unknown>>('/v1/runs', { method: 'POST' });
+export function createRun(presetId: string) {
+  return request<Record<string, unknown>>('/v1/runs', {
+    method: 'POST',
+    body: JSON.stringify({ presetId }),
+  });
 }
 
 /** GET /v1/runs/:runId — fetch current run state. */

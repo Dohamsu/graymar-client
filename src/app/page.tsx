@@ -48,6 +48,7 @@ export default function GamePage() {
   const choices = useGameStore((s) => s.choices);
   const hud = useGameStore((s) => s.hud);
   const currentNodeType = useGameStore((s) => s.currentNodeType);
+  const inventory = useGameStore((s) => s.inventory);
   const battleState = useGameStore((s) => s.battleState);
   const isSubmitting = useGameStore((s) => s.isSubmitting);
   const submitAction = useGameStore((s) => s.submitAction);
@@ -137,7 +138,7 @@ export default function GamePage() {
           </div>
 
           {/* Right Column - Side Panel */}
-          <SidePanel character={PLACEHOLDER_CHARACTER} />
+          <SidePanel character={PLACEHOLDER_CHARACTER} inventory={inventory} gold={hud.gold} />
         </div>
       </div>
 
