@@ -1,5 +1,62 @@
 @import "tailwindcss";
 
+/* ── 에이투지체 (A2G) Local Font ── */
+
+@font-face {
+  font-family: "A2G";
+  src: url("/fonts/에이투지체-1Thin.otf") format("opentype");
+  font-weight: 100;
+  font-display: swap;
+}
+@font-face {
+  font-family: "A2G";
+  src: url("/fonts/에이투지체-2ExtraLight.otf") format("opentype");
+  font-weight: 200;
+  font-display: swap;
+}
+@font-face {
+  font-family: "A2G";
+  src: url("/fonts/에이투지체-3Light.otf") format("opentype");
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: "A2G";
+  src: url("/fonts/에이투지체-4Regular.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "A2G";
+  src: url("/fonts/에이투지체-5Medium.otf") format("opentype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "A2G";
+  src: url("/fonts/에이투지체-6SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "A2G";
+  src: url("/fonts/에이투지체-7Bold.otf") format("opentype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "A2G";
+  src: url("/fonts/에이투지체-8ExtraBold.otf") format("opentype");
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "A2G";
+  src: url("/fonts/에이투지체-9Black.otf") format("opentype");
+  font-weight: 900;
+  font-display: swap;
+}
+
 :root {
   /* Game UI Colors */
   --bg-primary: #0F0F0F;
@@ -32,7 +89,11 @@
   }
 
   .font-ui {
-    font-family: "Noto Sans KR", sans-serif;
+    font-family: "A2G", "Noto Sans KR", sans-serif;
+  }
+
+  .font-narrative {
+    font-family: "Noto Serif KR", serif;
   }
 
   .font-dialogue {

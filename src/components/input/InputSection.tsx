@@ -5,14 +5,6 @@ import { Play, Loader2 } from "lucide-react";
 import { QuickActionButton } from "./QuickActionButton";
 import type { QuickAction } from "@/types/game";
 
-const COMBAT_ACTIONS: QuickAction[] = [
-  { id: "attack", label: "공격", icon: "sword", color: "var(--hp-red)" },
-  { id: "defend", label: "방어", icon: "shield", color: "var(--info-blue)" },
-  { id: "evade", label: "회피", icon: "footprints", color: "var(--success-green)" },
-  { id: "flee", label: "도주", icon: "door-open", color: "var(--gold)" },
-  { id: "use-item", label: "아이템 사용", icon: "package", color: "var(--orange)" },
-];
-
 const EVENT_ACTIONS: QuickAction[] = [
   { id: "observe", label: "관찰", icon: "eye", color: "var(--info-blue)" },
   { id: "talk", label: "대화", icon: "message-circle", color: "var(--purple)" },
@@ -27,13 +19,12 @@ const DEFAULT_ACTIONS: QuickAction[] = [
 function getQuickActions(nodeType: string | null): QuickAction[] {
   switch (nodeType) {
     case "COMBAT":
-      return COMBAT_ACTIONS;
-    case "EVENT":
-      return EVENT_ACTIONS;
     case "REST":
     case "SHOP":
     case "EXIT":
       return [];
+    case "EVENT":
+      return EVENT_ACTIONS;
     default:
       return DEFAULT_ACTIONS;
   }

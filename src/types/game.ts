@@ -24,6 +24,7 @@ export interface PlayerHud {
 export interface CharacterInfo {
   name: string;
   class: string;
+  portrait?: string;
   level: number;
   exp: number;
   maxExp: number;

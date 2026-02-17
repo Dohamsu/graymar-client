@@ -17,22 +17,7 @@ import { StartScreen } from "@/components/screens/StartScreen";
 import { NodeTransitionScreen } from "@/components/screens/NodeTransitionScreen";
 import { RunEndScreen } from "@/components/screens/RunEndScreen";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import type { CharacterInfo, BattleEnemy } from "@/types/game";
-
-const PLACEHOLDER_CHARACTER: CharacterInfo = {
-  name: "용병",
-  class: "방랑 검사",
-  level: 1,
-  exp: 0,
-  maxExp: 100,
-  stats: [
-    { label: "ATK", value: 15, color: "var(--hp-red)" },
-    { label: "DEF", value: 10, color: "var(--info-blue)" },
-    { label: "ACC", value: 5, color: "var(--success-green)" },
-    { label: "EVA", value: 3, color: "var(--gold)" },
-  ],
-  equipment: [],
-};
+import type { BattleEnemy } from "@/types/game";
 
 const NODE_LOCATION_LABELS: Record<string, string> = {
   EVENT: "그레이마르 항만 — 이벤트",
@@ -49,6 +34,7 @@ export default function GamePage() {
   const hud = useGameStore((s) => s.hud);
   const currentNodeType = useGameStore((s) => s.currentNodeType);
   const inventory = useGameStore((s) => s.inventory);
+  const characterInfo = useGameStore((s) => s.characterInfo);
   const battleState = useGameStore((s) => s.battleState);
   const isSubmitting = useGameStore((s) => s.isSubmitting);
   const submitAction = useGameStore((s) => s.submitAction);
@@ -70,11 +56,6 @@ export default function GamePage() {
     battleState && typeof battleState === "object" && "enemies" in battleState
       ? (battleState as { enemies: BattleEnemy[] }).enemies
       : [];
-
-  // narrator가 아직 로딩 중이면 BattlePanel 숨김
-  const isNarratorLoading = messages.some(
-    (m) => m.type === "NARRATOR" && m.loading,
-  );
 
   const location =
     NODE_LOCATION_LABELS[currentNodeType ?? ""] ?? "그레이마르 항만";
@@ -107,7 +88,7 @@ export default function GamePage() {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="mx-auto flex h-full max-w-[1440px] flex-col">
       {/* Node transition overlay */}
       {phase === "NODE_TRANSITION" && <NodeTransitionScreen />}
 
@@ -123,7 +104,7 @@ export default function GamePage() {
             {/* Battle panel (COMBAT only, narrator 완료 후 표시) */}
             {currentNodeType === "COMBAT" &&
               enemies.length > 0 &&
-              !isNarratorLoading && <BattlePanel enemies={enemies} />}
+              <BattlePanel enemies={enemies} />}
             <NarrativePanel
               messages={displayMessages}
               onChoiceSelect={handleChoiceSelect}
@@ -138,7 +119,7 @@ export default function GamePage() {
           </div>
 
           {/* Right Column - Side Panel */}
-          <SidePanel character={PLACEHOLDER_CHARACTER} inventory={inventory} gold={hud.gold} />
+          {characterInfo && <SidePanel character={characterInfo} inventory={inventory} gold={hud.gold} />}
         </div>
       </div>
 
@@ -153,7 +134,7 @@ export default function GamePage() {
             <>
               {currentNodeType === "COMBAT" &&
                 enemies.length > 0 &&
-                !isNarratorLoading && <BattlePanel enemies={enemies} />}
+                <BattlePanel enemies={enemies} />}
               <NarrativePanel
                 messages={displayMessages}
                 onChoiceSelect={handleChoiceSelect}
