@@ -3,12 +3,14 @@ import type {
   PlayerHud,
   StoryMessage,
   Choice,
+  CharacterInfo,
   ServerResultV1,
   SubmitTurnResponse,
   BattleEnemy,
   InventoryItem,
 } from '@/types/game';
-import { createRun, getRun, submitTurn, getTurnDetail } from '@/lib/api-client';
+import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail } from '@/lib/api-client';
+import { PRESETS } from '@/data/presets';
 import { mapResultToMessages } from '@/lib/result-mapper';
 import { applyDiffToHud, applyEnemyDiffs, applyInventoryDiff } from '@/lib/hud-mapper';
 import { ApiError } from '@/lib/api-errors';
@@ -38,9 +40,13 @@ export interface GameState {
   pendingChoices: Choice[];
   isSubmitting: boolean;
   error: string | null;
+  activeRunInfo: { runId: string; presetId: string; gender: 'male' | 'female'; currentTurnNo: number } | null;
+  characterInfo: CharacterInfo | null;
 
   // actions
-  startNewGame: (presetId: string) => Promise<void>;
+  checkActiveRun: () => Promise<void>;
+  resumeRun: () => Promise<void>;
+  startNewGame: (presetId: string, gender?: 'male' | 'female') => Promise<void>;
   submitAction: (text: string) => Promise<void>;
   submitChoice: (choiceId: string) => Promise<void>;
   flushPending: () => void;
@@ -59,6 +65,53 @@ const INITIAL_HUD: PlayerHud = {
   maxStamina: 5,
   gold: 50,
 };
+
+const STAT_COLORS: Record<string, string> = {
+  ATK: 'var(--hp-red)',
+  DEF: 'var(--info-blue)',
+  ACC: 'var(--success-green)',
+  EVA: 'var(--gold)',
+  CRIT: 'var(--hp-red)',
+  SPEED: 'var(--success-green)',
+  RESIST: 'var(--info-blue)',
+};
+
+function buildCharacterInfo(presetId: string, gender: 'male' | 'female' = 'male'): CharacterInfo {
+  const preset = PRESETS.find((p) => p.presetId === presetId);
+  if (!preset) {
+    return {
+      name: '용병',
+      class: '방랑 검사',
+      level: 1,
+      exp: 0,
+      maxExp: 100,
+      stats: [
+        { label: 'ATK', value: 15, color: 'var(--hp-red)' },
+        { label: 'DEF', value: 10, color: 'var(--info-blue)' },
+        { label: 'ACC', value: 5, color: 'var(--success-green)' },
+        { label: 'EVA', value: 3, color: 'var(--gold)' },
+      ],
+      equipment: [],
+    };
+  }
+
+  return {
+    name: preset.name,
+    class: preset.subtitle,
+    portrait: preset.portraits?.[gender],
+    level: 1,
+    exp: 0,
+    maxExp: 100,
+    stats: (
+      ['ATK', 'DEF', 'ACC', 'EVA', 'CRIT', 'SPEED', 'RESIST'] as const
+    ).map((key) => ({
+      label: key,
+      value: preset.stats[key],
+      color: STAT_COLORS[key] ?? 'var(--text-primary)',
+    })),
+    equipment: [],
+  };
+}
 
 const NODE_TRANSITION_DELAY_MS = 1500;
 const LLM_POLL_INTERVAL_MS = 2000;
@@ -142,7 +195,8 @@ function processTurnResponse(
 
   // Map result to displayable messages
   // 노드 전이가 있으면 action narrator는 건너뜀 (enter narrator가 대체)
-  const allMessages = mapResultToMessages(result);
+  const isLlmSkipped = turnRes.llm?.status === 'SKIPPED';
+  const allMessages = mapResultToMessages(result, 'narrator', isLlmSkipped);
   const hasTransition = turnRes.meta?.nodeOutcome === 'NODE_ENDED' || !!turnRes.transition;
   const newMessages = hasTransition
     ? allMessages.filter((m) => m.type !== 'NARRATOR')
@@ -309,15 +363,129 @@ export const useGameStore = create<GameState>((set, get) => ({
   pendingChoices: [],
   isSubmitting: false,
   error: null,
+  activeRunInfo: null,
+  characterInfo: null,
+
+  // -----------------------------------------------------------------------
+  // checkActiveRun
+  // -----------------------------------------------------------------------
+  checkActiveRun: async () => {
+    try {
+      const info = await getActiveRun();
+      set({ activeRunInfo: info ?? null });
+    } catch {
+      set({ activeRunInfo: null });
+    }
+  },
+
+  // -----------------------------------------------------------------------
+  // resumeRun
+  // -----------------------------------------------------------------------
+  resumeRun: async () => {
+    const { activeRunInfo } = get();
+    if (!activeRunInfo) return;
+
+    set({ phase: 'LOADING', error: null });
+
+    try {
+      const data = (await getRun(activeRunInfo.runId)) as Record<string, unknown>;
+      const run = data.run as Record<string, unknown>;
+      const runId = run.id as string;
+      const currentNode = data.currentNode as Record<string, unknown> | undefined;
+      const lastResult = data.lastResult as ServerResultV1 | undefined;
+      const battleState = data.battleState as unknown | undefined;
+      const runState = data.runState as
+        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }> }
+        | undefined;
+      const turnsArr = data.turns as Array<{
+        turnNo: number;
+        llmStatus: string;
+        llmOutput: string | null;
+        summary: string;
+      }> | undefined;
+
+      // HUD 복원
+      const hud: PlayerHud = runState
+        ? {
+            hp: runState.hp,
+            maxHp: runState.maxHp,
+            stamina: runState.stamina,
+            maxStamina: runState.maxStamina,
+            gold: runState.gold,
+          }
+        : { ...INITIAL_HUD };
+
+      const restoredInventory: InventoryItem[] = (runState?.inventory ?? []).map((i) => ({
+        itemId: i.itemId,
+        qty: i.qty,
+      }));
+
+      // 마지막 턴의 내러티브와 선택지 복원
+      let restoredMessages: StoryMessage[] = [];
+      let restoredChoices: Choice[] = [];
+
+      if (lastResult) {
+        restoredMessages = mapResultToMessages(lastResult);
+
+        // LLM 내러티브가 완료된 경우 NARRATOR 텍스트 교체
+        const lastTurn = turnsArr?.[0];
+        if (lastTurn?.llmOutput && lastTurn.llmStatus === 'DONE') {
+          restoredMessages = restoredMessages.map((msg) =>
+            msg.type === 'NARRATOR'
+              ? { ...msg, text: lastTurn.llmOutput!, loading: false }
+              : msg,
+          );
+        } else if (lastTurn) {
+          // LLM 미완료 — loading 표시 제거하고 summary fallback
+          restoredMessages = restoredMessages.map((msg) =>
+            msg.type === 'NARRATOR'
+              ? { ...msg, loading: false }
+              : msg,
+          );
+        }
+
+        restoredChoices = (lastResult.choices ?? []).map((c) => ({
+          id: c.id,
+          label: c.label,
+        }));
+      }
+
+      set({
+        phase: 'PLAYING',
+        runId,
+        currentNodeType: (currentNode?.nodeType as string) ?? null,
+        currentNodeIndex: (currentNode?.nodeIndex as number) ?? 0,
+        currentTurnNo: (run.currentTurnNo as number) + 1,
+        hud,
+        inventory: restoredInventory,
+        battleState: battleState ?? null,
+        messages: restoredMessages,
+        pendingMessages: [],
+        choices: restoredChoices,
+        pendingChoices: [],
+        isSubmitting: false,
+        activeRunInfo: null,
+        characterInfo: buildCharacterInfo(
+          (run.presetId as string) ?? activeRunInfo.presetId,
+          ((run.gender as string) ?? activeRunInfo.gender ?? 'male') as 'male' | 'female',
+        ),
+      });
+    } catch (err) {
+      set({
+        phase: 'ERROR',
+        error: extractErrorMessage(err),
+      });
+    }
+  },
 
   // -----------------------------------------------------------------------
   // startNewGame
   // -----------------------------------------------------------------------
-  startNewGame: async (presetId: string) => {
+  startNewGame: async (presetId: string, gender?: 'male' | 'female') => {
     set({ phase: 'LOADING', error: null });
 
     try {
-      const data = (await createRun(presetId)) as Record<string, unknown>;
+      const data = (await createRun(presetId, gender)) as Record<string, unknown>;
 
       const run = data.run as Record<string, unknown>;
       const runId = run.id as string;
@@ -381,6 +549,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         choices: hasNarratorLoading ? [] : initialChoices,
         pendingChoices: hasNarratorLoading ? initialChoices : [],
         isSubmitting: false,
+        characterInfo: buildCharacterInfo(presetId, gender),
       });
 
       // 첫 턴 LLM 폴링 시작
@@ -419,10 +588,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ messages: [...get().messages, playerMsg] });
 
     try {
+      const { currentNodeType } = get();
       const turnRes = await submitTurn(runId, {
         idempotencyKey: crypto.randomUUID(),
         expectedNextTurnNo: currentTurnNo,
         input: { type: 'ACTION', text },
+        ...(currentNodeType === 'COMBAT' ? { options: { skipLlm: true } } : {}),
       });
 
       processTurnResponse(turnRes, get, set);
@@ -450,10 +621,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ isSubmitting: true, error: null, choices: [], messages: updatedMessages });
 
     try {
+      const { currentNodeType } = get();
       const turnRes = await submitTurn(runId, {
         idempotencyKey: crypto.randomUUID(),
         expectedNextTurnNo: currentTurnNo,
         input: { type: 'CHOICE', choiceId },
+        ...(currentNodeType === 'COMBAT' ? { options: { skipLlm: true } } : {}),
       });
 
       processTurnResponse(turnRes, get, set);
@@ -507,6 +680,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       pendingChoices: [],
       isSubmitting: false,
       error: null,
+      activeRunInfo: null,
+      characterInfo: null,
     });
   },
 }));

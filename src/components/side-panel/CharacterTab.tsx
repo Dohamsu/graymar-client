@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { User, HardHat, Shirt, Sword, Gem } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { CharacterInfo } from "@/types/game";
@@ -18,8 +19,20 @@ export function CharacterTab({ character }: CharacterTabProps) {
     <div className="flex flex-col gap-5">
       {/* Portrait Section */}
       <div className="flex gap-4">
-        <div className="flex h-[120px] w-[100px] items-center justify-center rounded border border-[var(--gold)] bg-[var(--bg-card)]">
-          <User size={40} className="text-[var(--text-muted)]" />
+        <div className="relative h-[120px] w-[100px] overflow-hidden rounded border border-[var(--gold)] bg-[var(--bg-card)]">
+          {character.portrait ? (
+            <Image
+              src={character.portrait}
+              alt={character.name}
+              fill
+              sizes="100px"
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <User size={40} className="text-[var(--text-muted)]" />
+            </div>
+          )}
         </div>
         <div className="flex flex-1 flex-col gap-2">
           <h2 className="font-display text-xl font-medium text-[var(--text-primary)]">

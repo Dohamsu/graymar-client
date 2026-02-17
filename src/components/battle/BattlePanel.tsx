@@ -3,6 +3,16 @@
 import { Skull, Shield } from "lucide-react";
 import type { BattleEnemy } from "@/types/game";
 
+const DISTANCE_LABELS: Record<string, string> = {
+  ENGAGED: '밀착', CLOSE: '근거리', MID: '중거리', FAR: '원거리', OUT: '전장 밖',
+};
+const ANGLE_LABELS: Record<string, string> = {
+  FRONT: '정면', SIDE: '측면', BACK: '후방',
+};
+const STATUS_LABELS: Record<string, string> = {
+  BLEED: '출혈', POISON: '중독', STUN: '기절', WEAKEN: '약화', FORTIFY: '강화',
+};
+
 interface BattlePanelProps {
   enemies: BattleEnemy[];
 }
@@ -33,7 +43,7 @@ function EnemyCard({ enemy }: { enemy: BattleEnemy }) {
           </span>
         </div>
         <span className="text-[10px] text-[var(--text-muted)]">
-          {enemy.distance} / {enemy.angle}
+          {DISTANCE_LABELS[enemy.distance] ?? enemy.distance} / {ANGLE_LABELS[enemy.angle] ?? enemy.angle}
         </span>
       </div>
 
@@ -67,7 +77,7 @@ function EnemyCard({ enemy }: { enemy: BattleEnemy }) {
               key={s.id}
               className="rounded bg-[var(--border-primary)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]"
             >
-              {s.id} x{s.stacks}
+              {STATUS_LABELS[s.id] ?? s.id} x{s.stacks}
             </span>
           ))}
         </div>

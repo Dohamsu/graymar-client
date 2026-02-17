@@ -188,7 +188,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   // NARRATOR가 loading → 텍스트로 전환될 때 타이핑 애니메이션 트리거 (derived state 패턴)
   const [shouldAnimate, setShouldAnimate] = useState(false);
   const [prevLoading, setPrevLoading] = useState(message.loading);
-  const [wasLoading, setWasLoading] = useState(false);
+  const [wasLoading, setWasLoading] = useState(!!message.loading);
 
   if (prevLoading !== message.loading) {
     setPrevLoading(message.loading);
@@ -260,7 +260,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
       ) : isNarrator ? (
         /* ── 내레이터: 대사 스타일 + 문단 간격 ── */
         <div
-          className="font-display text-[17px] leading-[1.75]"
+          className="font-narrative text-[17px] leading-[1.75]"
           style={{ color: "var(--text-primary)" }}
         >
           {isNarratorTypewriting ? (
@@ -278,8 +278,8 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
       ) : (
         /* ── 일반 메시지 (PLAYER, SYSTEM) ── */
         <p
-          className={`font-display text-[17px] leading-[1.75] whitespace-pre-line ${
-            isPlayer ? "italic" : ""
+          className={`text-[17px] leading-[1.75] whitespace-pre-line ${
+            isPlayer ? "font-ui italic" : "font-narrative"
           }`}
           style={{
             color: isPlayer ? "var(--text-secondary)" : "var(--text-primary)",

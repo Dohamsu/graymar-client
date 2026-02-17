@@ -30,11 +30,29 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /** POST /v1/runs — create a new run and return the full run response. */
-export function createRun(presetId: string) {
+export function createRun(presetId: string, gender: 'male' | 'female' = 'male') {
   return request<Record<string, unknown>>('/v1/runs', {
     method: 'POST',
-    body: JSON.stringify({ presetId }),
+    body: JSON.stringify({ presetId, gender }),
   });
+}
+
+/** GET /v1/runs — fetch active run info (or null). */
+export async function getActiveRun(): Promise<{
+  runId: string;
+  presetId: string;
+  gender: 'male' | 'female';
+  currentTurnNo: number;
+  currentNodeIndex: number;
+  startedAt: string;
+} | null> {
+  const res = await fetch(`${BASE_URL}/v1/runs`, {
+    headers: { 'Content-Type': 'application/json', 'x-user-id': USER_ID },
+  });
+  if (!res.ok) return null;
+  const text = await res.text();
+  if (!text) return null;
+  return JSON.parse(text);
 }
 
 /** GET /v1/runs/:runId — fetch current run state. */

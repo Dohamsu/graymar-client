@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useGameStore } from "@/store/game-store";
 import { PRESETS } from "@/data/presets";
@@ -90,10 +90,12 @@ function PresetCard({
   const statSummary = buildStatSummary(preset.stats);
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
-      className={`flex flex-col overflow-hidden rounded-lg border text-left transition-all ${
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
+      className={`flex cursor-pointer flex-col overflow-hidden rounded-lg border text-left transition-all ${
         selected
           ? "border-[var(--gold)] bg-[rgba(201,169,98,0.08)] shadow-[0_0_20px_rgba(201,169,98,0.18)]"
           : "border-[var(--border-primary)] bg-[var(--bg-card)] hover:border-[rgba(201,169,98,0.4)] hover:bg-[rgba(201,169,98,0.04)]"
@@ -194,7 +196,7 @@ function PresetCard({
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -202,10 +204,20 @@ function PresetCard({
 // StartScreen
 // ---------------------------------------------------------------------------
 
+/** presetId → 프리셋 이름 */
+function getPresetName(presetId: string): string {
+  return PRESETS.find((p) => p.presetId === presetId)?.name ?? presetId;
+}
+
 export function StartScreen() {
   const startNewGame = useGameStore((s) => s.startNewGame);
   const phase = useGameStore((s) => s.phase);
   const isLoading = phase === "LOADING";
+  const activeRunInfo = useGameStore((s) => s.activeRunInfo);
+  const checkActiveRun = useGameStore((s) => s.checkActiveRun);
+  const resumeRun = useGameStore((s) => s.resumeRun);
+
+  useEffect(() => { checkActiveRun(); }, [checkActiveRun]);
 
   const [screenPhase, setScreenPhase] = useState<ScreenPhase>("TITLE");
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
@@ -213,7 +225,7 @@ export function StartScreen() {
 
   const handleStartGame = () => {
     if (!selectedPresetId) return;
-    startNewGame(selectedPresetId);
+    startNewGame(selectedPresetId, genderMap[selectedPresetId] ?? "male");
   };
 
   // Phase 1: TITLE
@@ -237,6 +249,18 @@ export function StartScreen() {
 
         {/* Actions */}
         <div className="flex flex-col items-center gap-4">
+          {activeRunInfo && (
+            <button
+              onClick={() => resumeRun()}
+              disabled={isLoading}
+              className="flex h-14 w-64 flex-col items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
+            >
+              <span className="text-lg tracking-[3px]">이어하기</span>
+              <span className="text-xs opacity-70">
+                {getPresetName(activeRunInfo.presetId)} · 턴 {activeRunInfo.currentTurnNo}
+              </span>
+            </button>
+          )}
           <button
             onClick={() => setScreenPhase("SELECT_PRESET")}
             disabled={isLoading}
