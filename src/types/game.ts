@@ -1,10 +1,11 @@
 export interface StoryMessage {
   id: string;
-  type: "SYSTEM" | "NARRATOR" | "PLAYER" | "CHOICE";
+  type: "SYSTEM" | "NARRATOR" | "PLAYER" | "CHOICE" | "RESOLVE";
   text: string;
   choices?: Choice[];
   loading?: boolean;
   selectedChoiceId?: string;
+  resolveOutcome?: ResolveOutcome;
 }
 
 export interface Choice {
@@ -134,6 +135,8 @@ export interface ServerResultV1 {
     targetLabels: Array<{ id: string; name: string; hint: string }>;
     actionSlots: { base: number; bonusAvailable: boolean; max: number };
     toneHint: string;
+    worldState?: WorldStateUI;
+    resolveOutcome?: 'SUCCESS' | 'PARTIAL' | 'FAIL';
   };
   choices: Array<{
     id: string;
@@ -148,6 +151,15 @@ export interface ServerResultV1 {
     nodeTransition?: boolean;
   };
 }
+
+export interface WorldStateUI {
+  hubHeat: number;
+  hubSafety: 'SAFE' | 'ALERT' | 'DANGER';
+  timePhase: 'DAY' | 'NIGHT';
+  currentLocationId: string | null;
+}
+
+export type ResolveOutcome = 'SUCCESS' | 'PARTIAL' | 'FAIL';
 
 export interface SubmitTurnResponse {
   accepted: boolean;

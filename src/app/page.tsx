@@ -14,18 +14,11 @@ import { InputSection, MobileInputSection } from "@/components/input/InputSectio
 import { SidePanel } from "@/components/side-panel/SidePanel";
 import { BattlePanel } from "@/components/battle/BattlePanel";
 import { StartScreen } from "@/components/screens/StartScreen";
-import { NodeTransitionScreen } from "@/components/screens/NodeTransitionScreen";
+
 import { RunEndScreen } from "@/components/screens/RunEndScreen";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { LocationHeader } from "@/components/hub/LocationHeader";
 import type { BattleEnemy } from "@/types/game";
-
-const NODE_LOCATION_LABELS: Record<string, string> = {
-  EVENT: "그레이마르 항만 — 이벤트",
-  COMBAT: "그레이마르 항만 — 전투",
-  REST: "그레이마르 항만 — 휴식처",
-  SHOP: "그레이마르 항만 — 상점",
-  EXIT: "그레이마르 항만 — 출구",
-};
 
 export default function GamePage() {
   const phase = useGameStore((s) => s.phase);
@@ -40,6 +33,8 @@ export default function GamePage() {
   const submitAction = useGameStore((s) => s.submitAction);
   const submitChoice = useGameStore((s) => s.submitChoice);
   const flushPending = useGameStore((s) => s.flushPending);
+  const worldState = useGameStore((s) => s.worldState);
+  const locationName = useGameStore((s) => s.locationName);
 
   const [mobileTab, setMobileTab] = useState("story");
 
@@ -58,7 +53,9 @@ export default function GamePage() {
       : [];
 
   const location =
-    NODE_LOCATION_LABELS[currentNodeType ?? ""] ?? "그레이마르 항만";
+    phase === "HUB"
+      ? "그레이마르 거점"
+      : locationName ?? "그레이마르 항만";
 
   // Combine choices into the message feed if not already there
   const displayMessages =
@@ -89,20 +86,23 @@ export default function GamePage() {
 
   return (
     <div className="mx-auto flex h-full max-w-[1440px] flex-col">
-      {/* Node transition overlay */}
-      {phase === "NODE_TRANSITION" && <NodeTransitionScreen />}
-
       {/* Error banner */}
       <ErrorBanner />
 
       {/* ===== Desktop Layout ===== */}
       <div className="hidden h-full flex-col lg:flex">
-        <Header location={location} hud={hud} />
+        <Header location={location} hud={hud} worldState={worldState} />
+
+        {/* LOCATION 헤더 (LOCATION phase) */}
+        {phase === "LOCATION" && (
+          <LocationHeader locationName={location} />
+        )}
+
         <div className="flex flex-1 overflow-hidden">
           {/* Left Column - Narrative */}
           <div className="flex flex-1 flex-col bg-[var(--bg-primary)]">
-            {/* Battle panel (COMBAT only, narrator 완료 후 표시) */}
-            {currentNodeType === "COMBAT" &&
+            {/* Battle panel (COMBAT only) */}
+            {phase === "COMBAT" &&
               enemies.length > 0 &&
               <BattlePanel enemies={enemies} />}
             <NarrativePanel
@@ -129,10 +129,10 @@ export default function GamePage() {
         <MobileLocationBar location={location} />
         <MobileHudBar hud={hud} />
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex flex-1 flex-col overflow-hidden">
           {mobileTab === "story" && (
             <>
-              {currentNodeType === "COMBAT" &&
+              {phase === "COMBAT" &&
                 enemies.length > 0 &&
                 <BattlePanel enemies={enemies} />}
               <NarrativePanel
@@ -143,7 +143,7 @@ export default function GamePage() {
             </>
           )}
           {mobileTab === "character" && (
-            <div className="p-4">
+            <div className="flex-1 overflow-y-auto p-4">
               <p className="text-sm text-[var(--text-muted)]">
                 Character panel (mobile)
               </p>

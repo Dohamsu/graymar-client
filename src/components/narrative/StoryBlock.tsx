@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import type { StoryMessage } from "@/types/game";
+import { ResolveOutcomeInline } from "@/components/hub/ResolveOutcomeBanner";
 
 const LOADING_MESSAGES = [
   "서술 생성 중...",
@@ -179,6 +180,11 @@ function TypewriterText({ text, onComplete }: { text: string; onComplete?: () =>
 // ---------------------------------------------------------------------------
 
 export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: StoryBlockProps) {
+  // RESOLVE 타입: 주사위 애니메이션 → 판정 결과 공개 (별도 블록)
+  if (message.type === "RESOLVE" && message.resolveOutcome) {
+    return <ResolveOutcomeInline outcome={message.resolveOutcome} />;
+  }
+
   const labelColor = LABEL_COLORS[message.type] ?? "var(--text-muted)";
   const isPlayer = message.type === "PLAYER";
   const isNarrator = message.type === "NARRATOR";

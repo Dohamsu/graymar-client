@@ -8,6 +8,8 @@ import type {
   SubmitTurnResponse,
   BattleEnemy,
   InventoryItem,
+  WorldStateUI,
+  ResolveOutcome,
 } from '@/types/game';
 import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail } from '@/lib/api-client';
 import { PRESETS } from '@/data/presets';
@@ -23,7 +25,9 @@ export interface GameState {
   phase:
     | 'TITLE'
     | 'LOADING'
-    | 'PLAYING'
+    | 'HUB'
+    | 'LOCATION'
+    | 'COMBAT'
     | 'NODE_TRANSITION'
     | 'RUN_ENDED'
     | 'ERROR';
@@ -42,6 +46,10 @@ export interface GameState {
   error: string | null;
   activeRunInfo: { runId: string; presetId: string; gender: 'male' | 'female'; currentTurnNo: number } | null;
   characterInfo: CharacterInfo | null;
+  // HUB 전용 상태
+  worldState: WorldStateUI | null;
+  resolveOutcome: ResolveOutcome | null;
+  locationName: string | null;
 
   // actions
   checkActiveRun: () => Promise<void>;
@@ -111,6 +119,27 @@ function buildCharacterInfo(presetId: string, gender: 'male' | 'female' = 'male'
     })),
     equipment: [],
   };
+}
+
+/**
+ * 노드 타입에서 UI phase 도출
+ */
+function derivePhase(
+  nodeType: string | null,
+  result: ServerResultV1 | null,
+): GameState['phase'] {
+  if (!nodeType) return 'HUB';
+  switch (nodeType) {
+    case 'HUB':
+      return 'HUB';
+    case 'LOCATION':
+      return 'LOCATION';
+    case 'COMBAT':
+      return 'COMBAT';
+    default:
+      // 기존 노드 타입 (EVENT, REST, SHOP, EXIT) → LOCATION 취급
+      return 'LOCATION';
+  }
 }
 
 const NODE_TRANSITION_DELAY_MS = 1500;
@@ -221,12 +250,12 @@ function processTurnResponse(
   const hasLlmPending = turnRes.llm?.status === 'PENDING' && !hasTransition;
 
   if (hasLlmPending) {
-    // 내레이터만 먼저 표시, 나머지는 내레이션 완료 후 flush
-    const narratorMsgs = newMessages.filter((m) => m.type === 'NARRATOR');
-    const otherMsgs = newMessages.filter((m) => m.type !== 'NARRATOR');
+    // 내레이터 + 판정 결과 먼저 표시, 나머지는 내레이션 완료 후 flush
+    const immediateMsgs = newMessages.filter((m) => m.type === 'NARRATOR' || m.type === 'RESOLVE');
+    const otherMsgs = newMessages.filter((m) => m.type !== 'NARRATOR' && m.type !== 'RESOLVE');
 
     set({
-      messages: [...get().messages, ...narratorMsgs],
+      messages: [...get().messages, ...immediateMsgs],
       pendingMessages: otherMsgs,
       hud: updatedHud,
       inventory: updatedInventory,
@@ -261,6 +290,16 @@ function processTurnResponse(
     set({ battleState: { ...currentBattle, enemies: updatedEnemies } });
   }
 
+  // WorldState 업데이트
+  const wsUI = result.ui?.worldState as WorldStateUI | undefined;
+  if (wsUI) {
+    set({ worldState: wsUI });
+  }
+
+  // ResolveOutcome 업데이트
+  const resolveOutcome = result.ui?.resolveOutcome as ResolveOutcome | undefined;
+  set({ resolveOutcome: resolveOutcome ?? null });
+
   // Handle node / run outcome
   const outcome = turnRes.meta?.nodeOutcome;
 
@@ -270,54 +309,53 @@ function processTurnResponse(
   }
 
   if (outcome === 'NODE_ENDED' || turnRes.transition) {
-    set({ phase: 'NODE_TRANSITION' });
+    // 전환 화면 없이 즉시 다음 노드로 전환
+    if (turnRes.transition) {
+      const t = turnRes.transition;
+      const enterMessages = mapResultToMessages(t.enterResult);
+      const enterChoices: Choice[] = (
+        t.enterResult.choices ?? []
+      ).map((c) => ({ id: c.id, label: c.label }));
 
-    // After a short delay, load the next node
-    setTimeout(async () => {
-      try {
-        if (turnRes.transition) {
-          // Use inline transition data
-          const t = turnRes.transition;
-          // narrator prefix → LLM 폴링 대상 (loading 표시)
-          const enterMessages = mapResultToMessages(t.enterResult);
-          const enterChoices: Choice[] = (
-            t.enterResult.choices ?? []
-          ).map((c) => ({ id: c.id, label: c.label }));
+      const narratorMsgs = enterMessages.filter((m) => m.type === 'NARRATOR');
+      const systemMsgs = enterMessages.filter((m) => m.type === 'SYSTEM');
+      const otherMsgs = enterMessages.filter(
+        (m) => m.type !== 'NARRATOR' && m.type !== 'SYSTEM',
+      );
 
-          // 내레이터 vs 나머지 분리
-          const narratorMsgs = enterMessages.filter((m) => m.type === 'NARRATOR');
-          const systemMsgs = enterMessages.filter((m) => m.type === 'SYSTEM');
-          const otherMsgs = enterMessages.filter(
-            (m) => m.type !== 'NARRATOR' && m.type !== 'SYSTEM',
-          );
+      const enterTurnNo = t.enterTurnNo ?? t.enterResult.turnNo;
+      const nextPhase = derivePhase(t.nextNodeType, t.enterResult);
+      const transWs = t.enterResult.ui?.worldState as WorldStateUI | undefined;
+      const locName = t.enterResult.summary?.display ?? null;
 
-          const enterTurnNo = t.enterTurnNo ?? t.enterResult.turnNo;
+      set({
+        phase: nextPhase,
+        currentNodeType: t.nextNodeType,
+        currentNodeIndex: t.nextNodeIndex,
+        battleState: t.battleState ?? null,
+        messages: [...get().messages, ...systemMsgs, ...narratorMsgs],
+        pendingMessages: otherMsgs,
+        choices: [],
+        pendingChoices: enterChoices,
+        currentTurnNo: enterTurnNo + 1,
+        ...(transWs ? { worldState: transWs } : {}),
+        locationName: locName,
+      });
 
-          set({
-            phase: 'PLAYING',
-            currentNodeType: t.nextNodeType,
-            currentNodeIndex: t.nextNodeIndex,
-            battleState: t.battleState ?? null,
-            messages: [...get().messages, ...systemMsgs, ...narratorMsgs],
-            pendingMessages: otherMsgs,
-            choices: [],
-            pendingChoices: enterChoices,
-            currentTurnNo: enterTurnNo + 1,
-          });
-
-          // enter 내레이션 LLM 폴링
-          const runId = get().runId;
-          if (runId) {
-            pollForNarrative(
-              runId,
-              enterTurnNo,
-              t.enterResult.summary?.display ?? t.enterResult.summary?.short ?? '',
-              get,
-              set,
-            );
-          }
-        } else {
-          // Fallback: re-fetch the run to get fresh state
+      const runId = get().runId;
+      if (runId) {
+        pollForNarrative(
+          runId,
+          enterTurnNo,
+          t.enterResult.summary?.display ?? t.enterResult.summary?.short ?? '',
+          get,
+          set,
+        );
+      }
+    } else {
+      // Fallback: re-fetch
+      (async () => {
+        try {
           const runId = get().runId;
           if (!runId) return;
 
@@ -325,21 +363,31 @@ function processTurnResponse(
           const currentNode = runData.currentNode as
             | Record<string, unknown>
             | undefined;
+          const nodeType = (currentNode?.nodeType as string) ?? null;
 
           set({
-            phase: 'PLAYING',
-            currentNodeType: (currentNode?.type as string) ?? null,
-            currentNodeIndex: (currentNode?.index as number) ?? 0,
+            phase: derivePhase(nodeType, null),
+            currentNodeType: nodeType,
+            currentNodeIndex: (currentNode?.nodeIndex as number) ?? 0,
             battleState: (runData.battleState as unknown) ?? null,
           });
+        } catch (err) {
+          set({
+            phase: 'ERROR',
+            error: extractErrorMessage(err),
+          });
         }
-      } catch (err) {
-        set({
-          phase: 'ERROR',
-          error: extractErrorMessage(err),
-        });
+      })();
+    }
+  } else {
+    // 전이 없음 — 현재 노드 타입에 따라 phase 유지/전환
+    const nodeType = result.node?.type;
+    if (nodeType) {
+      const newPhase = derivePhase(nodeType, result);
+      if (get().phase !== newPhase) {
+        set({ phase: newPhase });
       }
-    }, NODE_TRANSITION_DELAY_MS);
+    }
   }
 }
 
@@ -365,6 +413,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   error: null,
   activeRunInfo: null,
   characterInfo: null,
+  worldState: null,
+  resolveOutcome: null,
+  locationName: null,
 
   // -----------------------------------------------------------------------
   // checkActiveRun
@@ -450,10 +501,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         }));
       }
 
+      const nodeType = (currentNode?.nodeType as string) ?? null;
+      const resumePhase = derivePhase(nodeType, lastResult ?? null);
+      const resumeWs = lastResult?.ui?.worldState as import('@/types/game').WorldStateUI | undefined;
+
       set({
-        phase: 'PLAYING',
+        phase: resumePhase,
         runId,
-        currentNodeType: (currentNode?.nodeType as string) ?? null,
+        currentNodeType: nodeType,
         currentNodeIndex: (currentNode?.nodeIndex as number) ?? 0,
         currentTurnNo: (run.currentTurnNo as number) + 1,
         hud,
@@ -469,6 +524,9 @@ export const useGameStore = create<GameState>((set, get) => ({
           (run.presetId as string) ?? activeRunInfo.presetId,
           ((run.gender as string) ?? activeRunInfo.gender ?? 'male') as 'male' | 'female',
         ),
+        worldState: resumeWs ?? null,
+        resolveOutcome: null,
+        locationName: null,
       });
     } catch (err) {
       set({
@@ -530,10 +588,15 @@ export const useGameStore = create<GameState>((set, get) => ({
         qty: i.qty,
       }));
 
+      // WorldState 추출
+      const wsUI = serverResult?.ui?.worldState as import('@/types/game').WorldStateUI | undefined;
+      const nodeType = (currentNode?.nodeType as string) ?? null;
+      const initialPhase = derivePhase(nodeType, serverResult ?? null);
+
       set({
-        phase: 'PLAYING',
+        phase: initialPhase,
         runId,
-        currentNodeType: (currentNode?.nodeType as string) ?? null,
+        currentNodeType: nodeType,
         currentNodeIndex: (currentNode?.nodeIndex as number) ?? 0,
         currentTurnNo: 1,
         hud,
@@ -550,6 +613,9 @@ export const useGameStore = create<GameState>((set, get) => ({
         pendingChoices: hasNarratorLoading ? initialChoices : [],
         isSubmitting: false,
         characterInfo: buildCharacterInfo(presetId, gender),
+        worldState: wsUI ?? null,
+        resolveOutcome: null,
+        locationName: null,
       });
 
       // 첫 턴 LLM 폴링 시작
@@ -656,11 +722,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   clearError: () => {
-    const { phase } = get();
+    const { phase, currentNodeType } = get();
     set({
       error: null,
-      // Only recover from ERROR phase → PLAYING when there is an active run
-      ...(phase === 'ERROR' && get().runId ? { phase: 'PLAYING' } : {}),
+      // ERROR → 적절한 phase로 복구
+      ...(phase === 'ERROR' && get().runId
+        ? { phase: derivePhase(currentNodeType, null) }
+        : {}),
     });
   },
 
@@ -682,6 +750,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       error: null,
       activeRunInfo: null,
       characterInfo: null,
+      worldState: null,
+      resolveOutcome: null,
+      locationName: null,
     });
   },
 }));
