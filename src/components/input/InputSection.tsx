@@ -22,12 +22,20 @@ function getQuickActions(nodeType: string | null): QuickAction[] {
     case "REST":
     case "SHOP":
     case "EXIT":
+    case "HUB":
       return [];
     case "EVENT":
+      return EVENT_ACTIONS;
+    case "LOCATION":
       return EVENT_ACTIONS;
     default:
       return DEFAULT_ACTIONS;
   }
+}
+
+/** HUB 노드는 선택지만 사용 — 텍스트 입력 숨김 */
+function shouldHideTextInput(nodeType: string | null): boolean {
+  return nodeType === "HUB";
 }
 
 interface InputSectionProps {
@@ -48,38 +56,45 @@ export function InputSection({ onSubmit, onQuickAction, nodeType, disabled }: In
     }
   };
 
+  const hideInput = shouldHideTextInput(nodeType ?? null);
+
+  // HUB에서는 선택지만 사용 — 입력 영역 자체를 숨김
+  if (hideInput && quickActions.length === 0) return null;
+
   return (
     <div className="flex w-full flex-col gap-4 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] p-6">
-      {/* Input Row */}
-      <div className="flex w-full items-center gap-3">
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-          placeholder={
-            nodeType === "COMBAT"
-              ? "전투 행동을 입력하세요..."
-              : "행동을 입력하세요..."
-          }
-          disabled={disabled}
-          className="h-12 flex-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] disabled:opacity-50"
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={disabled || !text.trim()}
-          className="flex h-12 items-center gap-2 rounded-lg bg-[var(--gold)] px-6 transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {disabled ? (
-            <Loader2 size={16} className="animate-spin text-[var(--bg-secondary)]" />
-          ) : (
-            <Play size={16} className="text-[var(--bg-secondary)]" />
-          )}
-          <span className="text-sm font-semibold text-[var(--bg-secondary)]">
-            {disabled ? "처리 중..." : "실행"}
-          </span>
-        </button>
-      </div>
+      {/* Input Row — HUB에서는 숨김 */}
+      {!hideInput && (
+        <div className="flex w-full items-center gap-3">
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            placeholder={
+              nodeType === "COMBAT"
+                ? "전투 행동을 입력하세요..."
+                : "행동을 입력하세요..."
+            }
+            disabled={disabled}
+            className="h-12 flex-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] disabled:opacity-50"
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={disabled || !text.trim()}
+            className="flex h-12 items-center gap-2 rounded-lg bg-[var(--gold)] px-6 transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {disabled ? (
+              <Loader2 size={16} className="animate-spin text-[var(--bg-secondary)]" />
+            ) : (
+              <Play size={16} className="text-[var(--bg-secondary)]" />
+            )}
+            <span className="text-sm font-semibold text-[var(--bg-secondary)]">
+              {disabled ? "처리 중..." : "실행"}
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Quick Actions */}
       {quickActions.length > 0 && (
@@ -108,6 +123,7 @@ export function MobileInputSection({
 }: InputSectionProps) {
   const [text, setText] = useState("");
   const quickActions = getQuickActions(nodeType ?? null);
+  const hideInput = shouldHideTextInput(nodeType ?? null);
 
   const handleSubmit = () => {
     if (text.trim() && !disabled) {
@@ -116,30 +132,34 @@ export function MobileInputSection({
     }
   };
 
+  if (hideInput && quickActions.length === 0) return null;
+
   return (
     <div className="flex w-full flex-col gap-3 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] p-4">
-      <div className="flex w-full items-center gap-2">
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-          placeholder="행동을 입력하세요..."
-          disabled={disabled}
-          className="h-11 flex-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-50"
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={disabled || !text.trim()}
-          className="flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--gold)] disabled:opacity-50"
-        >
-          {disabled ? (
-            <Loader2 size={16} className="animate-spin text-[var(--bg-secondary)]" />
-          ) : (
-            <Play size={16} className="text-[var(--bg-secondary)]" />
-          )}
-        </button>
-      </div>
+      {!hideInput && (
+        <div className="flex w-full items-center gap-2">
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            placeholder="행동을 입력하세요..."
+            disabled={disabled}
+            className="h-11 flex-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-50"
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={disabled || !text.trim()}
+            className="flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--gold)] disabled:opacity-50"
+          >
+            {disabled ? (
+              <Loader2 size={16} className="animate-spin text-[var(--bg-secondary)]" />
+            ) : (
+              <Play size={16} className="text-[var(--bg-secondary)]" />
+            )}
+          </button>
+        </div>
+      )}
       {quickActions.length > 0 && (
         <div className="flex gap-1.5">
           {quickActions.slice(0, 4).map((action) => (

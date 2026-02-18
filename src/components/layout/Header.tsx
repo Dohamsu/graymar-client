@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { MapPin, Coins, Menu, Settings } from "lucide-react";
-import type { PlayerHud } from "@/types/game";
+import type { PlayerHud, WorldStateUI } from "@/types/game";
 import { LlmSettingsModal } from "@/components/ui/LlmSettingsModal";
+import { HeatGauge } from "@/components/hub/HeatGauge";
+import { TimePhaseIndicator } from "@/components/hub/TimePhaseIndicator";
 
 interface HeaderProps {
   location: string;
   hud: PlayerHud;
+  worldState?: WorldStateUI | null;
 }
 
 function HpBar({ current, max }: { current: number; max: number }) {
@@ -46,7 +49,7 @@ function StaminaBar({ current, max }: { current: number; max: number }) {
   );
 }
 
-export function Header({ location, hud }: HeaderProps) {
+export function Header({ location, hud, worldState }: HeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
@@ -62,12 +65,21 @@ export function Header({ location, hud }: HeaderProps) {
           </span>
         </div>
 
-        {/* Location */}
-        <div className="flex items-center gap-2">
-          <MapPin size={16} className="text-[var(--text-muted)]" />
-          <span className="font-display text-base text-[var(--text-secondary)]">
-            {location}
-          </span>
+        {/* Location + WorldState */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <MapPin size={16} className="text-[var(--text-muted)]" />
+            <span className="font-display text-base text-[var(--text-secondary)]">
+              {location}
+            </span>
+          </div>
+          {worldState && (
+            <>
+              <div className="h-4 w-px bg-[var(--border-primary)]" />
+              <TimePhaseIndicator timePhase={worldState.timePhase} />
+              <HeatGauge worldState={worldState} />
+            </>
+          )}
         </div>
 
         {/* Player HUD + Settings */}

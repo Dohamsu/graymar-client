@@ -53,6 +53,16 @@ export function mapResultToMessages(
     }
   }
 
+  // 2.5 Resolve outcome (판정 결과 — 시스템 이벤트 후, 내레이터 전)
+  if (result.ui?.resolveOutcome) {
+    messages.push({
+      id: `resolve-${result.turnNo}`,
+      type: 'RESOLVE',
+      text: '',
+      resolveOutcome: result.ui.resolveOutcome as StoryMessage['resolveOutcome'],
+    });
+  }
+
   // 3. Narrator summary (장면 묘사 — 시스템 이벤트 후)
   //    LLM 스킵이면 NARRATOR 생략
   if (result.summary?.short && !isLlmSkipped) {
