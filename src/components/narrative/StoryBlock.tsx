@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import type { StoryMessage } from "@/types/game";
 import { ResolveOutcomeInline } from "@/components/hub/ResolveOutcomeBanner";
+import { useSettingsStore, TEXT_SPEED_PRESETS } from "@/store/settings-store";
 
 const LOADING_MESSAGES = [
   "서술 생성 중...",
@@ -125,9 +126,6 @@ function NarratorContent({ text }: { text: string }) {
 // TypewriterText — 글자 단위 타이핑 + 문단 경계 숨 쉬기 + 대사/문단 스타일
 // ---------------------------------------------------------------------------
 
-const CHAR_SPEED_MS = 25;
-const PARAGRAPH_PAUSE_MS = 600;
-
 function findParagraphBreaks(text: string): Set<number> {
   const breaks = new Set<number>();
   const re = /\n\n*/g;
@@ -139,6 +137,9 @@ function findParagraphBreaks(text: string): Set<number> {
 }
 
 function TypewriterText({ text, onComplete }: { text: string; onComplete?: () => void }) {
+  const textSpeed = useSettingsStore((s) => s.textSpeed);
+  const preset = TEXT_SPEED_PRESETS[textSpeed];
+
   const [displayLen, setDisplayLen] = useState(0);
   const [prevText, setPrevText] = useState(text);
   const onCompleteRef = useRef(onComplete);
@@ -158,12 +159,17 @@ function TypewriterText({ text, onComplete }: { text: string; onComplete?: () =>
       onCompleteRef.current?.();
       return;
     }
-    const delay = breaks.has(displayLen) ? PARAGRAPH_PAUSE_MS : CHAR_SPEED_MS;
+    // 즉시 모드: 한번에 전부 표시
+    if (preset.charSpeed === 0) {
+      setDisplayLen(text.length);
+      return;
+    }
+    const delay = breaks.has(displayLen) ? preset.paragraphPause : preset.charSpeed;
     const timer = setTimeout(() => {
       setDisplayLen((prev) => Math.min(prev + 1, text.length));
     }, delay);
     return () => clearTimeout(timer);
-  }, [displayLen, text, breaks]);
+  }, [displayLen, text, breaks, preset]);
 
   return (
     <>
