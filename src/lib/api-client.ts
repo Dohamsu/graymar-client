@@ -1,13 +1,24 @@
 import { ApiError } from '@/lib/api-errors';
 import type { SubmitTurnResponse } from '@/types/game';
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+function getBaseUrl(): string {
+  if (typeof window === 'undefined') {
+    // SSR — 항상 직접 접속
+    return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+  }
+  const { hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // 로컬 개발 — 백엔드 직접 호출
+    return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+  }
+  // 외부 접속 (ngrok 등) — 상대경로로 Next.js rewrites 프록시 사용
+  return '';
+}
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${getBaseUrl()}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
@@ -46,7 +57,7 @@ export async function getActiveRun(): Promise<{
   currentNodeIndex: number;
   startedAt: string;
 } | null> {
-  const res = await fetch(`${BASE_URL}/v1/runs`, {
+  const res = await fetch(`${getBaseUrl()}/v1/runs`, {
     headers: { 'Content-Type': 'application/json', 'x-user-id': USER_ID },
   });
   if (!res.ok) return null;
