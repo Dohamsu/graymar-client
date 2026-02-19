@@ -35,6 +35,7 @@ export default function GamePage() {
   const flushPending = useGameStore((s) => s.flushPending);
   const worldState = useGameStore((s) => s.worldState);
   const locationName = useGameStore((s) => s.locationName);
+  const llmStats = useGameStore((s) => s.llmStats);
 
   const [mobileTab, setMobileTab] = useState("story");
 
@@ -91,7 +92,7 @@ export default function GamePage() {
 
       {/* ===== Desktop Layout ===== */}
       <div className="hidden h-full flex-col lg:flex">
-        <Header location={location} hud={hud} worldState={worldState} />
+        <Header location={location} hud={hud} worldState={worldState} llmStats={llmStats} />
 
         {/* LOCATION 헤더 (LOCATION phase) */}
         {phase === "LOCATION" && (

@@ -101,10 +101,17 @@ export function updateLlmSettings(
   );
 }
 
+export interface LlmTokenStats {
+  prompt: number;
+  cached: number;
+  completion: number;
+  latencyMs: number;
+}
+
 /** GET /v1/runs/:runId/turns/:turnNo — fetch turn detail (LLM narrative polling). */
 export function getTurnDetail(runId: string, turnNo: number) {
   return request<{
-    llm: { status: string; output: string | null; modelUsed: string | null };
+    llm: { status: string; output: string | null; modelUsed: string | null; tokenStats: LlmTokenStats | null };
   }>(`/v1/runs/${runId}/turns/${turnNo}`);
 }
 
