@@ -7,6 +7,11 @@ import {
   updateLlmSettings,
   type LlmSettingsResponse,
 } from "@/lib/api-client";
+import {
+  useSettingsStore,
+  TEXT_SPEED_PRESETS,
+  type TextSpeedKey,
+} from "@/store/settings-store";
 
 interface LlmSettingsModalProps {
   open: boolean;
@@ -26,6 +31,8 @@ const MODEL_OPTIONS: Record<string, string[]> = {
   gemini: ["gemini-2.0-flash", "gemini-2.5-pro", "gemini-2.5-flash"],
 };
 
+const TEXT_SPEED_ORDER: TextSpeedKey[] = ["instant", "fast", "normal", "slow"];
+
 export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
   const [settings, setSettings] = useState<LlmSettingsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +45,10 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
   const [model, setModel] = useState("");
   const [temperature, setTemperature] = useState(0.8);
   const [maxTokens, setMaxTokens] = useState(1024);
+
+  // Text speed (client-local, no server)
+  const textSpeed = useSettingsStore((s) => s.textSpeed);
+  const setTextSpeed = useSettingsStore((s) => s.setTextSpeed);
 
   useEffect(() => {
     if (!open) return;
@@ -244,6 +255,32 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
                 <div className="mt-1 flex justify-between text-[10px] text-[var(--text-muted)]">
                   <span>짧게</span>
                   <span>길게</span>
+                </div>
+              </div>
+
+              {/* Text Speed */}
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
+                  대화 출력 속도
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {TEXT_SPEED_ORDER.map((key) => {
+                    const preset = TEXT_SPEED_PRESETS[key];
+                    const selected = textSpeed === key;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setTextSpeed(key)}
+                        className={`rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
+                          selected
+                            ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
+                            : "border-[var(--border-primary)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]"
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
