@@ -82,29 +82,38 @@ export function CharacterTab({ character }: CharacterTabProps) {
         <span className="text-[10px] font-semibold tracking-[1px] text-[var(--text-secondary)]">
           장비
         </span>
-        <div className="grid grid-cols-2 gap-2">
-          {character.equipment.map((item) => {
-            const IconComponent = EQUIP_ICON_MAP[item.icon] ?? Gem;
-            return (
-              <div
-                key={item.slot}
-                className="flex flex-col items-center gap-2 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-3"
-                style={{
-                  borderColor: item.rarity ? `${item.color}50` : undefined,
-                }}
-              >
-                <IconComponent size={24} style={{ color: item.color }} />
-                <span className="text-[11px] font-medium text-[var(--text-primary)]">
-                  {item.name}
-                </span>
-                <span className="text-[9px] text-[var(--text-muted)]">
-                  {item.rarity ? `${item.rarity} \u00b7 ` : ""}
-                  {item.slot}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        {character.equipment.length === 0 ? (
+          <span className="text-[11px] text-[var(--text-muted)]">
+            장착된 장비 없음
+          </span>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {character.equipment.map((item) => {
+              const IconComponent = EQUIP_ICON_MAP[item.icon] ?? Gem;
+              return (
+                <div
+                  key={item.slot}
+                  className="flex flex-col items-center gap-2 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-3"
+                  style={{
+                    borderColor: item.rarity ? `${item.color}50` : undefined,
+                  }}
+                >
+                  <IconComponent size={24} style={{ color: item.color }} />
+                  <span
+                    className="text-center text-[11px] font-medium"
+                    style={{ color: item.rarity ? item.color : 'var(--text-primary)' }}
+                  >
+                    {item.name}
+                  </span>
+                  <span className="text-[9px] text-[var(--text-muted)]">
+                    {item.rarity ? `${item.rarity} \u00b7 ` : ""}
+                    {item.slot}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

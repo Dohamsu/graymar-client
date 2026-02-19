@@ -2,8 +2,11 @@
 
 export interface ItemMeta {
   name: string;
-  type: 'CONSUMABLE' | 'KEY_ITEM' | 'CLUE';
+  type: 'CONSUMABLE' | 'KEY_ITEM' | 'CLUE' | 'EQUIPMENT';
   description?: string;
+  rarity?: string;
+  slot?: string;
+  icon?: string;
 }
 
 export const ITEM_CATALOG: Record<string, ItemMeta> = {
@@ -63,5 +66,112 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
   CLUE_LOCK_TAG_EAST_DOCK: {
     name: '동쪽 부두 자물쇠 인장',
     type: 'CLUE',
+  },
+
+  // --- EQUIPMENT ---
+  EQ_DOCK_CUTLASS: {
+    name: '부두 만도',
+    type: 'EQUIPMENT',
+    rarity: 'RARE',
+    slot: 'WEAPON',
+    icon: 'sword',
+  },
+  EQ_DOCK_VEST: {
+    name: '두꺼운 방수 조끼',
+    type: 'EQUIPMENT',
+    rarity: 'RARE',
+    slot: 'ARMOR',
+    icon: 'shirt',
+  },
+  EQ_DOCK_BOOTS: {
+    name: '항만 전투화',
+    type: 'EQUIPMENT',
+    rarity: 'RARE',
+    slot: 'TACTICAL',
+    icon: 'hard-hat',
+  },
+  EQ_MERCHANT_LEDGER: {
+    name: '상인 길드 원장',
+    type: 'EQUIPMENT',
+    rarity: 'RARE',
+    slot: 'POLITICAL',
+    icon: 'gem',
+  },
+  EQ_MERCHANT_RING: {
+    name: '상단 인장 반지',
+    type: 'EQUIPMENT',
+    rarity: 'RARE',
+    slot: 'POLITICAL',
+    icon: 'gem',
+  },
+  EQ_MERCHANT_CLOAK: {
+    name: '길드 외교관 망토',
+    type: 'EQUIPMENT',
+    rarity: 'UNIQUE',
+    slot: 'ARMOR',
+    icon: 'shirt',
+  },
+  EQ_RUSTY_BLADE: {
+    name: '녹슨 단검',
+    type: 'EQUIPMENT',
+    rarity: 'RARE',
+    slot: 'WEAPON',
+    icon: 'sword',
+  },
+  EQ_SHADOW_DAGGER: {
+    name: '암살자의 단도',
+    type: 'EQUIPMENT',
+    rarity: 'UNIQUE',
+    slot: 'WEAPON',
+    icon: 'sword',
+  },
+  EQ_PATROL_ARMOR: {
+    name: '순찰대 경갑',
+    type: 'EQUIPMENT',
+    rarity: 'RARE',
+    slot: 'ARMOR',
+    icon: 'shirt',
+  },
+  EQ_SCOUTS_GOGGLES: {
+    name: '정찰병 고글',
+    type: 'EQUIPMENT',
+    rarity: 'RARE',
+    slot: 'TACTICAL',
+    icon: 'hard-hat',
+  },
+  EQ_HARBOR_SEAL: {
+    name: '항만 관리관의 봉인',
+    type: 'EQUIPMENT',
+    rarity: 'UNIQUE',
+    slot: 'POLITICAL',
+    icon: 'gem',
+  },
+  EQ_RELIC_TIDE_COMPASS: {
+    name: '조류의 나침반',
+    type: 'EQUIPMENT',
+    rarity: 'LEGENDARY',
+    slot: 'RELIC',
+    icon: 'gem',
+  },
+  EQ_SMUGGLER_DAGGER: {
+    name: '밀수업자의 단검',
+    type: 'EQUIPMENT',
+    rarity: 'RARE',
+    slot: 'WEAPON',
+    icon: 'sword',
+  },
+  EQ_SHADOW_CLOAK: {
+    name: '그림자 망토',
+    type: 'EQUIPMENT',
+    rarity: 'UNIQUE',
+    slot: 'ARMOR',
+    icon: 'shirt',
+  },
+  EQ_SILENT_BOOTS: {
+    name: '무음 장화',
+    type: 'EQUIPMENT',
+    rarity: 'RARE',
+    slot: 'TACTICAL',
+    icon: 'hard-hat',
   },
 };

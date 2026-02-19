@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MapPin, Coins, Menu, Settings } from "lucide-react";
 import type { PlayerHud, WorldStateUI } from "@/types/game";
+import type { LlmTokenStats } from "@/lib/api-client";
 import { LlmSettingsModal } from "@/components/ui/LlmSettingsModal";
 import { HeatGauge } from "@/components/hub/HeatGauge";
 import { TimePhaseIndicator } from "@/components/hub/TimePhaseIndicator";
@@ -11,6 +12,7 @@ interface HeaderProps {
   location: string;
   hud: PlayerHud;
   worldState?: WorldStateUI | null;
+  llmStats?: (LlmTokenStats & { model: string | null }) | null;
 }
 
 function HpBar({ current, max }: { current: number; max: number }) {
@@ -49,7 +51,7 @@ function StaminaBar({ current, max }: { current: number; max: number }) {
   );
 }
 
-export function Header({ location, hud, worldState }: HeaderProps) {
+export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
@@ -92,6 +94,13 @@ export function Header({ location, hud, worldState }: HeaderProps) {
               {hud.gold.toLocaleString()}
             </span>
           </div>
+          {llmStats && (
+            <div className="flex items-center gap-1.5 rounded bg-[var(--bg-card)] px-2 py-1 font-mono text-[10px] text-[var(--text-muted)]" title={`model: ${llmStats.model ?? '?'}\nprompt: ${llmStats.prompt}\ncached: ${llmStats.cached}\ncompletion: ${llmStats.completion}\nlatency: ${llmStats.latencyMs}ms`}>
+              <span>P:{llmStats.prompt}</span>
+              <span className={llmStats.cached > 0 ? "text-[var(--stamina-green)]" : ""}>C:{llmStats.cached}</span>
+              <span>{llmStats.latencyMs}ms</span>
+            </div>
+          )}
           <button
             onClick={() => setSettingsOpen(true)}
             className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-[var(--text-primary)]"

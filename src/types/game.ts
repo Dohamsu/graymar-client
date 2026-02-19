@@ -39,12 +39,24 @@ export interface StatItem {
   color: string;
 }
 
+export interface ItemInstance {
+  instanceId: string;
+  baseItemId: string;
+  prefixAffixId?: string;
+  suffixAffixId?: string;
+  displayName: string;
+}
+
 export interface EquipmentItem {
   slot: string;
-  name: string;
+  name: string; // displayName (affix 포함)
+  baseName: string; // 원본 아이템 이름
   rarity?: string;
   icon: string;
   color: string;
+  prefixName?: string;
+  suffixName?: string;
+  statBonus?: Record<string, number>;
 }
 
 export interface CharacterPreset {

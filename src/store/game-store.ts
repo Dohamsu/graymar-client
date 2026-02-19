@@ -11,8 +11,9 @@ import type {
   WorldStateUI,
   ResolveOutcome,
 } from '@/types/game';
-import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail } from '@/lib/api-client';
+import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, type LlmTokenStats } from '@/lib/api-client';
 import { PRESETS } from '@/data/presets';
+import { ITEM_CATALOG } from '@/data/items';
 import { mapResultToMessages } from '@/lib/result-mapper';
 import { applyDiffToHud, applyEnemyDiffs, applyInventoryDiff } from '@/lib/hud-mapper';
 import { ApiError } from '@/lib/api-errors';
@@ -50,6 +51,7 @@ export interface GameState {
   worldState: WorldStateUI | null;
   resolveOutcome: ResolveOutcome | null;
   locationName: string | null;
+  llmStats: (LlmTokenStats & { model: string | null }) | null;
 
   // actions
   checkActiveRun: () => Promise<void>;
@@ -83,6 +85,44 @@ const STAT_COLORS: Record<string, string> = {
   SPEED: 'var(--success-green)',
   RESIST: 'var(--info-blue)',
 };
+
+const RARITY_COLORS: Record<string, string> = {
+  COMMON: 'var(--text-muted)',
+  RARE: 'var(--info-blue)',
+  UNIQUE: '#a855f7',
+  LEGENDARY: 'var(--gold)',
+};
+
+const SLOT_ICONS: Record<string, string> = {
+  WEAPON: 'sword',
+  ARMOR: 'shirt',
+  TACTICAL: 'hard-hat',
+  POLITICAL: 'gem',
+  RELIC: 'gem',
+};
+
+function mapEquippedToDisplay(
+  equipped?: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }>,
+): import('@/types/game').EquipmentItem[] {
+  if (!equipped) return [];
+  const items: import('@/types/game').EquipmentItem[] = [];
+  for (const [slot, instance] of Object.entries(equipped)) {
+    if (!instance) continue;
+    const meta = ITEM_CATALOG[instance.baseItemId];
+    const rarity = meta?.rarity ?? undefined;
+    items.push({
+      slot,
+      name: instance.displayName,
+      baseName: meta?.name ?? instance.baseItemId,
+      rarity,
+      icon: meta?.icon ?? SLOT_ICONS[slot] ?? 'gem',
+      color: rarity ? (RARITY_COLORS[rarity] ?? 'var(--text-primary)') : 'var(--text-primary)',
+      prefixName: instance.prefixAffixId ? undefined : undefined, // affix 이름은 서버에서 displayName에 포함
+      suffixName: instance.suffixAffixId ? undefined : undefined,
+    });
+  }
+  return items;
+}
 
 function buildCharacterInfo(presetId: string, gender: 'male' | 'female' = 'male'): CharacterInfo {
   const preset = PRESETS.find((p) => p.presetId === presetId);
@@ -192,6 +232,9 @@ function pollForNarrative(
 
       if (detail.llm.status === 'DONE' && detail.llm.output) {
         clearInterval(timer);
+        if (detail.llm.tokenStats) {
+          set({ llmStats: { ...detail.llm.tokenStats, model: detail.llm.modelUsed } });
+        }
         flushNarrator(detail.llm.output!, turnNo, get, set);
         return;
       }
@@ -416,6 +459,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   worldState: null,
   resolveOutcome: null,
   locationName: null,
+  llmStats: null,
 
   // -----------------------------------------------------------------------
   // checkActiveRun
@@ -446,7 +490,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const lastResult = data.lastResult as ServerResultV1 | undefined;
       const battleState = data.battleState as unknown | undefined;
       const runState = data.runState as
-        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }> }
+        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }>; equipped?: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }> }
         | undefined;
       const turnsArr = data.turns as Array<{
         turnNo: number;
@@ -520,10 +564,13 @@ export const useGameStore = create<GameState>((set, get) => ({
         pendingChoices: [],
         isSubmitting: false,
         activeRunInfo: null,
-        characterInfo: buildCharacterInfo(
-          (run.presetId as string) ?? activeRunInfo.presetId,
-          ((run.gender as string) ?? activeRunInfo.gender ?? 'male') as 'male' | 'female',
-        ),
+        characterInfo: {
+          ...buildCharacterInfo(
+            (run.presetId as string) ?? activeRunInfo.presetId,
+            ((run.gender as string) ?? activeRunInfo.gender ?? 'male') as 'male' | 'female',
+          ),
+          equipment: mapEquippedToDisplay(runState?.equipped),
+        },
         worldState: resumeWs ?? null,
         resolveOutcome: null,
         locationName: null,
@@ -553,7 +600,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const serverResult = data.lastResult as ServerResultV1 | undefined;
       const battleState = data.battleState as unknown | undefined;
       const runState = data.runState as
-        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }> }
+        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }>; equipped?: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }> }
         | undefined;
 
       // Build initial messages / choices from the enter result
@@ -612,7 +659,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         choices: hasNarratorLoading ? [] : initialChoices,
         pendingChoices: hasNarratorLoading ? initialChoices : [],
         isSubmitting: false,
-        characterInfo: buildCharacterInfo(presetId, gender),
+        characterInfo: {
+          ...buildCharacterInfo(presetId, gender),
+          equipment: mapEquippedToDisplay(runState?.equipped),
+        },
         worldState: wsUI ?? null,
         resolveOutcome: null,
         locationName: null,
