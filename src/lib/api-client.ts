@@ -122,7 +122,13 @@ export interface LlmTokenStats {
 /** GET /v1/runs/:runId/turns/:turnNo — fetch turn detail (LLM narrative polling). */
 export function getTurnDetail(runId: string, turnNo: number) {
   return request<{
-    llm: { status: string; output: string | null; modelUsed: string | null; tokenStats: LlmTokenStats | null };
+    llm: {
+      status: string;
+      output: string | null;
+      modelUsed: string | null;
+      tokenStats: LlmTokenStats | null;
+      error: { error: string; provider?: string } | null;
+    };
   }>(`/v1/runs/${runId}/turns/${turnNo}`);
 }
 

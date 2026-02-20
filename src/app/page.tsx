@@ -17,6 +17,7 @@ import { StartScreen } from "@/components/screens/StartScreen";
 
 import { RunEndScreen } from "@/components/screens/RunEndScreen";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { LlmFailureModal } from "@/components/ui/LlmFailureModal";
 import { LocationHeader } from "@/components/hub/LocationHeader";
 import type { BattleEnemy } from "@/types/game";
 
@@ -89,6 +90,8 @@ export default function GamePage() {
     <div className="mx-auto flex h-full max-w-[1440px] flex-col">
       {/* Error banner */}
       <ErrorBanner />
+      {/* LLM failure modal */}
+      <LlmFailureModal />
 
       {/* ===== Desktop Layout ===== */}
       <div className="hidden h-full flex-col lg:flex">
