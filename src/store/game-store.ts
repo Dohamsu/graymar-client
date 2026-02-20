@@ -52,6 +52,7 @@ export interface GameState {
   resolveOutcome: ResolveOutcome | null;
   locationName: string | null;
   llmStats: (LlmTokenStats & { model: string | null }) | null;
+  llmFailure: { message: string; provider?: string; turnNo: number } | null;
 
   // actions
   checkActiveRun: () => Promise<void>;
@@ -61,6 +62,7 @@ export interface GameState {
   submitChoice: (choiceId: string) => Promise<void>;
   flushPending: () => void;
   clearError: () => void;
+  dismissLlmFailure: () => void;
   reset: () => void;
 }
 
@@ -239,16 +241,42 @@ function pollForNarrative(
         return;
       }
 
-      if (detail.llm.status === 'FAILED' || attempts >= LLM_POLL_MAX_ATTEMPTS) {
+      if (detail.llm.status === 'FAILED') {
         clearInterval(timer);
-        flushNarrator(fallbackText, turnNo, get, set);
+        const errInfo = detail.llm.error;
+        const provider = (errInfo as Record<string, unknown> | null)?.provider as string | undefined;
+        const errorMsg = (errInfo as Record<string, unknown> | null)?.error as string | undefined;
+        set({
+          llmFailure: {
+            message: errorMsg ?? 'AI 서술 생성에 실패했습니다.',
+            provider,
+            turnNo,
+          },
+        });
+        // 게임 정지: narrator를 로딩 상태로 유지, pending flush하지 않음
+        return;
+      }
+
+      if (attempts >= LLM_POLL_MAX_ATTEMPTS) {
+        clearInterval(timer);
+        set({
+          llmFailure: {
+            message: 'AI 서술 응답 시간이 초과되었습니다.',
+            turnNo,
+          },
+        });
         return;
       }
     } catch {
-      // 네트워크 오류 시 계속 시도, 최대 횟수 초과 시 fallback
+      // 네트워크 오류 시 계속 시도, 최대 횟수 초과 시 에러 표시
       if (attempts >= LLM_POLL_MAX_ATTEMPTS) {
         clearInterval(timer);
-        flushNarrator(fallbackText, turnNo, get, set);
+        set({
+          llmFailure: {
+            message: '서버와의 연결에 실패했습니다.',
+            turnNo,
+          },
+        });
       }
     }
   }, LLM_POLL_INTERVAL_MS);
@@ -460,6 +488,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   resolveOutcome: null,
   locationName: null,
   llmStats: null,
+  llmFailure: null,
 
   // -----------------------------------------------------------------------
   // checkActiveRun
@@ -782,6 +811,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
+  dismissLlmFailure: () => {
+    set({ llmFailure: null });
+  },
+
   reset: () => {
     set({
       phase: 'TITLE',
@@ -798,6 +831,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       pendingChoices: [],
       isSubmitting: false,
       error: null,
+      llmFailure: null,
       activeRunInfo: null,
       characterInfo: null,
       worldState: null,
