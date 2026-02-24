@@ -8,8 +8,14 @@ import type {
   SubmitTurnResponse,
   BattleEnemy,
   InventoryItem,
+  InventoryChanges,
   WorldStateUI,
   ResolveOutcome,
+  IncidentSummaryUI,
+  SignalFeedItemUI,
+  OperationProgressUI,
+  NpcEmotionalUI,
+  EndingResult,
 } from '@/types/game';
 import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, type LlmTokenStats } from '@/lib/api-client';
 import { PRESETS } from '@/data/presets';
@@ -53,6 +59,13 @@ export interface GameState {
   locationName: string | null;
   llmStats: (LlmTokenStats & { model: string | null }) | null;
   llmFailure: { message: string; provider?: string; turnNo: number } | null;
+  inventoryChanges: InventoryChanges | null;
+  // Narrative Engine v1
+  signalFeed: SignalFeedItemUI[];
+  activeIncidents: IncidentSummaryUI[];
+  operationProgress: OperationProgressUI | null;
+  npcEmotional: NpcEmotionalUI[];
+  endingResult: EndingResult | null;
 
   // actions
   checkActiveRun: () => Promise<void>;
@@ -63,6 +76,7 @@ export interface GameState {
   flushPending: () => void;
   clearError: () => void;
   dismissLlmFailure: () => void;
+  clearInventoryChanges: () => void;
   reset: () => void;
 }
 
@@ -312,6 +326,17 @@ function processTurnResponse(
     ? applyInventoryDiff(get().inventory, result.diff.inventory)
     : get().inventory;
 
+  // Track inventory changes for UI feedback
+  const invDiff = result.diff?.inventory;
+  const hasInvChanges = invDiff && (
+    (invDiff.itemsAdded?.length ?? 0) > 0 ||
+    (invDiff.itemsRemoved?.length ?? 0) > 0 ||
+    invDiff.goldDelta !== 0
+  );
+  const newInventoryChanges: InventoryChanges | null = hasInvChanges
+    ? { itemsAdded: invDiff.itemsAdded ?? [], itemsRemoved: invDiff.itemsRemoved ?? [], goldDelta: invDiff.goldDelta }
+    : null;
+
   // Extract choices from result
   const newChoices: Choice[] = (result.choices ?? []).map((c) => ({
     id: c.id,
@@ -330,6 +355,7 @@ function processTurnResponse(
       pendingMessages: otherMsgs,
       hud: updatedHud,
       inventory: updatedInventory,
+      inventoryChanges: newInventoryChanges,
       choices: [],
       pendingChoices: newChoices,
       currentTurnNo: turnRes.turnNo + 1,
@@ -347,6 +373,7 @@ function processTurnResponse(
       pendingMessages: [],
       hud: updatedHud,
       inventory: updatedInventory,
+      inventoryChanges: newInventoryChanges,
       choices: hasTransition ? [] : newChoices,
       pendingChoices: [],
       currentTurnNo: turnRes.turnNo + 1,
@@ -367,6 +394,19 @@ function processTurnResponse(
     set({ worldState: wsUI });
   }
 
+  // Narrative Engine v1 UI 업데이트
+  const uiBundle = result.ui as Record<string, unknown> | undefined;
+  if (uiBundle) {
+    const sf = uiBundle.signalFeed as import('@/types/game').SignalFeedItemUI[] | undefined;
+    const ai = uiBundle.activeIncidents as import('@/types/game').IncidentSummaryUI[] | undefined;
+    const op = uiBundle.operationProgress as import('@/types/game').OperationProgressUI | undefined;
+    const ne = uiBundle.npcEmotional as import('@/types/game').NpcEmotionalUI[] | undefined;
+    if (sf) set({ signalFeed: sf });
+    if (ai) set({ activeIncidents: ai });
+    if (op !== undefined) set({ operationProgress: op ?? null });
+    if (ne) set({ npcEmotional: ne });
+  }
+
   // ResolveOutcome 업데이트
   const resolveOutcome = result.ui?.resolveOutcome as ResolveOutcome | undefined;
   set({ resolveOutcome: resolveOutcome ?? null });
@@ -375,7 +415,9 @@ function processTurnResponse(
   const outcome = turnRes.meta?.nodeOutcome;
 
   if (outcome === 'RUN_ENDED') {
-    set({ phase: 'RUN_ENDED' });
+    // EndingResult가 UIBundle에 포함되어 있으면 추출
+    const endingData = (result.ui as Record<string, unknown>)?.endingResult as import('@/types/game').EndingResult | undefined;
+    set({ phase: 'RUN_ENDED', endingResult: endingData ?? null });
     return;
   }
 
@@ -489,6 +531,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   locationName: null,
   llmStats: null,
   llmFailure: null,
+  inventoryChanges: null,
+  // Narrative Engine v1
+  signalFeed: [],
+  activeIncidents: [],
+  operationProgress: null,
+  npcEmotional: [],
+  endingResult: null,
 
   // -----------------------------------------------------------------------
   // checkActiveRun
@@ -815,6 +864,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ llmFailure: null });
   },
 
+  clearInventoryChanges: () => {
+    set({ inventoryChanges: null });
+  },
+
   reset: () => {
     set({
       phase: 'TITLE',
@@ -832,11 +885,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       isSubmitting: false,
       error: null,
       llmFailure: null,
+      inventoryChanges: null,
       activeRunInfo: null,
       characterInfo: null,
       worldState: null,
       resolveOutcome: null,
       locationName: null,
+      // Narrative Engine v1
+      signalFeed: [],
+      activeIncidents: [],
+      operationProgress: null,
+      npcEmotional: [],
+      endingResult: null,
     });
   },
 }));

@@ -87,6 +87,12 @@ export interface InventoryItem {
   qty: number;
 }
 
+export interface InventoryChanges {
+  itemsAdded: Array<{ itemId: string; qty: number }>;
+  itemsRemoved: Array<{ itemId: string; qty: number }>;
+  goldDelta: number;
+}
+
 export type QuickAction = {
   id: string;
   label: string;
@@ -168,10 +174,84 @@ export interface WorldStateUI {
   hubHeat: number;
   hubSafety: 'SAFE' | 'ALERT' | 'DANGER';
   timePhase: 'DAY' | 'NIGHT';
+  phaseV2?: 'DAWN' | 'DAY' | 'DUSK' | 'NIGHT';
+  day?: number;
   currentLocationId: string | null;
 }
 
 export type ResolveOutcome = 'SUCCESS' | 'PARTIAL' | 'FAIL';
+
+// --- Narrative Engine v1 UI Types ---
+
+export interface IncidentSummaryUI {
+  incidentId: string;
+  title: string;
+  kind: string;
+  stage: number;
+  control: number;
+  pressure: number;
+  deadlineClock: number;
+  resolved: boolean;
+  outcome?: string;
+}
+
+export interface SignalFeedItemUI {
+  id: string;
+  channel: string;
+  severity: 1 | 2 | 3 | 4 | 5;
+  locationId?: string;
+  text: string;
+}
+
+export interface NpcEmotionalUI {
+  npcId: string;
+  npcName: string;
+  trust: number;
+  fear: number;
+  respect: number;
+  suspicion: number;
+  attachment: number;
+  posture: string;
+  marks: string[];
+}
+
+export interface OperationProgressUI {
+  sessionId: string;
+  locationId: string;
+  currentStep: number;
+  maxSteps: number;
+  totalTimeCost: number;
+  active: boolean;
+}
+
+// --- Ending System ---
+
+export interface NpcEpilogue {
+  npcId: string;
+  npcName: string;
+  epilogueText: string;
+  finalPosture: string;
+}
+
+export interface CityStatus {
+  stability: 'STABLE' | 'UNSTABLE' | 'COLLAPSED';
+  summary: string;
+}
+
+export interface EndingResult {
+  endingType: 'NATURAL' | 'DEADLINE' | 'PLAYER_CHOICE';
+  npcEpilogues: NpcEpilogue[];
+  cityStatus: CityStatus;
+  narrativeMarks: Array<{ type: string; context: string }>;
+  closingLine: string;
+  statistics: {
+    daysSpent: number;
+    incidentsContained: number;
+    incidentsEscalated: number;
+    incidentsExpired: number;
+    totalTurns: number;
+  };
+}
 
 export interface SubmitTurnResponse {
   accepted: boolean;
