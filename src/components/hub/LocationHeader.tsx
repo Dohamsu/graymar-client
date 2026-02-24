@@ -11,6 +11,7 @@ interface LocationHeaderProps {
 export function LocationHeader({ locationName, toneHint }: LocationHeaderProps) {
   const submitChoice = useGameStore((s) => s.submitChoice);
   const isSubmitting = useGameStore((s) => s.isSubmitting);
+  const operationProgress = useGameStore((s) => s.operationProgress);
 
   return (
     <div className="flex items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-6 py-2.5">
@@ -22,6 +23,11 @@ export function LocationHeader({ locationName, toneHint }: LocationHeaderProps) 
         {toneHint && toneHint !== "neutral" && (
           <span className="text-xs text-[var(--text-muted)]">
             ({toneHint === "danger" ? "위험" : toneHint === "tense" ? "긴장" : toneHint})
+          </span>
+        )}
+        {operationProgress && operationProgress.active && (
+          <span className="ml-2 rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-300">
+            스텝 {operationProgress.currentStep}/{operationProgress.maxSteps}
           </span>
         )}
       </div>

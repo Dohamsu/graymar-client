@@ -4,6 +4,9 @@ import { MapPin, Shield, AlertTriangle, Skull, Handshake, Coins } from "lucide-r
 import { useGameStore } from "@/store/game-store";
 import { HeatGauge } from "./HeatGauge";
 import { TimePhaseIndicator } from "./TimePhaseIndicator";
+import { SignalFeedPanel } from "./SignalFeedPanel";
+import { IncidentTracker } from "./IncidentTracker";
+import { NpcRelationshipCard } from "./NpcRelationshipCard";
 import type { WorldStateUI, Choice } from "@/types/game";
 
 // LOCATION 정보 (클라이언트 표시용)
@@ -122,6 +125,9 @@ export function HubScreen() {
   const messages = useGameStore((s) => s.messages);
   const submitChoice = useGameStore((s) => s.submitChoice);
   const isSubmitting = useGameStore((s) => s.isSubmitting);
+  const signalFeed = useGameStore((s) => s.signalFeed);
+  const activeIncidents = useGameStore((s) => s.activeIncidents);
+  const npcEmotional = useGameStore((s) => s.npcEmotional);
 
   const locationChoices = choices.filter((c) =>
     c.id.startsWith("go_"),
@@ -148,7 +154,7 @@ export function HubScreen() {
         <div className="flex items-center gap-4">
           {worldState && (
             <>
-              <TimePhaseIndicator timePhase={worldState.timePhase} />
+              <TimePhaseIndicator timePhase={worldState.timePhase} phaseV2={worldState.phaseV2} day={worldState.day} />
               <HeatGauge worldState={worldState} />
             </>
           )}
@@ -203,6 +209,11 @@ export function HubScreen() {
             </div>
           </div>
         )}
+
+        {/* Narrative Engine v1 Panels */}
+        <IncidentTracker incidents={activeIncidents} />
+        <SignalFeedPanel signals={signalFeed} />
+        <NpcRelationshipCard npcs={npcEmotional} />
       </div>
     </div>
   );

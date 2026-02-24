@@ -4,6 +4,8 @@ const SYSTEM_EVENT_KINDS = new Set([
   'SYSTEM',
   'LOOT',
   'GOLD',
+  'INCIDENT_PROGRESS',
+  'INCIDENT_RESOLVED',
 ]);
 
 const COMBAT_EVENT_KINDS = new Set([

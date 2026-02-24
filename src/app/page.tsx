@@ -16,6 +16,7 @@ import { BattlePanel } from "@/components/battle/BattlePanel";
 import { StartScreen } from "@/components/screens/StartScreen";
 
 import { RunEndScreen } from "@/components/screens/RunEndScreen";
+import { EndingScreen } from "@/components/screens/EndingScreen";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { LlmFailureModal } from "@/components/ui/LlmFailureModal";
 import { LocationHeader } from "@/components/hub/LocationHeader";
@@ -37,6 +38,8 @@ export default function GamePage() {
   const worldState = useGameStore((s) => s.worldState);
   const locationName = useGameStore((s) => s.locationName);
   const llmStats = useGameStore((s) => s.llmStats);
+  const inventoryChanges = useGameStore((s) => s.inventoryChanges);
+  const clearInventoryChanges = useGameStore((s) => s.clearInventoryChanges);
 
   const [mobileTab, setMobileTab] = useState("story");
 
@@ -45,7 +48,8 @@ export default function GamePage() {
     return <StartScreen />;
   }
   if (phase === "RUN_ENDED") {
-    return <RunEndScreen />;
+    const endingResult = useGameStore.getState().endingResult;
+    return endingResult ? <EndingScreen /> : <RunEndScreen />;
   }
 
   // Extract battle enemies for BattlePanel
@@ -123,7 +127,7 @@ export default function GamePage() {
           </div>
 
           {/* Right Column - Side Panel */}
-          {characterInfo && <SidePanel character={characterInfo} inventory={inventory} gold={hud.gold} />}
+          {characterInfo && <SidePanel character={characterInfo} inventory={inventory} gold={hud.gold} inventoryChanges={inventoryChanges} onClearChanges={clearInventoryChanges} />}
         </div>
       </div>
 
