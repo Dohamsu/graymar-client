@@ -18,6 +18,7 @@ import type {
   EndingResult,
 } from '@/types/game';
 import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, type LlmTokenStats } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth-store';
 import { PRESETS } from '@/data/presets';
 import { ITEM_CATALOG } from '@/data/items';
 import { mapResultToMessages } from '@/lib/result-mapper';
@@ -250,6 +251,10 @@ function pollForNarrative(
         clearInterval(timer);
         if (detail.llm.tokenStats) {
           set({ llmStats: { ...detail.llm.tokenStats, model: detail.llm.modelUsed } });
+        }
+        // LLM 맥락 선택지로 교체
+        if (detail.llm.choices && detail.llm.choices.length > 0) {
+          set({ pendingChoices: detail.llm.choices.map(c => ({ id: c.id, label: c.label })) });
         }
         flushNarrator(detail.llm.output!, turnNo, get, set);
         return;
@@ -543,6 +548,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   // checkActiveRun
   // -----------------------------------------------------------------------
   checkActiveRun: async () => {
+    const token = useAuthStore.getState().token;
+    if (!token) {
+      set({ activeRunInfo: null });
+      return;
+    }
     try {
       const info = await getActiveRun();
       set({ activeRunInfo: info ?? null });

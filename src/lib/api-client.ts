@@ -1,4 +1,5 @@
 import { ApiError } from '@/lib/api-errors';
+import { useAuthStore } from '@/store/auth-store';
 import type { SubmitTurnResponse } from '@/types/game';
 
 function getBaseUrl(): string {
@@ -15,14 +16,18 @@ function getBaseUrl(): string {
   return '';
 }
 
-const USER_ID = '00000000-0000-0000-0000-000000000001';
+function getAuthHeaders(): Record<string, string> {
+  const token = useAuthStore.getState().token;
+  if (token) return { Authorization: `Bearer ${token}` };
+  return {};
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${getBaseUrl()}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      'x-user-id': USER_ID,
+      ...getAuthHeaders(),
       ...init?.headers,
     },
   });
@@ -58,7 +63,7 @@ export async function getActiveRun(): Promise<{
   startedAt: string;
 } | null> {
   const res = await fetch(`${getBaseUrl()}/v1/runs`, {
-    headers: { 'Content-Type': 'application/json', 'x-user-id': USER_ID },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
   });
   if (!res.ok) return null;
   const text = await res.text();
@@ -128,6 +133,12 @@ export function getTurnDetail(runId: string, turnNo: number) {
       modelUsed: string | null;
       tokenStats: LlmTokenStats | null;
       error: { error: string; provider?: string } | null;
+      choices: Array<{
+        id: string;
+        label: string;
+        hint?: string;
+        action: { type: string; payload: Record<string, unknown> };
+      }> | null;
     };
   }>(`/v1/runs/${runId}/turns/${turnNo}`);
 }

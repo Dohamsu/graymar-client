@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGameStore } from "@/store/game-store";
+import { useAuthStore } from "@/store/auth-store";
 import {
   Header,
   MobileHeader,
@@ -23,6 +24,11 @@ import { LocationHeader } from "@/components/hub/LocationHeader";
 import type { BattleEnemy } from "@/types/game";
 
 export default function GamePage() {
+  const authToken = useAuthStore((s) => s.token);
+  const hydrate = useAuthStore((s) => s.hydrate);
+
+  useEffect(() => { hydrate(); }, [hydrate]);
+
   const phase = useGameStore((s) => s.phase);
   const messages = useGameStore((s) => s.messages);
   const choices = useGameStore((s) => s.choices);
@@ -44,7 +50,7 @@ export default function GamePage() {
   const [mobileTab, setMobileTab] = useState("story");
 
   // --- Phase routing ---
-  if (phase === "TITLE" || phase === "LOADING") {
+  if (!authToken || phase === "TITLE" || phase === "LOADING") {
     return <StartScreen />;
   }
   if (phase === "RUN_ENDED") {
