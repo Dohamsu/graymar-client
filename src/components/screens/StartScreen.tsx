@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useGameStore } from "@/store/game-store";
+import { useAuthStore } from "@/store/auth-store";
 import { PRESETS } from "@/data/presets";
 import type { CharacterPreset } from "@/types/game";
 
-type ScreenPhase = "TITLE" | "SELECT_PRESET";
+type ScreenPhase = "TITLE" | "AUTH" | "SELECT_PRESET";
+type AuthTab = "login" | "register";
 type Gender = "male" | "female";
 
 // ---------------------------------------------------------------------------
@@ -201,6 +203,133 @@ function PresetCard({
 }
 
 // ---------------------------------------------------------------------------
+// AuthForm
+// ---------------------------------------------------------------------------
+
+function AuthForm({ onSuccess }: { onSuccess: () => void }) {
+  const [tab, setTab] = useState<AuthTab>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [nickname, setNickname] = useState("");
+
+  const authLogin = useAuthStore((s) => s.login);
+  const authRegister = useAuthStore((s) => s.register);
+  const authLoading = useAuthStore((s) => s.isLoading);
+  const authError = useAuthStore((s) => s.error);
+  const clearError = useAuthStore((s) => s.clearError);
+
+  const handleTabChange = (newTab: AuthTab) => {
+    setTab(newTab);
+    clearError();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (tab === "login") {
+      await authLogin(email, password);
+    } else {
+      await authRegister(email, password, nickname || undefined);
+    }
+    // 성공 여부는 store의 token으로 판단
+    const { token } = useAuthStore.getState();
+    if (token) {
+      onSuccess();
+    }
+  };
+
+  return (
+    <div className="w-full max-w-sm">
+      {/* Tabs */}
+      <div className="mb-6 flex border-b border-[var(--border-primary)]">
+        {(["login", "register"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => handleTabChange(t)}
+            className={`flex-1 pb-3 text-center font-display text-sm tracking-wider transition-colors ${
+              tab === t
+                ? "border-b-2 border-[var(--gold)] text-[var(--gold)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+            }`}
+          >
+            {t === "login" ? "로그인" : "회원가입"}
+          </button>
+        ))}
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="auth-email" className="text-xs text-[var(--text-muted)]">
+            이메일
+          </label>
+          <input
+            id="auth-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="email@example.com"
+            className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="auth-password" className="text-xs text-[var(--text-muted)]">
+            비밀번호
+          </label>
+          <input
+            id="auth-password"
+            type="password"
+            required
+            minLength={tab === "register" ? 8 : 1}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={tab === "register" ? "8자 이상" : "비밀번호"}
+            className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+          />
+        </div>
+
+        {tab === "register" && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="auth-nickname" className="text-xs text-[var(--text-muted)]">
+              닉네임 <span className="text-[var(--text-muted)]">(선택)</span>
+            </label>
+            <input
+              id="auth-nickname"
+              type="text"
+              maxLength={30}
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="게임에서 사용할 이름"
+              className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+            />
+          </div>
+        )}
+
+        {/* Error */}
+        {authError && (
+          <p className="text-sm text-[var(--hp-red)]">{authError}</p>
+        )}
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={authLoading}
+          className="mt-2 flex h-12 items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
+        >
+          {authLoading
+            ? "처리 중..."
+            : tab === "login"
+              ? "로그인"
+              : "가입하기"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // StartScreen
 // ---------------------------------------------------------------------------
 
@@ -217,7 +346,14 @@ export function StartScreen() {
   const checkActiveRun = useGameStore((s) => s.checkActiveRun);
   const resumeRun = useGameStore((s) => s.resumeRun);
 
-  useEffect(() => { checkActiveRun(); }, [checkActiveRun]);
+  const authToken = useAuthStore((s) => s.token);
+  const authUser = useAuthStore((s) => s.user);
+  const authLogout = useAuthStore((s) => s.logout);
+  const gameReset = useGameStore((s) => s.reset);
+
+  useEffect(() => {
+    if (authToken) checkActiveRun();
+  }, [authToken, checkActiveRun]);
 
   const [screenPhase, setScreenPhase] = useState<ScreenPhase>("TITLE");
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
@@ -228,8 +364,46 @@ export function StartScreen() {
     startNewGame(selectedPresetId, genderMap[selectedPresetId] ?? "male");
   };
 
-  // Phase 1: TITLE
+  const handleLogout = () => {
+    authLogout();
+    gameReset();
+    setScreenPhase("TITLE");
+  };
+
+  // Phase: AUTH (로그인/회원가입)
+  if (screenPhase === "AUTH") {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
+        {/* Logo (compact) */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-16 w-16 items-center justify-center border-2 border-[var(--gold)]">
+            <span className="font-display text-2xl font-bold text-[var(--gold)]">
+              R
+            </span>
+          </div>
+          <h1 className="font-display text-2xl tracking-[4px] text-[var(--text-primary)]">
+            그림자의 왕국
+          </h1>
+        </div>
+
+        <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
+
+        {/* 뒤로 */}
+        <button
+          onClick={() => setScreenPhase("TITLE")}
+          className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+        >
+          &larr; 돌아가기
+        </button>
+      </div>
+    );
+  }
+
+  // Phase: TITLE
   if (screenPhase === "TITLE") {
+    const isLoggedIn = !!authToken;
+    const displayName = authUser?.nickname ?? authUser?.email ?? "";
+
     return (
       <div className="flex h-full flex-col items-center justify-center gap-12 bg-[var(--bg-primary)]">
         {/* Logo */}
@@ -249,31 +423,54 @@ export function StartScreen() {
 
         {/* Actions */}
         <div className="flex flex-col items-center gap-4">
-          {activeRunInfo && (
+          {isLoggedIn ? (
+            <>
+              {/* 로그인 상태: 닉네임 표시 */}
+              <p className="mb-2 text-sm text-[var(--text-secondary)]">
+                <span className="text-[var(--gold)]">{displayName}</span> 님, 환영합니다
+              </p>
+
+              {activeRunInfo && (
+                <button
+                  onClick={() => resumeRun()}
+                  disabled={isLoading}
+                  className="flex h-14 w-64 flex-col items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
+                >
+                  <span className="text-lg tracking-[3px]">이어하기</span>
+                  <span className="text-xs opacity-70">
+                    {getPresetName(activeRunInfo.presetId)} · 턴 {activeRunInfo.currentTurnNo}
+                  </span>
+                </button>
+              )}
+              <button
+                onClick={() => setScreenPhase("SELECT_PRESET")}
+                disabled={isLoading}
+                className="flex h-14 w-64 items-center justify-center border border-[var(--gold)] bg-transparent font-display text-lg tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
+              >
+                새 게임
+              </button>
+              <button
+                onClick={handleLogout}
+                className="mt-2 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+              >
+                로그아웃
+              </button>
+            </>
+          ) : (
+            /* 미로그인 상태 */
             <button
-              onClick={() => resumeRun()}
-              disabled={isLoading}
-              className="flex h-14 w-64 flex-col items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
+              onClick={() => setScreenPhase("AUTH")}
+              className="flex h-14 w-64 items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-lg tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
             >
-              <span className="text-lg tracking-[3px]">이어하기</span>
-              <span className="text-xs opacity-70">
-                {getPresetName(activeRunInfo.presetId)} · 턴 {activeRunInfo.currentTurnNo}
-              </span>
+              시작하기
             </button>
           )}
-          <button
-            onClick={() => setScreenPhase("SELECT_PRESET")}
-            disabled={isLoading}
-            className="flex h-14 w-64 items-center justify-center border border-[var(--gold)] bg-transparent font-display text-lg tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
-          >
-            새 게임
-          </button>
         </div>
       </div>
     );
   }
 
-  // Phase 2: SELECT_PRESET
+  // Phase: SELECT_PRESET
   return (
     <div className="flex h-full flex-col bg-[var(--bg-primary)]">
       {/* Header */}
