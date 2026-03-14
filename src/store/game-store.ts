@@ -17,11 +17,12 @@ import type {
   NpcEmotionalUI,
   EndingResult,
 } from '@/types/game';
-import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, type LlmTokenStats } from '@/lib/api-client';
+import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, type LlmTokenStats } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { PRESETS } from '@/data/presets';
 import { ITEM_CATALOG } from '@/data/items';
-import { mapResultToMessages } from '@/lib/result-mapper';
+import { STAT_COLORS } from '@/data/stat-descriptions';
+import { mapResultToMessages, mapTurnHistoryToMessages, stripNarratorChoices, type TurnHistoryItem } from '@/lib/result-mapper';
 import { applyDiffToHud, applyEnemyDiffs, applyInventoryDiff } from '@/lib/hud-mapper';
 import { ApiError } from '@/lib/api-errors';
 
@@ -77,6 +78,8 @@ export interface GameState {
   flushPending: () => void;
   clearError: () => void;
   dismissLlmFailure: () => void;
+  retryLlmNarrative: () => Promise<void>;
+  skipLlmNarrative: () => void;
   clearInventoryChanges: () => void;
   reset: () => void;
 }
@@ -91,16 +94,6 @@ const INITIAL_HUD: PlayerHud = {
   stamina: 5,
   maxStamina: 5,
   gold: 50,
-};
-
-const STAT_COLORS: Record<string, string> = {
-  ATK: 'var(--hp-red)',
-  DEF: 'var(--info-blue)',
-  ACC: 'var(--success-green)',
-  EVA: 'var(--gold)',
-  CRIT: 'var(--hp-red)',
-  SPEED: 'var(--success-green)',
-  RESIST: 'var(--info-blue)',
 };
 
 const RARITY_COLORS: Record<string, string> = {
@@ -256,7 +249,7 @@ function pollForNarrative(
         if (detail.llm.choices && detail.llm.choices.length > 0) {
           set({ pendingChoices: detail.llm.choices.map(c => ({ id: c.id, label: c.label })) });
         }
-        flushNarrator(detail.llm.output!, turnNo, get, set);
+        flushNarrator(stripNarratorChoices(detail.llm.output!), turnNo, get, set);
         return;
       }
 
@@ -352,8 +345,9 @@ function processTurnResponse(
 
   if (hasLlmPending) {
     // 내레이터 + 판정 결과 먼저 표시, 나머지는 내레이션 완료 후 flush
+    // CHOICE는 pendingChoices로 별도 관리 — pendingMessages에 포함하면 flushPending 시 충돌
     const immediateMsgs = newMessages.filter((m) => m.type === 'NARRATOR' || m.type === 'RESOLVE');
-    const otherMsgs = newMessages.filter((m) => m.type !== 'NARRATOR' && m.type !== 'RESOLVE');
+    const otherMsgs = newMessages.filter((m) => m.type !== 'NARRATOR' && m.type !== 'RESOLVE' && m.type !== 'CHOICE');
 
     set({
       messages: [...get().messages, ...immediateMsgs],
@@ -437,8 +431,9 @@ function processTurnResponse(
 
       const narratorMsgs = enterMessages.filter((m) => m.type === 'NARRATOR');
       const systemMsgs = enterMessages.filter((m) => m.type === 'SYSTEM');
+      // CHOICE는 pendingChoices(enterChoices)로 별도 관리 — pendingMessages에서 제외
       const otherMsgs = enterMessages.filter(
-        (m) => m.type !== 'NARRATOR' && m.type !== 'SYSTEM',
+        (m) => m.type !== 'NARRATOR' && m.type !== 'SYSTEM' && m.type !== 'CHOICE',
       );
 
       const enterTurnNo = t.enterTurnNo ?? t.enterResult.turnNo;
@@ -571,7 +566,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ phase: 'LOADING', error: null });
 
     try {
-      const data = (await getRun(activeRunInfo.runId)) as Record<string, unknown>;
+      const data = (await getRun(activeRunInfo.runId, { turnsLimit: 50 })) as Record<string, unknown>;
       const run = data.run as Record<string, unknown>;
       const runId = run.id as string;
       const currentNode = data.currentNode as Record<string, unknown> | undefined;
@@ -580,12 +575,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const runState = data.runState as
         | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }>; equipped?: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }> }
         | undefined;
-      const turnsArr = data.turns as Array<{
-        turnNo: number;
-        llmStatus: string;
-        llmOutput: string | null;
-        summary: string;
-      }> | undefined;
+      const turnsArr = data.turns as TurnHistoryItem[] | undefined;
 
       // HUD 복원
       const hud: PlayerHud = runState
@@ -603,30 +593,34 @@ export const useGameStore = create<GameState>((set, get) => ({
         qty: i.qty,
       }));
 
-      // 마지막 턴의 내러티브와 선택지 복원
+      // ── 대화 이력 복원 ──
       let restoredMessages: StoryMessage[] = [];
       let restoredChoices: Choice[] = [];
 
+      // 서버는 newest-first → 시간순으로 뒤집기
+      const chronological = turnsArr && turnsArr.length > 0 ? [...turnsArr].reverse() : [];
+
+      if (chronological.length > 1) {
+        // 마지막 턴 제외한 과거 턴으로 이력 구성
+        const pastTurns = chronological.slice(0, -1);
+        restoredMessages = mapTurnHistoryToMessages(pastTurns);
+      }
+
+      // 마지막 턴: 기존 lastResult 기반 복원 유지
       if (lastResult) {
-        restoredMessages = mapResultToMessages(lastResult);
+        const lastTurnMessages = mapResultToMessages(lastResult);
+        const lastTurn = chronological.length > 0 ? chronological[chronological.length - 1] : undefined;
 
-        // LLM 내러티브가 완료된 경우 NARRATOR 텍스트 교체
-        const lastTurn = turnsArr?.[0];
-        if (lastTurn?.llmOutput && lastTurn.llmStatus === 'DONE') {
-          restoredMessages = restoredMessages.map((msg) =>
-            msg.type === 'NARRATOR'
-              ? { ...msg, text: lastTurn.llmOutput!, loading: false }
-              : msg,
-          );
-        } else if (lastTurn) {
-          // LLM 미완료 — loading 표시 제거하고 summary fallback
-          restoredMessages = restoredMessages.map((msg) =>
-            msg.type === 'NARRATOR'
-              ? { ...msg, loading: false }
-              : msg,
-          );
-        }
+        // LLM 내러티브 교체 (선택지 잔여물 제거)
+        const finalLastMessages = lastTurn?.llmOutput && lastTurn.llmStatus === 'DONE'
+          ? lastTurnMessages.map((msg) =>
+              msg.type === 'NARRATOR' ? { ...msg, text: stripNarratorChoices(lastTurn.llmOutput!), loading: false } : msg,
+            )
+          : lastTurnMessages.map((msg) =>
+              msg.type === 'NARRATOR' ? { ...msg, loading: false } : msg,
+            );
 
+        restoredMessages = [...restoredMessages, ...finalLastMessages];
         restoredChoices = (lastResult.choices ?? []).map((c) => ({
           id: c.id,
           label: c.label,
@@ -813,15 +807,33 @@ export const useGameStore = create<GameState>((set, get) => ({
   // submitChoice
   // -----------------------------------------------------------------------
   submitChoice: async (choiceId: string) => {
-    const { runId, currentTurnNo, isSubmitting } = get();
+    const { runId, currentTurnNo, isSubmitting, choices, messages } = get();
     if (!runId || isSubmitting) return;
 
     // 선택한 선택지만 표시되도록 CHOICE 메시지 업데이트
-    const updatedMessages = get().messages.map((msg) =>
+    let updatedMessages = messages.map((msg) =>
       msg.type === 'CHOICE' && msg.choices?.some((c) => c.id === choiceId)
         ? { ...msg, selectedChoiceId: choiceId }
         : msg,
     );
+
+    // choices 상태(live-choices)에서 선택된 경우 → messages에 영구 기록
+    if (choices.length > 0 && choices.some((c) => c.id === choiceId)) {
+      const lastMsg = updatedMessages[updatedMessages.length - 1];
+      if (!lastMsg || lastMsg.type !== 'CHOICE') {
+        updatedMessages = [
+          ...updatedMessages,
+          {
+            id: `selected-choice-${choiceId}`,
+            type: 'CHOICE' as const,
+            text: '',
+            choices,
+            selectedChoiceId: choiceId,
+          },
+        ];
+      }
+    }
+
     set({ isSubmitting: true, error: null, choices: [], messages: updatedMessages });
 
     try {
@@ -872,6 +884,38 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   dismissLlmFailure: () => {
     set({ llmFailure: null });
+  },
+
+  retryLlmNarrative: async () => {
+    const { runId, llmFailure } = get();
+    if (!runId || !llmFailure) return;
+
+    const { turnNo } = llmFailure;
+    set({ llmFailure: null });
+
+    try {
+      await retryLlm(runId, turnNo);
+      // 재시도 성공 → 폴링 재시작
+      pollForNarrative(runId, turnNo, '', get, set);
+    } catch {
+      set({
+        llmFailure: {
+          message: 'LLM 재시도 요청에 실패했습니다.',
+          turnNo,
+        },
+      });
+    }
+  },
+
+  skipLlmNarrative: () => {
+    const { llmFailure } = get();
+    if (!llmFailure) return;
+
+    const { turnNo } = llmFailure;
+    set({ llmFailure: null });
+
+    // 로딩 중인 narrator를 fallback 텍스트로 교체하고 pending flush
+    flushNarrator('...', turnNo, get, set);
   },
 
   clearInventoryChanges: () => {

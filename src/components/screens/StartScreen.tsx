@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useGameStore } from "@/store/game-store";
 import { useAuthStore } from "@/store/auth-store";
 import { PRESETS } from "@/data/presets";
+import { STAT_ACTION_HINTS } from "@/data/stat-descriptions";
+import { StatTooltip } from "@/components/ui/StatTooltip";
 import type { CharacterPreset } from "@/types/game";
 
 type ScreenPhase = "TITLE" | "AUTH" | "SELECT_PRESET";
@@ -49,12 +51,12 @@ function getStatGrade(key: string, value: number): StatGrade {
 const SUMMARY_STATS = ["MaxHP", "ATK", "DEF", "EVA", "CRIT", "RESIST", "SPEED"] as const;
 
 /** 눈에 띄는 스탯만 뽑아서 한 줄 요약 ("체력 높음 · 회피 낮음") */
-function buildStatSummary(stats: CharacterPreset["stats"]): Array<{ label: string; grade: StatGrade }> {
-  const items: Array<{ label: string; grade: StatGrade }> = [];
+function buildStatSummary(stats: CharacterPreset["stats"]): Array<{ key: string; label: string; grade: StatGrade }> {
+  const items: Array<{ key: string; label: string; grade: StatGrade }> = [];
   for (const key of SUMMARY_STATS) {
     const grade = getStatGrade(key, stats[key]);
     if (grade === "매우 높음" || grade === "높음" || grade === "낮음") {
-      items.push({ label: STAT_LABELS[key], grade });
+      items.push({ key, label: STAT_LABELS[key], grade });
     }
   }
   return items;
@@ -176,14 +178,16 @@ function PresetCard({
 
         {/* 능력치 한 줄 요약 */}
         <div className="flex flex-wrap gap-x-2 gap-y-1 text-sm">
-          {statSummary.map(({ label, grade }, i) => (
-            <span key={label}>
-              <span className="text-[var(--text-muted)]">{label}</span>{" "}
-              <span className={GRADE_COLOR[grade]}>{grade}</span>
-              {i < statSummary.length - 1 && (
-                <span className="text-[var(--border-primary)]"> · </span>
-              )}
-            </span>
+          {statSummary.map(({ key, label, grade }, i) => (
+            <StatTooltip key={key} hint={STAT_ACTION_HINTS[key] ?? ""}>
+              <span className="cursor-help">
+                <span className="text-[var(--text-muted)]">{label}</span>{" "}
+                <span className={GRADE_COLOR[grade]}>{grade}</span>
+                {i < statSummary.length - 1 && (
+                  <span className="text-[var(--border-primary)]"> · </span>
+                )}
+              </span>
+            </StatTooltip>
           ))}
         </div>
 
@@ -206,17 +210,187 @@ function PresetCard({
 // AuthForm
 // ---------------------------------------------------------------------------
 
+const SAVED_EMAIL_KEY = "graymar_saved_email";
+const REMEMBER_EMAIL_KEY = "graymar_remember_email";
+
+const EMAIL_DOMAINS = [
+  "naver.com",
+  "gmail.com",
+  "kakao.com",
+  "daum.net",
+  "hanmail.net",
+  "nate.com",
+  "outlook.com",
+  "icloud.com",
+];
+
+// ---------------------------------------------------------------------------
+// EmailInput — @ 입력 시 도메인 자동완성 드롭다운
+// ---------------------------------------------------------------------------
+
+function EmailInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [showDomains, setShowDomains] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [filteredDomains, setFilteredDomains] = useState(EMAIL_DOMAINS);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // @ 이후 입력에 따라 필터링
+  const updateSuggestions = useCallback((email: string) => {
+    const atIdx = email.indexOf("@");
+    if (atIdx === -1 || atIdx === 0) {
+      setShowDomains(false);
+      return;
+    }
+    const typed = email.slice(atIdx + 1);
+    // @ 뒤에 완전한 도메인이 이미 있으면 닫기
+    if (EMAIL_DOMAINS.includes(typed)) {
+      setShowDomains(false);
+      return;
+    }
+    const filtered = typed
+      ? EMAIL_DOMAINS.filter((d) => d.startsWith(typed.toLowerCase()))
+      : EMAIL_DOMAINS;
+    setFilteredDomains(filtered);
+    setActiveIdx(0);
+    setShowDomains(filtered.length > 0);
+  }, []);
+
+  const selectDomain = useCallback(
+    (domain: string) => {
+      const local = value.split("@")[0];
+      onChange(`${local}@${domain}`);
+      setShowDomains(false);
+    },
+    [value, onChange],
+  );
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    onChange(v);
+    updateSuggestions(v);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showDomains) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIdx((prev) => (prev + 1) % filteredDomains.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIdx((prev) => (prev - 1 + filteredDomains.length) % filteredDomains.length);
+    } else if (e.key === "Enter" && filteredDomains.length > 0) {
+      e.preventDefault();
+      selectDomain(filteredDomains[activeIdx]);
+    } else if (e.key === "Escape") {
+      setShowDomains(false);
+    } else if (e.key === "Tab" && filteredDomains.length > 0) {
+      e.preventDefault();
+      selectDomain(filteredDomains[activeIdx]);
+    }
+  };
+
+  // 활성 항목 스크롤
+  useEffect(() => {
+    if (!showDomains || !listRef.current) return;
+    const active = listRef.current.children[activeIdx] as HTMLElement | undefined;
+    active?.scrollIntoView({ block: "nearest" });
+  }, [activeIdx, showDomains]);
+
+  // 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowDomains(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <input
+        id="auth-email"
+        name="email"
+        type="text"
+        inputMode="email"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        required
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onFocus={() => updateSuggestions(value)}
+        placeholder="email@example.com"
+        className="h-11 w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+      />
+      {showDomains && (
+        <ul
+          ref={listRef}
+          role="listbox"
+          className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 max-h-52 overflow-y-auto rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] py-1 shadow-lg shadow-black/40"
+        >
+          {filteredDomains.map((domain, idx) => {
+            const local = value.split("@")[0];
+            return (
+              <li
+                key={domain}
+                role="option"
+                aria-selected={idx === activeIdx}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  selectDomain(domain);
+                }}
+                onMouseEnter={() => setActiveIdx(idx)}
+                className={`flex cursor-pointer items-center px-3 py-2 text-sm transition-colors ${
+                  idx === activeIdx
+                    ? "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
+                    : "text-[var(--text-secondary)] hover:bg-[rgba(201,169,98,0.08)]"
+                }`}
+              >
+                <span className="text-[var(--text-muted)]">{local}@</span>
+                <span className="font-medium">{domain}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function AuthForm({ onSuccess }: { onSuccess: () => void }) {
   const [tab, setTab] = useState<AuthTab>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
+  const [rememberEmail, setRememberEmail] = useState(false);
 
   const authLogin = useAuthStore((s) => s.login);
   const authRegister = useAuthStore((s) => s.register);
   const authLoading = useAuthStore((s) => s.isLoading);
   const authError = useAuthStore((s) => s.error);
   const clearError = useAuthStore((s) => s.clearError);
+
+  // 저장된 이메일 복원
+  useEffect(() => {
+    const saved = localStorage.getItem(SAVED_EMAIL_KEY);
+    const remember = localStorage.getItem(REMEMBER_EMAIL_KEY) === "true";
+    if (remember && saved) {
+      setEmail(saved);
+      setRememberEmail(true);
+    }
+  }, []);
 
   const handleTabChange = (newTab: AuthTab) => {
     setTab(newTab);
@@ -225,6 +399,15 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // 이메일 저장 처리
+    if (rememberEmail) {
+      localStorage.setItem(SAVED_EMAIL_KEY, email);
+      localStorage.setItem(REMEMBER_EMAIL_KEY, "true");
+    } else {
+      localStorage.removeItem(SAVED_EMAIL_KEY);
+      localStorage.removeItem(REMEMBER_EMAIL_KEY);
+    }
+
     if (tab === "login") {
       await authLogin(email, password);
     } else {
@@ -258,20 +441,12 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} autoComplete="on" className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="auth-email" className="text-xs text-[var(--text-muted)]">
             이메일
           </label>
-          <input
-            id="auth-email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@example.com"
-            className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
-          />
+          <EmailInput value={email} onChange={setEmail} />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -280,7 +455,9 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
           </label>
           <input
             id="auth-password"
+            name="password"
             type="password"
+            autoComplete={tab === "login" ? "current-password" : "new-password"}
             required
             minLength={tab === "register" ? 8 : 1}
             value={password}
@@ -297,7 +474,9 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
             </label>
             <input
               id="auth-nickname"
+              name="nickname"
               type="text"
+              autoComplete="username"
               maxLength={30}
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
@@ -305,6 +484,19 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
               className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
             />
           </div>
+        )}
+
+        {/* 이메일 저장 체크박스 (로그인 탭에서만) */}
+        {tab === "login" && (
+          <label className="flex cursor-pointer items-center gap-2 select-none">
+            <input
+              type="checkbox"
+              checked={rememberEmail}
+              onChange={(e) => setRememberEmail(e.target.checked)}
+              className="h-4 w-4 cursor-pointer accent-[var(--gold)]"
+            />
+            <span className="text-sm text-[var(--text-muted)]">이메일 저장</span>
+          </label>
         )}
 
         {/* Error */}

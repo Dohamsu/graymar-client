@@ -30,6 +30,17 @@ interface AuthState {
 const STORAGE_KEY = 'graymar_auth_token';
 const STORAGE_USER_KEY = 'graymar_auth_user';
 
+/** JWT payload에서 만료 시간 추출 (base64 디코딩) */
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    // 만료 1시간 전부터 만료로 간주 (갱신 여유)
+    return payload.exp * 1000 < Date.now() + 60 * 60 * 1000;
+  } catch {
+    return true;
+  }
+}
+
 function getBaseUrl(): string {
   if (typeof window === 'undefined') {
     return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -110,6 +121,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     const token = localStorage.getItem(STORAGE_KEY);
     const userJson = localStorage.getItem(STORAGE_USER_KEY);
     if (token && userJson) {
+      // JWT 만료 체크 — 만료된 토큰은 자동 정리
+      if (isTokenExpired(token)) {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_USER_KEY);
+        set({ token: null, user: null });
+        return;
+      }
       try {
         const user = JSON.parse(userJson) as AuthUser;
         set({ token, user });
