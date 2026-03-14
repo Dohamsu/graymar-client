@@ -6,6 +6,7 @@ export interface StoryMessage {
   loading?: boolean;
   selectedChoiceId?: string;
   resolveOutcome?: ResolveOutcome;
+  resolveBreakdown?: ResolveBreakdown;
 }
 
 export interface Choice {
@@ -155,6 +156,7 @@ export interface ServerResultV1 {
     toneHint: string;
     worldState?: WorldStateUI;
     resolveOutcome?: 'SUCCESS' | 'PARTIAL' | 'FAIL';
+    resolveBreakdown?: ResolveBreakdown;
   };
   choices: Array<{
     id: string;
@@ -180,6 +182,15 @@ export interface WorldStateUI {
 }
 
 export type ResolveOutcome = 'SUCCESS' | 'PARTIAL' | 'FAIL';
+
+export interface ResolveBreakdown {
+  diceRoll: number;
+  statKey: string | null;
+  statValue: number;
+  statBonus: number;
+  baseMod: number;
+  totalScore: number;
+}
 
 // --- Narrative Engine v1 UI Types ---
 

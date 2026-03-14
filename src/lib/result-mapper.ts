@@ -1,4 +1,107 @@
-import type { StoryMessage, Choice, ServerResultV1 } from '@/types/game';
+import type { StoryMessage, Choice, ServerResultV1, ResolveBreakdown } from '@/types/game';
+
+// ---------------------------------------------------------------------------
+// Turn history types & mapper (이어하기 대화 이력 복원용)
+// ---------------------------------------------------------------------------
+
+export interface TurnHistoryItem {
+  turnNo: number;
+  nodeType: string;
+  inputType: string;
+  rawInput: string;
+  summary: string;
+  llmStatus: string;
+  llmOutput: string | null;
+  createdAt: string;
+  resolveOutcome: 'SUCCESS' | 'PARTIAL' | 'FAIL' | null;
+  eventTexts: string[];
+  choices: Array<{ id: string; label: string }>;
+  displaySummary: string | null;
+}
+
+/**
+ * 내레이터 텍스트에서 선택지 잔여물을 제거.
+ * - [CHOICES]...[/CHOICES] 태그 (정상 닫힘)
+ * - [CHOICES]... (닫힘 태그 누락, 끝까지)
+ * - [선택지]... (한국어 변형)
+ * - 말미 "무엇을 하겠는가?" + 번호 선택지 목록
+ */
+export function stripNarratorChoices(text: string): string {
+  return text
+    .replace(/\s*\[CHOICES\][\s\S]*?\[\/CHOICES\]/g, '')
+    .replace(/\s*\[CHOICES\][\s\S]*$/g, '')
+    .replace(/\s*\[선택지\][\s\S]*$/g, '')
+    .replace(/\n+무엇을 하겠는가\??\s*(\n\s*\d+\.\s*.+)+\s*$/g, '')
+    .trim();
+}
+
+/**
+ * 과거 턴 배열(시간순)을 StoryMessage[]로 변환.
+ * 마지막 턴(현재 턴)은 별도로 mapResultToMessages()를 사용하므로 제외하고 전달할 것.
+ */
+export function mapTurnHistoryToMessages(
+  turns: TurnHistoryItem[],
+): StoryMessage[] {
+  const messages: StoryMessage[] = [];
+
+  for (let i = 0; i < turns.length; i++) {
+    const turn = turns[i];
+
+    // 1. Player input
+    if (turn.inputType === 'ACTION' && turn.rawInput) {
+      messages.push({
+        id: `history-player-${turn.turnNo}`,
+        type: 'PLAYER',
+        text: turn.rawInput,
+      });
+    } else if (turn.inputType === 'CHOICE' && turn.rawInput) {
+      // 선택지 → 이전 턴의 choices에서 라벨 역참조
+      const prevChoices = i > 0 ? turns[i - 1].choices : [];
+      const label = prevChoices.find((c) => c.id === turn.rawInput)?.label ?? turn.rawInput;
+      messages.push({
+        id: `history-player-${turn.turnNo}`,
+        type: 'PLAYER',
+        text: label,
+      });
+    }
+    // inputType === 'SYSTEM' (노드 전이, 초기화) → PLAYER 메시지 없음
+
+    // 2. System events (전리품, 시스템 공지)
+    for (let j = 0; j < turn.eventTexts.length; j++) {
+      messages.push({
+        id: `history-sys-${turn.turnNo}-${j}`,
+        type: 'SYSTEM',
+        text: turn.eventTexts[j],
+      });
+    }
+
+    // 3. Resolve outcome (판정 결과)
+    if (turn.resolveOutcome) {
+      messages.push({
+        id: `history-resolve-${turn.turnNo}`,
+        type: 'RESOLVE',
+        text: '',
+        resolveOutcome: turn.resolveOutcome,
+      });
+    }
+
+    // 4. Narrator (LLM 텍스트 > display > summary 순 fallback)
+    const rawNarrator = (turn.llmStatus === 'DONE' && turn.llmOutput)
+      ? turn.llmOutput
+      : (turn.displaySummary || turn.summary);
+    const narratorText = rawNarrator ? stripNarratorChoices(rawNarrator) : '';
+    if (narratorText) {
+      messages.push({
+        id: `narrator-${turn.turnNo}`,
+        type: 'NARRATOR',
+        text: narratorText,
+        loading: false,
+      });
+    }
+  }
+
+  return messages;
+}
 
 const SYSTEM_EVENT_KINDS = new Set([
   'SYSTEM',
@@ -62,6 +165,7 @@ export function mapResultToMessages(
       type: 'RESOLVE',
       text: '',
       resolveOutcome: result.ui.resolveOutcome as StoryMessage['resolveOutcome'],
+      resolveBreakdown: result.ui.resolveBreakdown ?? undefined,
     });
   }
 

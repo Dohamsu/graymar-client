@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { ResolveOutcome } from "@/types/game";
+import type { ResolveOutcome, ResolveBreakdown } from "@/types/game";
+import { STAT_KOREAN_NAMES, STAT_COLORS, STAT_KEY_TO_LABEL } from "@/data/stat-descriptions";
 
 const OUTCOME_CONFIG: Record<
   ResolveOutcome,
@@ -28,14 +29,18 @@ const OUTCOME_CONFIG: Record<
 };
 
 const ROLL_DURATION_MS = 1200;
+const BREAKDOWN_DELAY_MS = 200;
 
-/** 인라인 판정 애니메이션 — 주사위 굴림 → 결과 공개 */
+/** 인라인 판정 애니메이션 — 주사위 굴림 → 결과 공개 → 주사위 분해 */
 export function ResolveOutcomeInline({
   outcome,
+  breakdown,
 }: {
   outcome: ResolveOutcome;
+  breakdown?: ResolveBreakdown;
 }) {
   const [phase, setPhase] = useState<"rolling" | "revealed">("rolling");
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const config = OUTCOME_CONFIG[outcome];
 
   useEffect(() => {
@@ -43,30 +48,74 @@ export function ResolveOutcomeInline({
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (phase === "revealed" && breakdown) {
+      const timer = setTimeout(() => setShowBreakdown(true), BREAKDOWN_DELAY_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, breakdown]);
+
   return (
-    <div className="flex items-center justify-center py-3">
+    <div className="flex flex-col items-center justify-center gap-1 py-3">
       {phase === "rolling" ? (
         <DiceRolling />
       ) : (
-        <div
-          className="flex items-center gap-2 rounded-lg border px-5 py-2.5 animate-[outcomeReveal_0.5s_ease-out]"
-          style={{
-            backgroundColor: config.bgColor,
-            borderColor: config.glowColor,
-            boxShadow: `0 0 12px ${config.glowColor}`,
-          }}
-        >
-          <span className="text-lg" role="img" aria-label="dice">
-            &#x2680;
-          </span>
-          <span
-            className="font-display text-base font-bold tracking-wide"
-            style={{ color: config.color }}
+        <>
+          <div
+            className="flex items-center gap-2 rounded-lg border px-5 py-2.5 animate-[outcomeReveal_0.5s_ease-out]"
+            style={{
+              backgroundColor: config.bgColor,
+              borderColor: config.glowColor,
+              boxShadow: `0 0 12px ${config.glowColor}`,
+            }}
           >
-            {config.label}
-          </span>
-        </div>
+            <span className="text-lg" role="img" aria-label="dice">
+              &#x2680;
+            </span>
+            <span
+              className="font-display text-base font-bold tracking-wide"
+              style={{ color: config.color }}
+            >
+              {config.label}
+            </span>
+          </div>
+          {showBreakdown && breakdown && (
+            <BreakdownFormula breakdown={breakdown} />
+          )}
+        </>
       )}
+    </div>
+  );
+}
+
+/** 주사위 분해 공식 표시 */
+function BreakdownFormula({ breakdown }: { breakdown: ResolveBreakdown }) {
+  const { diceRoll, statKey, statBonus, baseMod, totalScore } = breakdown;
+  const statLabel = statKey ? (STAT_KOREAN_NAMES[statKey] ?? STAT_KEY_TO_LABEL[statKey] ?? statKey) : null;
+  const statColorKey = statKey ? (STAT_KEY_TO_LABEL[statKey] ?? statKey.toUpperCase()) : null;
+  const statColor = statColorKey ? (STAT_COLORS[statColorKey] ?? "var(--text-secondary)") : null;
+
+  return (
+    <div
+      className="flex items-center gap-1 text-xs text-[var(--text-muted)] animate-[fadeIn_0.3s_ease-out]"
+    >
+      <span>🎲</span>
+      <span className="text-[var(--text-secondary)]">{diceRoll}</span>
+      {statLabel && (
+        <>
+          <span>+</span>
+          <span style={{ color: statColor ?? undefined }}>{statLabel}</span>
+          <span className="text-[var(--text-secondary)]">{statBonus}</span>
+        </>
+      )}
+      {baseMod !== 0 && (
+        <>
+          <span>{baseMod > 0 ? "+" : ""}</span>
+          <span className="text-[var(--text-secondary)]">보정 {baseMod > 0 ? `+${baseMod}` : baseMod}</span>
+        </>
+      )}
+      <span>=</span>
+      <span className="font-bold text-[var(--text-primary)]">{totalScore}</span>
     </div>
   );
 }

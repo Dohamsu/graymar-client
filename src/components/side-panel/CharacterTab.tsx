@@ -2,6 +2,8 @@ import Image from "next/image";
 import { User, HardHat, Shirt, Sword, Gem } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { CharacterInfo } from "@/types/game";
+import { StatTooltip } from "@/components/ui/StatTooltip";
+import { STAT_ACTION_HINTS } from "@/data/stat-descriptions";
 
 const EQUIP_ICON_MAP: Record<string, LucideIcon> = {
   "hard-hat": HardHat,
@@ -62,17 +64,18 @@ export function CharacterTab({ character }: CharacterTabProps) {
         </span>
         <div className="grid grid-cols-4 gap-2">
           {character.stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="flex flex-col items-center gap-1 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-3"
-            >
-              <span className="text-[10px] font-semibold" style={{ color: stat.color }}>
-                {stat.label}
-              </span>
-              <span className="font-display text-2xl font-medium text-[var(--text-primary)]">
-                {stat.value}
-              </span>
-            </div>
+            <StatTooltip key={stat.label} hint={STAT_ACTION_HINTS[stat.label] ?? ""}>
+              <div
+                className="flex cursor-help flex-col items-center gap-1 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-3"
+              >
+                <span className="text-[10px] font-semibold" style={{ color: stat.color }}>
+                  {stat.label}
+                </span>
+                <span className="font-display text-2xl font-medium text-[var(--text-primary)]">
+                  {stat.value}
+                </span>
+              </div>
+            </StatTooltip>
           ))}
         </div>
       </div>

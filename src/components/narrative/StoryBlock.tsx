@@ -188,7 +188,7 @@ function TypewriterText({ text, onComplete }: { text: string; onComplete?: () =>
 export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: StoryBlockProps) {
   // RESOLVE 타입: 주사위 애니메이션 → 판정 결과 공개 (별도 블록)
   if (message.type === "RESOLVE" && message.resolveOutcome) {
-    return <ResolveOutcomeInline outcome={message.resolveOutcome} />;
+    return <ResolveOutcomeInline outcome={message.resolveOutcome} breakdown={message.resolveBreakdown} />;
   }
 
   const labelColor = LABEL_COLORS[message.type] ?? "var(--text-muted)";

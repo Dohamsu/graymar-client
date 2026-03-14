@@ -72,8 +72,9 @@ export async function getActiveRun(): Promise<{
 }
 
 /** GET /v1/runs/:runId — fetch current run state. */
-export function getRun(runId: string) {
-  return request<Record<string, unknown>>(`/v1/runs/${runId}`);
+export function getRun(runId: string, options?: { turnsLimit?: number }) {
+  const params = options?.turnsLimit ? `?turnsLimit=${options.turnsLimit}` : '';
+  return request<Record<string, unknown>>(`/v1/runs/${runId}${params}`);
 }
 
 // --- LLM Settings ---
@@ -141,6 +142,14 @@ export function getTurnDetail(runId: string, turnNo: number) {
       }> | null;
     };
   }>(`/v1/runs/${runId}/turns/${turnNo}`);
+}
+
+/** POST /v1/runs/:runId/turns/:turnNo/retry-llm — retry failed LLM narrative. */
+export function retryLlm(runId: string, turnNo: number) {
+  return request<{ success: boolean; turnNo: number; llmStatus: string }>(
+    `/v1/runs/${runId}/turns/${turnNo}/retry-llm`,
+    { method: 'POST' },
+  );
 }
 
 /** POST /v1/runs/:runId/turns — submit a player turn. */
