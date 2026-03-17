@@ -10,7 +10,7 @@ import { NpcRelationshipCard } from "./NpcRelationshipCard";
 import { PinnedAlertStack } from "./PinnedAlertStack";
 import { WorldDeltaSummaryCard } from "./WorldDeltaSummaryCard";
 import { HubNotificationList } from "./HubNotificationList";
-import type { WorldStateUI, Choice } from "@/types/game";
+import type { Choice } from "@/types/game";
 
 // LOCATION 정보 (클라이언트 표시용)
 const LOCATION_INFO: Record<
@@ -52,12 +52,10 @@ const DANGER_COLORS = [
 
 function LocationCard({
   choiceId,
-  choice,
   onSelect,
   disabled,
 }: {
   choiceId: string;
-  choice: Choice;
   onSelect: () => void;
   disabled: boolean;
 }) {
@@ -192,7 +190,6 @@ export function HubScreen() {
               <LocationCard
                 key={choice.id}
                 choiceId={choice.id}
-                choice={choice}
                 onSelect={() => submitChoice(choice.id)}
                 disabled={isSubmitting}
               />

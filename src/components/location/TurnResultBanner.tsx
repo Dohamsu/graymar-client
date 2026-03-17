@@ -21,19 +21,16 @@ export function TurnResultBanner({
     (n) => n.scope === "TURN_RESULT" && n.presentation === "BANNER",
   );
 
-  const [visible, setVisible] = useState(false);
+  const bannerId = banner?.id ?? null;
+  const [dismissedId, setDismissedId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (banner) {
-      setVisible(true);
-      const timer = setTimeout(() => setVisible(false), AUTO_DISMISS_MS);
-      return () => clearTimeout(timer);
-    } else {
-      setVisible(false);
-    }
-  }, [banner?.id]);
+    if (!bannerId) return;
+    const timer = setTimeout(() => setDismissedId(bannerId), AUTO_DISMISS_MS);
+    return () => clearTimeout(timer);
+  }, [bannerId]);
 
-  if (!visible || !banner) return null;
+  if (!banner || bannerId === dismissedId) return null;
 
   // priority로 outcome 추론
   const outcomeKey =

@@ -1,7 +1,6 @@
 "use client";
 
 import { useGameStore } from "@/store/game-store";
-import type { EndingResult } from "@/types/game";
 
 const POSTURE_LABELS: Record<string, string> = {
   FRIENDLY: "우호적",

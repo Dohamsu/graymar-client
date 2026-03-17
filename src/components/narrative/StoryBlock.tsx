@@ -159,10 +159,10 @@ function TypewriterText({ text, onComplete }: { text: string; onComplete?: () =>
       onCompleteRef.current?.();
       return;
     }
-    // 즉시 모드: 한번에 전부 표시
+    // 즉시 모드: 한번에 전부 표시 (setTimeout으로 비동기 처리하여 cascading render 방지)
     if (preset.charSpeed === 0) {
-      setDisplayLen(text.length);
-      return;
+      const timer = setTimeout(() => setDisplayLen(text.length), 0);
+      return () => clearTimeout(timer);
     }
     const delay = breaks.has(displayLen) ? preset.paragraphPause : preset.charSpeed;
     const timer = setTimeout(() => {
@@ -186,6 +186,12 @@ function TypewriterText({ text, onComplete }: { text: string; onComplete?: () =>
 // ---------------------------------------------------------------------------
 
 export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: StoryBlockProps) {
+  // NARRATOR가 loading → 텍스트로 전환될 때 타이핑 애니메이션 트리거 (derived state 패턴)
+  // Hooks must be called before any early return (rules-of-hooks)
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+  const [prevLoading, setPrevLoading] = useState(message.loading);
+  const [wasLoading, setWasLoading] = useState(!!message.loading);
+
   // RESOLVE 타입: 주사위 애니메이션 → 판정 결과 공개 (별도 블록)
   if (message.type === "RESOLVE" && message.resolveOutcome) {
     return <ResolveOutcomeInline outcome={message.resolveOutcome} breakdown={message.resolveBreakdown} />;
@@ -196,11 +202,6 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   const isNarrator = message.type === "NARRATOR";
   const borderColor = isPlayer ? "var(--gold)" : "var(--border-primary)";
   const bgColor = message.type === "CHOICE" || isPlayer ? "var(--bg-secondary)" : "var(--bg-card)";
-
-  // NARRATOR가 loading → 텍스트로 전환될 때 타이핑 애니메이션 트리거 (derived state 패턴)
-  const [shouldAnimate, setShouldAnimate] = useState(false);
-  const [prevLoading, setPrevLoading] = useState(message.loading);
-  const [wasLoading, setWasLoading] = useState(!!message.loading);
 
   if (prevLoading !== message.loading) {
     setPrevLoading(message.loading);

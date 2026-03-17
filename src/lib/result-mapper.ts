@@ -1,4 +1,4 @@
-import type { StoryMessage, Choice, ServerResultV1, ResolveBreakdown } from '@/types/game';
+import type { StoryMessage, Choice, ServerResultV1 } from '@/types/game';
 
 // ---------------------------------------------------------------------------
 // Turn history types & mapper (이어하기 대화 이력 복원용)
