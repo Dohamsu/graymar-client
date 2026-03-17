@@ -812,6 +812,28 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       processTurnResponse(turnRes, get, set);
     } catch (err) {
+      // PR-C: TURN_NO_MISMATCH 자동 복구 — 서버 turnNo 기준 재동기화 후 재시도
+      if (err instanceof ApiError && err.code === 'TURN_NO_MISMATCH') {
+        try {
+          const runData = (await getRun(runId)) as Record<string, unknown>;
+          const run = runData.run as Record<string, unknown> | undefined;
+          const serverTurnNo = (run?.currentTurnNo as number) ?? currentTurnNo;
+          set({ currentTurnNo: serverTurnNo + 1 });
+          // 재시도
+          const { currentNodeType: retryNodeType } = get();
+          const retryRes = await submitTurn(runId, {
+            idempotencyKey: crypto.randomUUID(),
+            expectedNextTurnNo: serverTurnNo + 1,
+            input: { type: 'ACTION', text },
+            ...(retryNodeType === 'COMBAT' ? { options: { skipLlm: true } } : {}),
+          });
+          processTurnResponse(retryRes, get, set);
+          return;
+        } catch (retryErr) {
+          set({ isSubmitting: false, error: extractErrorMessage(retryErr) });
+          return;
+        }
+      }
       set({
         isSubmitting: false,
         error: extractErrorMessage(err),
@@ -863,6 +885,27 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       processTurnResponse(turnRes, get, set);
     } catch (err) {
+      // PR-C: TURN_NO_MISMATCH 자동 복구
+      if (err instanceof ApiError && err.code === 'TURN_NO_MISMATCH') {
+        try {
+          const runData = (await getRun(runId)) as Record<string, unknown>;
+          const run = runData.run as Record<string, unknown> | undefined;
+          const serverTurnNo = (run?.currentTurnNo as number) ?? currentTurnNo;
+          set({ currentTurnNo: serverTurnNo + 1 });
+          const { currentNodeType: retryNodeType } = get();
+          const retryRes = await submitTurn(runId, {
+            idempotencyKey: crypto.randomUUID(),
+            expectedNextTurnNo: serverTurnNo + 1,
+            input: { type: 'CHOICE', choiceId },
+            ...(retryNodeType === 'COMBAT' ? { options: { skipLlm: true } } : {}),
+          });
+          processTurnResponse(retryRes, get, set);
+          return;
+        } catch (retryErr) {
+          set({ isSubmitting: false, error: extractErrorMessage(retryErr) });
+          return;
+        }
+      }
       set({
         isSubmitting: false,
         error: extractErrorMessage(err),
