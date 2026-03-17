@@ -141,6 +141,37 @@ export function EndingScreen() {
           </div>
         )}
 
+        {/* Playstyle Summary */}
+        {(endingResult.playstyleSummary || endingResult.threadSummary) && (
+          <div className="border border-[var(--border-primary)] rounded-lg p-4 bg-[var(--bg-card)]">
+            <h3 className="text-xs font-semibold tracking-[2px] text-[var(--text-muted)] mb-3">
+              행동 성향
+            </h3>
+            {endingResult.playstyleSummary && (
+              <p className="text-sm text-[var(--text-primary)] mb-2">
+                당신은 <span className="font-semibold text-[var(--gold)]">{endingResult.playstyleSummary}</span>이었다.
+              </p>
+            )}
+            {endingResult.threadSummary && (
+              <p className="text-xs text-[var(--text-secondary)]">
+                {endingResult.threadSummary}
+              </p>
+            )}
+            {endingResult.dominantVectors && endingResult.dominantVectors.length > 0 && (
+              <div className="flex gap-2 mt-2">
+                {endingResult.dominantVectors.map((v) => (
+                  <span
+                    key={v}
+                    className="text-[10px] px-2 py-0.5 rounded border border-[var(--border-primary)] text-[var(--text-muted)]"
+                  >
+                    {v}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Statistics */}
         <div className="border border-[var(--border-primary)] rounded-lg p-4 bg-[var(--bg-card)]">
           <h3 className="text-xs font-semibold tracking-[2px] text-[var(--text-muted)] mb-3">

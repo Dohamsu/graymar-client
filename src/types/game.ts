@@ -157,6 +157,10 @@ export interface ServerResultV1 {
     worldState?: WorldStateUI;
     resolveOutcome?: 'SUCCESS' | 'PARTIAL' | 'FAIL';
     resolveBreakdown?: ResolveBreakdown;
+    // Notification System 확장
+    notifications?: GameNotification[];
+    pinnedAlerts?: GameNotification[];
+    worldDeltaSummary?: WorldDeltaSummaryUI;
   };
   choices: Array<{
     id: string;
@@ -235,6 +239,49 @@ export interface OperationProgressUI {
   active: boolean;
 }
 
+// --- PlayerThread UI ---
+
+export interface PlayerThreadSummaryUI {
+  threadId: string;
+  approachVector: string;
+  goalCategory: string;
+  actionCount: number;
+  successRate: number;
+  status: 'EMERGING' | 'ACTIVE' | 'COMPLETED' | 'ABANDONED';
+  summary?: string;
+}
+
+// --- Notification System ---
+
+export type NotificationScope = 'TURN_RESULT' | 'LOCATION' | 'HUB' | 'GLOBAL';
+export type NotificationKind = 'SYSTEM' | 'INCIDENT' | 'WORLD' | 'NPC' | 'DEADLINE' | 'ACHIEVEMENT';
+export type NotificationPriority = 'LOW' | 'MID' | 'HIGH' | 'CRITICAL';
+export type NotificationPresentation = 'BANNER' | 'TOAST' | 'FEED_ITEM' | 'PINNED_CARD';
+
+export interface GameNotification {
+  id: string;
+  turnNo: number;
+  tickNo?: number;
+  scope: NotificationScope;
+  kind: NotificationKind;
+  priority: NotificationPriority;
+  presentation: NotificationPresentation;
+  title: string;
+  body: string;
+  incidentId?: string;
+  locationId?: string;
+  pinned?: boolean;
+  visibleFromTurn: number;
+  expiresAtTurn?: number;
+  dedupeKey?: string;
+}
+
+export interface WorldDeltaSummaryUI {
+  headline: string;
+  visibleChanges: string[];
+  urgency: 'LOW' | 'MID' | 'HIGH';
+}
+
 // --- Ending System ---
 
 export interface NpcEpilogue {
@@ -262,6 +309,10 @@ export interface EndingResult {
     incidentsExpired: number;
     totalTurns: number;
   };
+  // User-Driven System v3 확장
+  playstyleSummary?: string;
+  dominantVectors?: string[];
+  threadSummary?: string;
 }
 
 export interface SubmitTurnResponse {
