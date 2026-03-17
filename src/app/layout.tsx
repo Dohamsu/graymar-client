@@ -12,14 +12,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full">
+    <html lang="ko" className="h-full" suppressHydrationWarning>
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="font-ui h-full bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased">
+      <body className="font-ui h-full bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased" suppressHydrationWarning>
         {children}
       </body>
     </html>
