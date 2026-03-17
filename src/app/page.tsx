@@ -21,6 +21,8 @@ import { EndingScreen } from "@/components/screens/EndingScreen";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { LlmFailureModal } from "@/components/ui/LlmFailureModal";
 import { LocationHeader } from "@/components/hub/LocationHeader";
+import { TurnResultBanner } from "@/components/location/TurnResultBanner";
+import { LocationToastLayer } from "@/components/location/LocationToastLayer";
 import type { BattleEnemy } from "@/types/game";
 
 export default function GamePage() {
@@ -46,6 +48,7 @@ export default function GamePage() {
   const llmStats = useGameStore((s) => s.llmStats);
   const inventoryChanges = useGameStore((s) => s.inventoryChanges);
   const clearInventoryChanges = useGameStore((s) => s.clearInventoryChanges);
+  const notifications = useGameStore((s) => s.notifications);
 
   const [mobileTab, setMobileTab] = useState("story");
 
@@ -109,7 +112,10 @@ export default function GamePage() {
 
         {/* LOCATION 헤더 (LOCATION phase) */}
         {phase === "LOCATION" && (
-          <LocationHeader locationName={location} />
+          <>
+            <LocationHeader locationName={location} />
+            <TurnResultBanner notifications={notifications} />
+          </>
         )}
 
         <div className="flex flex-1 overflow-hidden">
@@ -176,6 +182,11 @@ export default function GamePage() {
 
         <MobileBottomNav activeTab={mobileTab} onTabChange={setMobileTab} />
       </div>
+
+      {/* LOCATION Toast Layer (floating, both desktop & mobile) */}
+      {phase === "LOCATION" && (
+        <LocationToastLayer notifications={notifications} />
+      )}
     </div>
   );
 }

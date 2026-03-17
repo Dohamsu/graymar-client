@@ -16,6 +16,8 @@ import type {
   OperationProgressUI,
   NpcEmotionalUI,
   EndingResult,
+  GameNotification,
+  WorldDeltaSummaryUI,
 } from '@/types/game';
 import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, type LlmTokenStats } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -68,6 +70,10 @@ export interface GameState {
   operationProgress: OperationProgressUI | null;
   npcEmotional: NpcEmotionalUI[];
   endingResult: EndingResult | null;
+  // Notification System
+  notifications: GameNotification[];
+  pinnedAlerts: GameNotification[];
+  worldDeltaSummary: WorldDeltaSummaryUI | null;
 
   // actions
   checkActiveRun: () => Promise<void>;
@@ -404,6 +410,14 @@ function processTurnResponse(
     if (ai) set({ activeIncidents: ai });
     if (op !== undefined) set({ operationProgress: op ?? null });
     if (ne) set({ npcEmotional: ne });
+
+    // Notification System 업데이트
+    const notifs = uiBundle.notifications as GameNotification[] | undefined;
+    const pinned = uiBundle.pinnedAlerts as GameNotification[] | undefined;
+    const wds = uiBundle.worldDeltaSummary as WorldDeltaSummaryUI | undefined;
+    if (notifs) set({ notifications: notifs });
+    if (pinned) set({ pinnedAlerts: pinned });
+    if (wds !== undefined) set({ worldDeltaSummary: wds ?? null });
   }
 
   // ResolveOutcome 업데이트
@@ -538,6 +552,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   operationProgress: null,
   npcEmotional: [],
   endingResult: null,
+  // Notification System
+  notifications: [],
+  pinnedAlerts: [],
+  worldDeltaSummary: null,
 
   // -----------------------------------------------------------------------
   // checkActiveRun
@@ -951,6 +969,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       operationProgress: null,
       npcEmotional: [],
       endingResult: null,
+      // Notification System
+      notifications: [],
+      pinnedAlerts: [],
+      worldDeltaSummary: null,
     });
   },
 }));

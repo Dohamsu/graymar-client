@@ -7,6 +7,9 @@ import { TimePhaseIndicator } from "./TimePhaseIndicator";
 import { SignalFeedPanel } from "./SignalFeedPanel";
 import { IncidentTracker } from "./IncidentTracker";
 import { NpcRelationshipCard } from "./NpcRelationshipCard";
+import { PinnedAlertStack } from "./PinnedAlertStack";
+import { WorldDeltaSummaryCard } from "./WorldDeltaSummaryCard";
+import { HubNotificationList } from "./HubNotificationList";
 import type { WorldStateUI, Choice } from "@/types/game";
 
 // LOCATION 정보 (클라이언트 표시용)
@@ -128,6 +131,9 @@ export function HubScreen() {
   const signalFeed = useGameStore((s) => s.signalFeed);
   const activeIncidents = useGameStore((s) => s.activeIncidents);
   const npcEmotional = useGameStore((s) => s.npcEmotional);
+  const pinnedAlerts = useGameStore((s) => s.pinnedAlerts);
+  const worldDeltaSummary = useGameStore((s) => s.worldDeltaSummary);
+  const notifications = useGameStore((s) => s.notifications);
 
   const locationChoices = choices.filter((c) =>
     c.id.startsWith("go_"),
@@ -172,6 +178,10 @@ export function HubScreen() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
+        {/* Notification Briefing */}
+        <PinnedAlertStack alerts={pinnedAlerts} />
+        <WorldDeltaSummaryCard summary={worldDeltaSummary} />
+
         {/* Location Cards */}
         <div className="mb-6">
           <h3 className="mb-3 text-xs font-semibold tracking-[2px] text-[var(--text-muted)]">
@@ -212,6 +222,7 @@ export function HubScreen() {
 
         {/* Narrative Engine v1 Panels */}
         <IncidentTracker incidents={activeIncidents} />
+        <HubNotificationList notifications={notifications} />
         <SignalFeedPanel signals={signalFeed} />
         <NpcRelationshipCard npcs={npcEmotional} />
       </div>
