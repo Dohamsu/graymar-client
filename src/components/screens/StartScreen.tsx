@@ -371,26 +371,24 @@ function EmailInput({
 
 function AuthForm({ onSuccess }: { onSuccess: () => void }) {
   const [tab, setTab] = useState<AuthTab>("login");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const remember = localStorage.getItem(REMEMBER_EMAIL_KEY) === "true";
+    const saved = localStorage.getItem(SAVED_EMAIL_KEY);
+    return remember && saved ? saved : "";
+  });
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
-  const [rememberEmail, setRememberEmail] = useState(false);
+  const [rememberEmail, setRememberEmail] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(REMEMBER_EMAIL_KEY) === "true";
+  });
 
   const authLogin = useAuthStore((s) => s.login);
   const authRegister = useAuthStore((s) => s.register);
   const authLoading = useAuthStore((s) => s.isLoading);
   const authError = useAuthStore((s) => s.error);
   const clearError = useAuthStore((s) => s.clearError);
-
-  // 저장된 이메일 복원
-  useEffect(() => {
-    const saved = localStorage.getItem(SAVED_EMAIL_KEY);
-    const remember = localStorage.getItem(REMEMBER_EMAIL_KEY) === "true";
-    if (remember && saved) {
-      setEmail(saved);
-      setRememberEmail(true);
-    }
-  }, []);
 
   const handleTabChange = (newTab: AuthTab) => {
     setTab(newTab);

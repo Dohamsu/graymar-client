@@ -182,7 +182,6 @@ function buildCharacterInfo(presetId: string, gender: 'male' | 'female' = 'male'
  */
 function derivePhase(
   nodeType: string | null,
-  result: ServerResultV1 | null,
 ): GameState['phase'] {
   if (!nodeType) return 'HUB';
   switch (nodeType) {
@@ -198,7 +197,6 @@ function derivePhase(
   }
 }
 
-const NODE_TRANSITION_DELAY_MS = 1500;
 const LLM_POLL_INTERVAL_MS = 2000;
 const LLM_POLL_MAX_ATTEMPTS = 15; // 최대 30초
 
@@ -451,7 +449,7 @@ function processTurnResponse(
       );
 
       const enterTurnNo = t.enterTurnNo ?? t.enterResult.turnNo;
-      const nextPhase = derivePhase(t.nextNodeType, t.enterResult);
+      const nextPhase = derivePhase(t.nextNodeType);
       const transWs = t.enterResult.ui?.worldState as WorldStateUI | undefined;
       const locName = t.enterResult.summary?.display ?? null;
 
@@ -493,7 +491,7 @@ function processTurnResponse(
           const nodeType = (currentNode?.nodeType as string) ?? null;
 
           set({
-            phase: derivePhase(nodeType, null),
+            phase: derivePhase(nodeType),
             currentNodeType: nodeType,
             currentNodeIndex: (currentNode?.nodeIndex as number) ?? 0,
             battleState: (runData.battleState as unknown) ?? null,
@@ -510,7 +508,7 @@ function processTurnResponse(
     // 전이 없음 — 현재 노드 타입에 따라 phase 유지/전환
     const nodeType = result.node?.type;
     if (nodeType) {
-      const newPhase = derivePhase(nodeType, result);
+      const newPhase = derivePhase(nodeType);
       if (get().phase !== newPhase) {
         set({ phase: newPhase });
       }
@@ -646,7 +644,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
 
       const nodeType = (currentNode?.nodeType as string) ?? null;
-      const resumePhase = derivePhase(nodeType, lastResult ?? null);
+      const resumePhase = derivePhase(nodeType);
       const resumeWs = lastResult?.ui?.worldState as import('@/types/game').WorldStateUI | undefined;
 
       set({
@@ -738,7 +736,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       // WorldState 추출
       const wsUI = serverResult?.ui?.worldState as import('@/types/game').WorldStateUI | undefined;
       const nodeType = (currentNode?.nodeType as string) ?? null;
-      const initialPhase = derivePhase(nodeType, serverResult ?? null);
+      const initialPhase = derivePhase(nodeType);
 
       set({
         phase: initialPhase,
@@ -895,7 +893,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       error: null,
       // ERROR → 적절한 phase로 복구
       ...(phase === 'ERROR' && get().runId
-        ? { phase: derivePhase(currentNodeType, null) }
+        ? { phase: derivePhase(currentNodeType) }
         : {}),
     });
   },
