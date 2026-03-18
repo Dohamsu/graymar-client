@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import type { StoryMessage } from "@/types/game";
 import { ResolveOutcomeInline } from "@/components/hub/ResolveOutcomeBanner";
-import { useSettingsStore, TEXT_SPEED_PRESETS } from "@/store/settings-store";
+import { useSettingsStore, TEXT_SPEED_PRESETS, FONT_SIZE_PRESETS } from "@/store/settings-store";
 
 const LOADING_MESSAGES = [
   "서술 생성 중...",
@@ -191,6 +191,8 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   const [shouldAnimate, setShouldAnimate] = useState(false);
   const [prevLoading, setPrevLoading] = useState(message.loading);
   const [wasLoading, setWasLoading] = useState(!!message.loading);
+  const fontSizeKey = useSettingsStore((s) => s.fontSize);
+  const fontSizes = FONT_SIZE_PRESETS[fontSizeKey];
 
   // RESOLVE 타입: 주사위 애니메이션 → 판정 결과 공개 (별도 블록)
   if (message.type === "RESOLVE" && message.resolveOutcome) {
@@ -243,10 +245,11 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
               const idx = message.choices.indexOf(selected);
               return (
                 <div
-                  className="rounded-md px-3 py-2 font-display text-base leading-[1.6]"
+                  className="rounded-md px-3 py-2 font-display leading-[1.6]"
                   style={{
                     color: "var(--gold)",
                     opacity: 0.7,
+                    fontSize: `${fontSizes.choice}px`,
                   }}
                 >
                   {idx + 1}. {selected.label}
@@ -258,11 +261,12 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
               <button
                 key={choice.id}
                 onClick={() => onChoiceSelect?.(choice.id)}
-                className="choice-btn cursor-pointer rounded-md px-3 py-2 text-left font-display text-base leading-[1.6]"
+                className="choice-btn cursor-pointer rounded-md px-3 py-2 text-left font-display leading-[1.6]"
                 style={{
                   color: choice.disabled
                     ? "var(--text-secondary)"
                     : "var(--text-primary)",
+                  fontSize: `${fontSizes.choice}px`,
                 }}
               >
                 {i + 1}. {choice.label}
@@ -273,8 +277,8 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
       ) : isNarrator ? (
         /* ── 내레이터: 대사 스타일 + 문단 간격 ── */
         <div
-          className="font-narrative text-[17px] leading-[1.75]"
-          style={{ color: "var(--text-primary)" }}
+          className="font-narrative leading-[1.75]"
+          style={{ color: "var(--text-primary)", fontSize: `${fontSizes.narrative}px` }}
         >
           {isNarratorTypewriting ? (
             <TypewriterText
@@ -291,11 +295,12 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
       ) : (
         /* ── 일반 메시지 (PLAYER, SYSTEM) ── */
         <p
-          className={`text-[17px] leading-[1.75] whitespace-pre-line ${
+          className={`leading-[1.75] whitespace-pre-line ${
             isPlayer ? "font-ui italic" : "font-narrative"
           }`}
           style={{
             color: isPlayer ? "var(--text-secondary)" : "var(--text-primary)",
+            fontSize: `${fontSizes.narrative}px`,
           }}
         >
           {message.text}

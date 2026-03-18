@@ -25,6 +25,7 @@ function getAuthHeaders(): Record<string, string> {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${getBaseUrl()}${path}`, {
     ...init,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeaders(),
@@ -63,6 +64,7 @@ export async function getActiveRun(): Promise<{
   startedAt: string;
 } | null> {
   const res = await fetch(`${getBaseUrl()}/v1/runs`, {
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
   });
   if (!res.ok) return null;

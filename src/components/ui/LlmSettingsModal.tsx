@@ -10,7 +10,9 @@ import {
 import {
   useSettingsStore,
   TEXT_SPEED_PRESETS,
+  FONT_SIZE_PRESETS,
   type TextSpeedKey,
+  type FontSizeKey,
 } from "@/store/settings-store";
 
 interface LlmSettingsModalProps {
@@ -18,20 +20,8 @@ interface LlmSettingsModalProps {
   onClose: () => void;
 }
 
-const PROVIDER_LABELS: Record<string, string> = {
-  mock: "Mock (테스트용)",
-  openai: "OpenAI",
-  claude: "Claude",
-  gemini: "Gemini",
-};
-
-const MODEL_OPTIONS: Record<string, string[]> = {
-  openai: ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o4-mini"],
-  claude: ["claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"],
-  gemini: ["gemini-2.0-flash", "gemini-2.5-pro", "gemini-2.5-flash"],
-};
-
 const TEXT_SPEED_ORDER: TextSpeedKey[] = ["instant", "fast", "normal", "slow"];
+const FONT_SIZE_ORDER: FontSizeKey[] = ["small", "normal", "large", "xlarge"];
 
 export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
   const [settings, setSettings] = useState<LlmSettingsResponse | null>(null);
@@ -41,14 +31,13 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
   const [success, setSuccess] = useState(false);
 
   // Draft state for editing
-  const [provider, setProvider] = useState("");
-  const [model, setModel] = useState("");
-  const [temperature, setTemperature] = useState(0.8);
   const [maxTokens, setMaxTokens] = useState(1024);
 
-  // Text speed (client-local, no server)
+  // Text speed & font size (client-local, no server)
   const textSpeed = useSettingsStore((s) => s.textSpeed);
   const setTextSpeed = useSettingsStore((s) => s.setTextSpeed);
+  const fontSize = useSettingsStore((s) => s.fontSize);
+  const setFontSize = useSettingsStore((s) => s.setFontSize);
 
   useEffect(() => {
     if (!open) return;
@@ -59,31 +48,11 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
     getLlmSettings()
       .then((data) => {
         setSettings(data);
-        setProvider(data.provider);
-        setModel(getModelForProvider(data, data.provider));
-        setTemperature(data.temperature);
         setMaxTokens(data.maxTokens);
       })
       .catch((err) => setError(String(err)))
       .finally(() => setLoading(false));
   }, [open]);
-
-  function getModelForProvider(
-    s: LlmSettingsResponse,
-    p: string,
-  ): string {
-    if (p === "openai") return s.openaiModel;
-    if (p === "claude") return s.claudeModel;
-    if (p === "gemini") return s.geminiModel;
-    return "";
-  }
-
-  function handleProviderChange(newProvider: string) {
-    setProvider(newProvider);
-    if (settings) {
-      setModel(getModelForProvider(settings, newProvider));
-    }
-  }
 
   async function handleSave() {
     setSaving(true);
@@ -91,17 +60,7 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
     setSuccess(false);
 
     try {
-      const patch: Record<string, unknown> = {
-        provider,
-        temperature,
-        maxTokens,
-      };
-
-      // Set model for the selected provider
-      if (provider === "openai") patch.openaiModel = model;
-      else if (provider === "claude") patch.claudeModel = model;
-      else if (provider === "gemini") patch.geminiModel = model;
-
+      const patch: Record<string, unknown> = { maxTokens };
       const updated = await updateLlmSettings(patch);
       setSettings(updated);
       setSuccess(true);
@@ -115,25 +74,16 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
 
   if (!open) return null;
 
-  const currentModels = MODEL_OPTIONS[provider] ?? [];
-  const isAvailable = (p: string) =>
-    settings?.availableProviders.includes(p) ?? false;
-
   // Check if anything changed
-  const hasChanges =
-    settings &&
-    (provider !== settings.provider ||
-      model !== getModelForProvider(settings, provider) ||
-      temperature !== settings.temperature ||
-      maxTokens !== settings.maxTokens);
+  const hasChanges = settings && maxTokens !== settings.maxTokens;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-full max-w-md rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-2xl">
+      <div className="mx-4 w-full max-w-md rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--border-primary)] px-5 py-4">
           <h2 className="font-display text-base font-semibold text-[var(--text-primary)]">
-            AI 모델 설정
+            게임 설정
           </h2>
           <button
             onClick={onClose}
@@ -154,90 +104,11 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
             </div>
           ) : (
             <>
-              {/* Provider */}
-              <div>
-                <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
-                  공급자
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {["mock", "openai", "claude", "gemini"].map(
-                    (p) => {
-                      const available = p === "mock" || isAvailable(p);
-                      const selected = provider === p;
-                      return (
-                        <button
-                          key={p}
-                          disabled={!available}
-                          onClick={() => handleProviderChange(p)}
-                          className={`rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
-                            selected
-                              ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
-                              : available
-                                ? "border-[var(--border-primary)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]"
-                                : "cursor-not-allowed border-[var(--border-primary)] text-[var(--text-muted)] opacity-40"
-                          }`}
-                        >
-                          {PROVIDER_LABELS[p]}
-                          {!available && p !== "mock" && (
-                            <span className="ml-1 text-[10px]">(키 없음)</span>
-                          )}
-                        </button>
-                      );
-                    },
-                  )}
-                </div>
-              </div>
-
-              {/* Model (only for non-mock) */}
-              {provider !== "mock" && currentModels.length > 0 && (
-                <div>
-                  <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
-                    모델
-                  </label>
-                  <select
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    className="w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--gold)]"
-                  >
-                    {currentModels.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Temperature */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)]">
-                    Temperature
-                  </label>
-                  <span className="text-xs font-mono text-[var(--gold)]">
-                    {temperature.toFixed(1)}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  value={temperature}
-                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                  className="w-full accent-[var(--gold)]"
-                />
-                <div className="mt-1 flex justify-between text-[10px] text-[var(--text-muted)]">
-                  <span>정확한</span>
-                  <span>창의적</span>
-                </div>
-              </div>
-
               {/* Max Tokens */}
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <label className="text-xs font-semibold text-[var(--text-secondary)]">
-                    최대 토큰
+                    AI 출력 길이
                   </label>
                   <span className="text-xs font-mono text-[var(--gold)]">
                     {maxTokens}
@@ -282,6 +153,36 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Font Size */}
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
+                  글자 크기
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {FONT_SIZE_ORDER.map((key) => {
+                    const preset = FONT_SIZE_PRESETS[key];
+                    const selected = fontSize === key;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setFontSize(key)}
+                        className={`rounded-md border px-2 py-2 font-medium transition-colors ${
+                          selected
+                            ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
+                            : "border-[var(--border-primary)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]"
+                        }`}
+                        style={{ fontSize: `${preset.ui}px` }}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-[10px] text-[var(--text-muted)]">
+                  내러티브·선택지 텍스트에 적용됩니다
+                </p>
               </div>
 
               {/* Error */}

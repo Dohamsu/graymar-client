@@ -338,7 +338,7 @@ function EmailInput({
         <ul
           ref={listRef}
           role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 max-h-52 overflow-y-auto rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] py-1 shadow-lg shadow-black/40"
+          className="absolute left-0 right-0 top-[calc(100%+4px)] z-30 max-h-40 overflow-y-auto rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] py-1 shadow-lg shadow-black/40"
         >
           {filteredDomains.map((domain, idx) => {
             const local = value.split("@")[0];
@@ -612,7 +612,7 @@ export function StartScreen() {
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex w-full flex-col items-center gap-4 px-6">
           {isLoggedIn ? (
             <>
               {/* 로그인 상태: 닉네임 표시 */}
@@ -624,7 +624,7 @@ export function StartScreen() {
                 <button
                   onClick={() => resumeRun()}
                   disabled={isLoading}
-                  className="flex h-14 w-64 flex-col items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
+                  className="flex h-14 w-full max-w-64 flex-col items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
                 >
                   <span className="text-lg tracking-[3px]">이어하기</span>
                   <span className="text-xs opacity-70">
@@ -635,7 +635,7 @@ export function StartScreen() {
               <button
                 onClick={() => setScreenPhase("SELECT_PRESET")}
                 disabled={isLoading}
-                className="flex h-14 w-64 items-center justify-center border border-[var(--gold)] bg-transparent font-display text-lg tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
+                className="flex h-14 w-full max-w-64 items-center justify-center border border-[var(--gold)] bg-transparent font-display text-lg tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
               >
                 새 게임
               </button>
@@ -650,7 +650,7 @@ export function StartScreen() {
             /* 미로그인 상태 */
             <button
               onClick={() => setScreenPhase("AUTH")}
-              className="flex h-14 w-64 items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-lg tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
+              className="flex h-14 w-full max-w-64 items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-lg tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
             >
               시작하기
             </button>

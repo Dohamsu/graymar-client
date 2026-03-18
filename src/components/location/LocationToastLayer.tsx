@@ -34,7 +34,7 @@ export function LocationToastLayer({
   const visible = toastKey !== fadedKey;
 
   return (
-    <div className="fixed bottom-24 right-4 z-50 flex flex-col gap-2 pointer-events-none lg:bottom-20 lg:right-8">
+    <div className="pointer-events-none fixed bottom-28 right-4 z-40 flex flex-col gap-2 lg:bottom-20 lg:right-8">
       {toasts.map((notification) => (
         <div
           key={notification.id}

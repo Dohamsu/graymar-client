@@ -20,7 +20,7 @@ export function LlmFailureModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80">
       <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--hp-red)]/30 bg-[var(--bg-primary)] p-6 shadow-2xl shadow-black/50">
         {/* 아이콘 + 제목 */}
         <div className="mb-4 flex items-center gap-3">

@@ -13,6 +13,8 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { NarrativePanel } from "@/components/narrative/NarrativePanel";
 import { InputSection, MobileInputSection } from "@/components/input/InputSection";
 import { SidePanel } from "@/components/side-panel/SidePanel";
+import { CharacterTab } from "@/components/side-panel/CharacterTab";
+import { InventoryTab } from "@/components/side-panel/InventoryTab";
 import { BattlePanel } from "@/components/battle/BattlePanel";
 import { StartScreen } from "@/components/screens/StartScreen";
 
@@ -106,7 +108,7 @@ export default function GamePage() {
       {/* LLM failure modal */}
       <LlmFailureModal />
 
-      {/* ===== Desktop Layout ===== */}
+      {/* ===== Desktop Layout (lg+) ===== */}
       <div className="hidden h-full flex-col lg:flex">
         <Header location={location} hud={hud} worldState={worldState} llmStats={llmStats} />
 
@@ -143,7 +145,7 @@ export default function GamePage() {
         </div>
       </div>
 
-      {/* ===== Mobile Layout ===== */}
+      {/* ===== Mobile & Tablet Layout (<lg) ===== */}
       <div className="flex h-full flex-col lg:hidden">
         <MobileHeader />
         <MobileLocationBar location={location} />
@@ -162,11 +164,24 @@ export default function GamePage() {
               />
             </>
           )}
-          {mobileTab === "character" && (
-            <div className="flex-1 overflow-y-auto p-4">
-              <p className="text-sm text-[var(--text-muted)]">
-                Character panel (mobile)
-              </p>
+          {mobileTab === "character" && characterInfo && (
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+              <CharacterTab character={characterInfo} />
+            </div>
+          )}
+          {mobileTab === "character" && !characterInfo && (
+            <div className="flex flex-1 items-center justify-center">
+              <p className="text-sm text-[var(--text-muted)]">캐릭터 정보 없음</p>
+            </div>
+          )}
+          {mobileTab === "inventory" && (
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+              <InventoryTab inventory={inventory} gold={hud.gold} changes={inventoryChanges} />
+            </div>
+          )}
+          {mobileTab === "quests" && (
+            <div className="flex flex-1 items-center justify-center">
+              <p className="text-sm text-[var(--text-muted)]">퀘스트 기록 준비 중...</p>
             </div>
           )}
         </div>

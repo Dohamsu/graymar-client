@@ -84,6 +84,14 @@
     height: 100%;
   }
 
+  /* Safe area padding for notched devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
   .font-display {
     font-family: "Noto Serif KR", serif;
   }
