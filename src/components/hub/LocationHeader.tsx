@@ -14,7 +14,7 @@ export function LocationHeader({ locationName, toneHint }: LocationHeaderProps) 
   const operationProgress = useGameStore((s) => s.operationProgress);
 
   return (
-    <div className="flex items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-6 py-2.5">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-2.5 md:px-6">
       <div className="flex items-center gap-2">
         <MapPin size={16} className="text-[var(--text-muted)]" />
         <span className="font-display text-base text-[var(--text-secondary)]">

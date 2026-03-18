@@ -94,7 +94,7 @@ export function BattlePanel({ enemies }: BattlePanelProps) {
       <span className="text-[10px] font-semibold tracking-[1px] text-[var(--hp-red)]">
         적
       </span>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
         {enemies.map((enemy) => (
           <EnemyCard key={enemy.id} enemy={enemy} />
         ))}

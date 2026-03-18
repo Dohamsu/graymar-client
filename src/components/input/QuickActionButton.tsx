@@ -38,7 +38,7 @@ export function QuickActionButton({ label, icon, color, onClick, disabled }: Qui
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex h-9 items-center justify-center gap-1.5 rounded-md bg-[var(--border-primary)] px-4 transition-opacity hover:opacity-80 disabled:opacity-50"
+      className="flex h-10 min-h-[44px] items-center justify-center gap-1.5 rounded-md bg-[var(--border-primary)] px-4 transition-opacity hover:opacity-80 disabled:opacity-50"
       style={{ border: `1px solid ${color}40` }}
     >
       {IconComponent && <IconComponent size={14} style={{ color }} />}

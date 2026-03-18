@@ -32,7 +32,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete }
   }, []);
 
   return (
-    <div ref={scrollRef} className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
+    <div ref={scrollRef} className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 md:p-6">
       {messages.map((msg) => (
         <StoryBlock key={msg.id} message={msg} onChoiceSelect={onChoiceSelect} onNarrationComplete={onNarrationComplete} />
       ))}

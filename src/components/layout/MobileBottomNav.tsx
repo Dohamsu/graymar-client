@@ -16,14 +16,14 @@ interface MobileBottomNavProps {
 
 export function MobileBottomNav({ activeTab, onTabChange }: MobileBottomNavProps) {
   return (
-    <nav className="flex h-16 w-full items-center justify-around border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] pt-2">
+    <nav className="flex h-16 w-full items-center justify-around border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] pb-[env(safe-area-inset-bottom)] pt-2">
       {NAV_ITEMS.map((item) => {
         const active = activeTab === item.id;
         return (
           <button
             key={item.id}
             onClick={() => onTabChange(item.id)}
-            className="flex flex-col items-center gap-1"
+            className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1"
           >
             <item.icon
               size={20}

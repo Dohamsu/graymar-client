@@ -22,7 +22,7 @@ export function RunEndScreen() {
 
       <button
         onClick={reset}
-        className="flex h-12 w-52 items-center justify-center border border-[var(--gold)] bg-transparent font-display text-sm tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)]"
+        className="flex h-12 w-full max-w-52 items-center justify-center border border-[var(--gold)] bg-transparent font-display text-sm tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)]"
       >
         새 게임
       </button>

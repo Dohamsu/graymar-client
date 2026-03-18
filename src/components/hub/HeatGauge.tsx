@@ -31,7 +31,7 @@ export function HeatGauge({ worldState }: { worldState: WorldStateUI }) {
       <span className={`text-[11px] font-semibold ${textColor}`}>
         {SAFETY_LABELS[safety] ?? safety}
       </span>
-      <div className="h-[6px] w-[70px] overflow-hidden rounded-full bg-[var(--border-primary)]">
+      <div className="h-[6px] w-[50px] overflow-hidden rounded-full bg-[var(--border-primary)] lg:w-[70px]">
         <div
           className={`h-full rounded-full transition-all ${barColor}`}
           style={{ width: `${pct}%` }}

@@ -167,7 +167,7 @@ export function MobileInputSection({
               key={action.id}
               onClick={() => onQuickAction?.(action.id)}
               disabled={disabled}
-              className="flex h-8 flex-1 items-center justify-center gap-1 rounded-md bg-[var(--border-primary)] disabled:opacity-50"
+              className="flex h-10 min-h-[44px] flex-1 items-center justify-center gap-1 rounded-md bg-[var(--border-primary)] disabled:opacity-50"
               style={{ border: `1px solid ${action.color}40` }}
             >
               <span

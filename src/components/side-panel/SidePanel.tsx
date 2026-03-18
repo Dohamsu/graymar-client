@@ -29,7 +29,7 @@ export function SidePanel({ character, inventory, gold, inventoryChanges, onClea
   }, [hasChanges, onClearChanges]);
 
   return (
-    <div className="flex h-full w-[420px] flex-col border-l border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+    <div className="flex h-full w-[320px] flex-col border-l border-[var(--border-primary)] bg-[var(--bg-secondary)] xl:w-[420px]">
       {/* Tab Header */}
       <div className="flex h-12 w-full items-center border-b border-[var(--border-primary)] px-4">
         {TABS.map((tab) => {
