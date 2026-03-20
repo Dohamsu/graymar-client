@@ -47,10 +47,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /** POST /v1/runs — create a new run and return the full run response. */
-export function createRun(presetId: string, gender: 'male' | 'female' = 'male') {
+export function createRun(
+  presetId: string,
+  gender: 'male' | 'female' = 'male',
+  options?: { campaignId?: string; scenarioId?: string },
+) {
   return request<Record<string, unknown>>('/v1/runs', {
     method: 'POST',
-    body: JSON.stringify({ presetId, gender }),
+    body: JSON.stringify({ presetId, gender, ...options }),
   });
 }
 
@@ -193,4 +197,50 @@ export function submitTurn(
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+// --- Campaigns ---
+
+export interface CampaignResponse {
+  id: string;
+  name: string;
+  status: 'ACTIVE' | 'COMPLETED';
+  currentScenarioOrder: number;
+  carryOverState: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ScenarioInfo {
+  scenarioId: string;
+  name: string;
+  description: string;
+  order: number;
+  prerequisites: string[];
+}
+
+/** POST /v1/campaigns — create a new campaign. */
+export function createCampaign(name: string) {
+  return request<CampaignResponse>('/v1/campaigns', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+}
+
+/** GET /v1/campaigns — fetch active campaign (or null). */
+export async function getActiveCampaign(): Promise<CampaignResponse | null> {
+  try {
+    return await request<CampaignResponse>('/v1/campaigns');
+  } catch {
+    return null;
+  }
+}
+
+/** GET /v1/campaigns/:id — fetch campaign detail. */
+export function getCampaign(campaignId: string) {
+  return request<CampaignResponse>(`/v1/campaigns/${campaignId}`);
+}
+
+/** GET /v1/campaigns/:id/scenarios — fetch available scenarios. */
+export function getAvailableScenarios(campaignId: string) {
+  return request<ScenarioInfo[]>(`/v1/campaigns/${campaignId}/scenarios`);
 }

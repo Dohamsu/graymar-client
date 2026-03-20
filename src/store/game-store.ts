@@ -74,11 +74,14 @@ export interface GameState {
   notifications: GameNotification[];
   pinnedAlerts: GameNotification[];
   worldDeltaSummary: WorldDeltaSummaryUI | null;
+  // Campaign
+  campaignId: string | null;
 
   // actions
   checkActiveRun: () => Promise<void>;
   resumeRun: () => Promise<void>;
   startNewGame: (presetId: string, gender?: 'male' | 'female') => Promise<void>;
+  startCampaignRun: (campaignId: string, scenarioId: string, presetId: string, gender?: 'male' | 'female') => Promise<void>;
   submitAction: (text: string) => Promise<void>;
   submitChoice: (choiceId: string) => Promise<void>;
   flushPending: () => void;
@@ -554,6 +557,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   notifications: [],
   pinnedAlerts: [],
   worldDeltaSummary: null,
+  // Campaign
+  campaignId: null,
 
   // -----------------------------------------------------------------------
   // checkActiveRun
@@ -767,6 +772,105 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
 
       // 첫 턴 LLM 폴링 시작
+      if (hasNarratorLoading) {
+        pollForNarrative(
+          runId,
+          serverResult!.turnNo,
+          serverResult!.summary?.display ?? serverResult!.summary?.short ?? '',
+          get,
+          set,
+        );
+      }
+    } catch (err) {
+      set({
+        phase: 'ERROR',
+        error: extractErrorMessage(err),
+      });
+    }
+  },
+
+  // -----------------------------------------------------------------------
+  // startCampaignRun
+  // -----------------------------------------------------------------------
+  startCampaignRun: async (campaignId: string, scenarioId: string, presetId: string, gender?: 'male' | 'female') => {
+    set({ phase: 'LOADING', error: null, campaignId });
+
+    try {
+      const data = (await createRun(presetId, gender, { campaignId, scenarioId })) as Record<string, unknown>;
+
+      const run = data.run as Record<string, unknown>;
+      const runId = run.id as string;
+      const currentNode = data.currentNode as
+        | Record<string, unknown>
+        | undefined;
+      const serverResult = data.lastResult as ServerResultV1 | undefined;
+      const battleState = data.battleState as unknown | undefined;
+      const runState = data.runState as
+        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }>; equipped?: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }> }
+        | undefined;
+
+      let initialMessages: StoryMessage[] = [];
+      let initialChoices: Choice[] = [];
+
+      if (serverResult) {
+        initialMessages = mapResultToMessages(serverResult);
+        initialChoices = (serverResult.choices ?? []).map((c) => ({
+          id: c.id,
+          label: c.label,
+        }));
+      }
+
+      const narratorMsgs = initialMessages.filter((m) => m.type === 'NARRATOR');
+      const otherMsgs = initialMessages.filter((m) => m.type !== 'NARRATOR');
+      const hasNarratorLoading = narratorMsgs.some((m) => m.loading);
+
+      const hud: PlayerHud = runState
+        ? {
+            hp: runState.hp,
+            maxHp: runState.maxHp,
+            stamina: runState.stamina,
+            maxStamina: runState.maxStamina,
+            gold: runState.gold,
+          }
+        : { ...INITIAL_HUD };
+
+      const initialInventory: InventoryItem[] = (runState?.inventory ?? []).map((i) => ({
+        itemId: i.itemId,
+        qty: i.qty,
+      }));
+
+      const wsUI = serverResult?.ui?.worldState as import('@/types/game').WorldStateUI | undefined;
+      const nodeType = (currentNode?.nodeType as string) ?? null;
+      const initialPhase = derivePhase(nodeType);
+
+      set({
+        phase: initialPhase,
+        runId,
+        campaignId,
+        currentNodeType: nodeType,
+        currentNodeIndex: (currentNode?.nodeIndex as number) ?? 0,
+        currentTurnNo: 1,
+        hud,
+        inventory: initialInventory,
+        battleState: battleState ?? null,
+        messages: hasNarratorLoading
+          ? [...otherMsgs.filter((m) => m.type === 'SYSTEM'), ...narratorMsgs]
+          : initialMessages,
+        pendingMessages: hasNarratorLoading
+          ? otherMsgs.filter((m) => m.type !== 'SYSTEM')
+          : [],
+        choices: hasNarratorLoading ? [] : initialChoices,
+        pendingChoices: hasNarratorLoading ? initialChoices : [],
+        isSubmitting: false,
+        characterInfo: {
+          ...buildCharacterInfo(presetId, gender),
+          equipment: mapEquippedToDisplay(runState?.equipped),
+        },
+        worldState: wsUI ?? null,
+        resolveOutcome: null,
+        locationName: null,
+      });
+
       if (hasNarratorLoading) {
         pollForNarrative(
           runId,
@@ -1014,6 +1118,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       notifications: [],
       pinnedAlerts: [],
       worldDeltaSummary: null,
+      campaignId: null,
     });
   },
 }));
