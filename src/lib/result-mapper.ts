@@ -1,4 +1,5 @@
 import type { StoryMessage, Choice, ServerResultV1 } from '@/types/game';
+import { getLocationImagePath } from '@/data/location-images';
 
 // ---------------------------------------------------------------------------
 // Turn history types & mapper (이어하기 대화 이력 복원용)
@@ -135,12 +136,23 @@ export function mapResultToMessages(
   const messages: StoryMessage[] = [];
 
   // 1. System / combat events (먼저 표시 — 공지/전투 로그)
+  //    LOCATION_ENTER 이벤트에는 장소 이미지 첨부
+  const ws = result.ui?.worldState as { currentLocationId?: string; timePhase?: string; hubSafety?: string; phaseV2?: string } | undefined;
   for (const event of result.events ?? []) {
-    if (SYSTEM_EVENT_KINDS.has(event.kind)) {
+    const isLocationEnter = event.tags?.includes('LOCATION_ENTER');
+    if (SYSTEM_EVENT_KINDS.has(event.kind) || isLocationEnter) {
       messages.push({
         id: crypto.randomUUID(),
         type: 'SYSTEM',
         text: event.text,
+        ...(isLocationEnter && ws ? {
+          locationImage: getLocationImagePath(
+            ws.currentLocationId,
+            ws.timePhase,
+            ws.hubSafety,
+            ws.phaseV2,
+          ),
+        } : {}),
       });
     }
   }

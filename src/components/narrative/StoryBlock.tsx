@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import Image from "next/image";
 import type { StoryMessage } from "@/types/game";
 import { ResolveOutcomeInline } from "@/components/hub/ResolveOutcomeBanner";
 import { useSettingsStore, TEXT_SPEED_PRESETS, FONT_SIZE_PRESETS } from "@/store/settings-store";
@@ -294,17 +295,31 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
         </div>
       ) : (
         /* ── 일반 메시지 (PLAYER, SYSTEM) ── */
-        <p
-          className={`leading-[1.75] whitespace-pre-line ${
-            isPlayer ? "font-ui italic" : "font-narrative"
-          }`}
-          style={{
-            color: isPlayer ? "var(--text-secondary)" : "var(--text-primary)",
-            fontSize: `${fontSizes.narrative}px`,
-          }}
-        >
-          {message.text}
-        </p>
+        <>
+          {message.locationImage && (
+            <div className="relative mb-2 h-[120px] w-full overflow-hidden rounded lg:h-[160px]">
+              <Image
+                src={message.locationImage}
+                alt="장소"
+                fill
+                sizes="(max-width: 768px) 100vw, 600px"
+                className="object-cover"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent from-60% to-[var(--bg-card)]" />
+            </div>
+          )}
+          <p
+            className={`leading-[1.75] whitespace-pre-line ${
+              isPlayer ? "font-ui italic" : "font-narrative"
+            }`}
+            style={{
+              color: isPlayer ? "var(--text-secondary)" : "var(--text-primary)",
+              fontSize: `${fontSizes.narrative}px`,
+            }}
+          >
+            {message.text}
+          </p>
+        </>
       )}
     </div>
   );

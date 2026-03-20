@@ -154,6 +154,27 @@ export function retryLlm(runId: string, turnNo: number) {
   );
 }
 
+// --- LLM Usage ---
+
+export interface LlmUsageTurn {
+  turnNo: number;
+  model: string | null;
+  prompt: number;
+  cached: number;
+  completion: number;
+  latencyMs: number;
+}
+
+export interface LlmUsageResponse {
+  turns: LlmUsageTurn[];
+  totals: { prompt: number; cached: number; completion: number; turns: number };
+}
+
+/** GET /v1/runs/:runId/turns/llm-usage — fetch LLM token usage for all turns in a run. */
+export function getLlmUsage(runId: string) {
+  return request<LlmUsageResponse>(`/v1/runs/${runId}/turns/llm-usage`);
+}
+
 /** POST /v1/runs/:runId/turns — submit a player turn. */
 export function submitTurn(
   runId: string,
