@@ -198,6 +198,31 @@ export interface ResolveBreakdown {
   totalScore: number;
 }
 
+// --- Quest / Arc UI Types ---
+
+export type ArcRoute = 'EXPOSE_CORRUPTION' | 'PROFIT_FROM_CHAOS' | 'ALLY_GUARD';
+
+export interface ArcStateUI {
+  currentRoute: ArcRoute | null;
+  commitment: number; // 0~3 (3=locked)
+  betrayalCount: number;
+}
+
+export interface NarrativeMarkUI {
+  type: string;
+  npcId?: string;
+  factionId?: string;
+  incidentId?: string;
+  context: string;
+  createdAtClock: number;
+}
+
+export interface MainArcClockUI {
+  startDay: number;
+  softDeadlineDay: number;
+  triggered: boolean;
+}
+
 // --- Narrative Engine v1 UI Types ---
 
 export interface IncidentSummaryUI {

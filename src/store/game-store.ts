@@ -18,6 +18,10 @@ import type {
   EndingResult,
   GameNotification,
   WorldDeltaSummaryUI,
+  ArcStateUI,
+  NarrativeMarkUI,
+  MainArcClockUI,
+  PlayerThreadSummaryUI,
 } from '@/types/game';
 import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, type LlmTokenStats } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -74,6 +78,12 @@ export interface GameState {
   notifications: GameNotification[];
   pinnedAlerts: GameNotification[];
   worldDeltaSummary: WorldDeltaSummaryUI | null;
+  // Quest / Arc State
+  arcState: ArcStateUI | null;
+  narrativeMarks: NarrativeMarkUI[];
+  mainArcClock: MainArcClockUI | null;
+  playerThreads: PlayerThreadSummaryUI[];
+  day: number;
   // Campaign
   campaignId: string | null;
 
@@ -419,6 +429,18 @@ function processTurnResponse(
     if (notifs) set({ notifications: notifs });
     if (pinned) set({ pinnedAlerts: pinned });
     if (wds !== undefined) set({ worldDeltaSummary: wds ?? null });
+
+    // Quest / Arc State 업데이트
+    const arc = uiBundle.arcState as ArcStateUI | undefined;
+    const marks = uiBundle.narrativeMarks as NarrativeMarkUI[] | undefined;
+    const clock = uiBundle.mainArcClock as MainArcClockUI | undefined;
+    const dayVal = uiBundle.day as number | undefined;
+    const threads = uiBundle.playerThreads as PlayerThreadSummaryUI[] | undefined;
+    if (arc) set({ arcState: arc });
+    if (marks) set({ narrativeMarks: marks });
+    if (clock) set({ mainArcClock: clock });
+    if (dayVal !== undefined) set({ day: dayVal });
+    if (threads) set({ playerThreads: threads });
   }
 
   // ResolveOutcome 업데이트
@@ -557,6 +579,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   notifications: [],
   pinnedAlerts: [],
   worldDeltaSummary: null,
+  // Quest / Arc State
+  arcState: null,
+  narrativeMarks: [],
+  mainArcClock: null,
+  playerThreads: [],
+  day: 1,
   // Campaign
   campaignId: null,
 
@@ -652,6 +680,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       const resumePhase = derivePhase(nodeType);
       const resumeWs = lastResult?.ui?.worldState as import('@/types/game').WorldStateUI | undefined;
 
+      // Quest / Arc State 복원 (runState에서 추출)
+      const rsAny = runState as Record<string, unknown> | undefined;
+      const wsObj = (rsAny?.worldState ?? {}) as Record<string, unknown>;
+
       set({
         phase: resumePhase,
         runId,
@@ -677,6 +709,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         worldState: resumeWs ?? null,
         resolveOutcome: null,
         locationName: null,
+        // Quest / Arc State
+        arcState: (rsAny?.arcState as ArcStateUI) ?? null,
+        narrativeMarks: (wsObj?.narrativeMarks as NarrativeMarkUI[]) ?? [],
+        mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
+        playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
+        day: (wsObj?.day as number) ?? 1,
       });
     } catch (err) {
       set({
@@ -1118,6 +1156,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       notifications: [],
       pinnedAlerts: [],
       worldDeltaSummary: null,
+      // Quest / Arc State
+      arcState: null,
+      narrativeMarks: [],
+      mainArcClock: null,
+      playerThreads: [],
+      day: 1,
       campaignId: null,
     });
   },

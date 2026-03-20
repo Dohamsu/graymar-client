@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { CharacterTab } from "./CharacterTab";
 import { InventoryTab } from "./InventoryTab";
+import { QuestTab } from "./QuestTab";
 import type { CharacterInfo, InventoryItem, InventoryChanges } from "@/types/game";
 
 const TABS = ["캐릭터", "소지품", "퀘스트"] as const;
@@ -60,9 +61,7 @@ export function SidePanel({ character, inventory, gold, inventoryChanges, onClea
         {activeTab === "소지품" && (
           <InventoryTab inventory={inventory} gold={gold} changes={inventoryChanges} />
         )}
-        {activeTab === "퀘스트" && (
-          <p className="text-sm text-[var(--text-muted)]">퀘스트 기록 준비 중...</p>
-        )}
+        {activeTab === "퀘스트" && <QuestTab />}
       </div>
     </div>
   );
