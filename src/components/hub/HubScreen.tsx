@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { MapPin, Shield, AlertTriangle, Skull, Handshake, Coins } from "lucide-react";
 import { useGameStore } from "@/store/game-store";
 import { HeatGauge } from "./HeatGauge";
@@ -15,31 +16,35 @@ import type { Choice } from "@/types/game";
 // LOCATION 정보 (클라이언트 표시용)
 const LOCATION_INFO: Record<
   string,
-  { name: string; description: string; dangerLevel: number; icon: typeof MapPin }
+  { name: string; description: string; dangerLevel: number; icon: typeof MapPin; imagePath: string }
 > = {
   go_market: {
     name: "시장 거리",
     description: "상인과 여행자가 북적이는 번화가. 소문과 거래가 오간다.",
     dangerLevel: 1,
     icon: MapPin,
+    imagePath: "/locations/market_day_safe.png",
   },
   go_guard: {
     name: "경비대 지구",
     description: "엄격한 질서가 유지되는 구역. 협력하거나 경계를 살필 수 있다.",
     dangerLevel: 2,
     icon: Shield,
+    imagePath: "/locations/guard_day_safe.png",
   },
   go_harbor: {
     name: "항만 부두",
     description: "밤이면 위험해지는 부두. 밀수품과 정보가 은밀히 오간다.",
     dangerLevel: 3,
     icon: AlertTriangle,
+    imagePath: "/locations/harbor_day_safe.png",
   },
   go_slums: {
     name: "빈민가",
     description: "법의 손길이 닿지 않는 골목. 암흑가의 심장부.",
     dangerLevel: 4,
     icon: Skull,
+    imagePath: "/locations/slums_day_safe.png",
   },
 };
 
@@ -69,20 +74,31 @@ function LocationCard({
     <button
       onClick={onSelect}
       disabled={disabled}
-      className={`flex flex-col gap-2 rounded-lg border ${DANGER_COLORS[dangerIdx]} bg-[var(--bg-card)] p-4 text-left transition-all hover:bg-[rgba(201,169,98,0.06)] hover:border-[var(--gold)]/60 disabled:opacity-50`}
+      className={`flex gap-3 rounded-lg border ${DANGER_COLORS[dangerIdx]} bg-[var(--bg-card)] p-3 text-left transition-all hover:bg-[rgba(201,169,98,0.06)] hover:border-[var(--gold)]/60 disabled:opacity-50`}
     >
-      <div className="flex items-center gap-2">
-        <Icon size={16} className="text-[var(--text-muted)]" />
-        <span className="font-display text-sm font-semibold text-[var(--text-primary)]">
-          {info.name}
-        </span>
-        <span className="ml-auto text-xs text-[var(--text-muted)]">
-          {"!".repeat(info.dangerLevel)}
-        </span>
+      <div className="relative h-[48px] w-[80px] shrink-0 overflow-hidden rounded">
+        <Image
+          src={info.imagePath}
+          alt={info.name}
+          fill
+          sizes="80px"
+          className="object-cover"
+        />
       </div>
-      <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-        {info.description}
-      </p>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <Icon size={14} className="text-[var(--text-muted)]" />
+          <span className="font-display text-sm font-semibold text-[var(--text-primary)]">
+            {info.name}
+          </span>
+          <span className="ml-auto text-xs text-[var(--text-muted)]">
+            {"!".repeat(info.dangerLevel)}
+          </span>
+        </div>
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
+          {info.description}
+        </p>
+      </div>
     </button>
   );
 }

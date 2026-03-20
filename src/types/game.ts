@@ -7,6 +7,8 @@ export interface StoryMessage {
   selectedChoiceId?: string;
   resolveOutcome?: ResolveOutcome;
   resolveBreakdown?: ResolveBreakdown;
+  /** 장소 진입 시 표시할 이미지 경로 */
+  locationImage?: string;
 }
 
 export interface Choice {
