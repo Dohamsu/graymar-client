@@ -7,9 +7,16 @@ import { useAuthStore } from "@/store/auth-store";
 import { PRESETS } from "@/data/presets";
 import { STAT_ACTION_HINTS } from "@/data/stat-descriptions";
 import { StatTooltip } from "@/components/ui/StatTooltip";
+import {
+  getActiveCampaign,
+  createCampaign,
+  getAvailableScenarios,
+  type CampaignResponse,
+  type ScenarioInfo,
+} from "@/lib/api-client";
 import type { CharacterPreset } from "@/types/game";
 
-type ScreenPhase = "TITLE" | "AUTH" | "SELECT_PRESET";
+type ScreenPhase = "TITLE" | "AUTH" | "SELECT_PRESET" | "CAMPAIGN" | "CAMPAIGN_SCENARIO" | "CAMPAIGN_PRESET";
 type AuthTab = "login" | "register";
 type Gender = "male" | "female";
 
@@ -530,6 +537,7 @@ function getPresetName(presetId: string): string {
 
 export function StartScreen() {
   const startNewGame = useGameStore((s) => s.startNewGame);
+  const startCampaignRun = useGameStore((s) => s.startCampaignRun);
   const phase = useGameStore((s) => s.phase);
   const isLoading = phase === "LOADING";
   const activeRunInfo = useGameStore((s) => s.activeRunInfo);
@@ -549,6 +557,14 @@ export function StartScreen() {
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [genderMap, setGenderMap] = useState<Record<string, Gender>>({});
 
+  // Campaign state
+  const [activeCampaign, setActiveCampaign] = useState<CampaignResponse | null>(null);
+  const [campaignName, setCampaignName] = useState("");
+  const [campaignLoading, setCampaignLoading] = useState(false);
+  const [campaignError, setCampaignError] = useState<string | null>(null);
+  const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
+
   const handleStartGame = () => {
     if (!selectedPresetId) return;
     startNewGame(selectedPresetId, genderMap[selectedPresetId] ?? "male");
@@ -557,7 +573,88 @@ export function StartScreen() {
   const handleLogout = () => {
     authLogout();
     gameReset();
+    setActiveCampaign(null);
+    setCampaignName("");
+    setScenarios([]);
+    setSelectedScenarioId(null);
     setScreenPhase("TITLE");
+  };
+
+  // Campaign: enter campaign mode
+  const handleEnterCampaign = async () => {
+    setCampaignLoading(true);
+    setCampaignError(null);
+    try {
+      const campaign = await getActiveCampaign();
+      setActiveCampaign(campaign);
+      setScreenPhase("CAMPAIGN");
+    } catch {
+      setCampaignError("캠페인 조회에 실패했습니다.");
+    } finally {
+      setCampaignLoading(false);
+    }
+  };
+
+  // Campaign: create new
+  const handleCreateCampaign = async () => {
+    if (!campaignName.trim()) return;
+    setCampaignLoading(true);
+    setCampaignError(null);
+    try {
+      const campaign = await createCampaign(campaignName.trim());
+      setActiveCampaign(campaign);
+      setCampaignName("");
+      // Load scenarios for the new campaign
+      const scenarioList = await getAvailableScenarios(campaign.id);
+      setScenarios(scenarioList);
+      setScreenPhase("CAMPAIGN_SCENARIO");
+    } catch {
+      setCampaignError("캠페인 생성에 실패했습니다.");
+    } finally {
+      setCampaignLoading(false);
+    }
+  };
+
+  // Campaign: load scenarios for existing campaign
+  const handleContinueCampaign = async () => {
+    if (!activeCampaign) return;
+    setCampaignLoading(true);
+    setCampaignError(null);
+    try {
+      const scenarioList = await getAvailableScenarios(activeCampaign.id);
+      setScenarios(scenarioList);
+      setScreenPhase("CAMPAIGN_SCENARIO");
+    } catch {
+      setCampaignError("시나리오 목록 조회에 실패했습니다.");
+    } finally {
+      setCampaignLoading(false);
+    }
+  };
+
+  // Campaign: select scenario -> go to preset selection (first scenario) or start directly
+  const handleSelectScenario = (scenarioId: string) => {
+    setSelectedScenarioId(scenarioId);
+    // First scenario needs preset selection
+    const scenario = scenarios.find((s) => s.scenarioId === scenarioId);
+    if (scenario && scenario.order === 1) {
+      setScreenPhase("CAMPAIGN_PRESET");
+    } else {
+      // Subsequent scenarios: start directly with existing character
+      if (activeCampaign) {
+        startCampaignRun(activeCampaign.id, scenarioId, "DOCKWORKER", "male");
+      }
+    }
+  };
+
+  // Campaign: start with preset
+  const handleStartCampaignWithPreset = () => {
+    if (!selectedPresetId || !activeCampaign || !selectedScenarioId) return;
+    startCampaignRun(
+      activeCampaign.id,
+      selectedScenarioId,
+      selectedPresetId,
+      genderMap[selectedPresetId] ?? "male",
+    );
   };
 
   // Phase: AUTH (로그인/회원가입)
@@ -640,6 +737,13 @@ export function StartScreen() {
                 새 게임
               </button>
               <button
+                onClick={handleEnterCampaign}
+                disabled={isLoading || campaignLoading}
+                className="flex h-14 w-full max-w-64 items-center justify-center border border-[var(--text-muted)] bg-transparent font-display text-lg tracking-[3px] text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
+              >
+                {campaignLoading ? "불러오는 중..." : "캠페인"}
+              </button>
+              <button
                 onClick={handleLogout}
                 className="mt-2 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
               >
@@ -655,6 +759,201 @@ export function StartScreen() {
               시작하기
             </button>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Phase: CAMPAIGN — campaign hub (create or continue)
+  if (screenPhase === "CAMPAIGN") {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-16 w-16 items-center justify-center border-2 border-[var(--gold)]">
+            <span className="font-display text-2xl font-bold text-[var(--gold)]">C</span>
+          </div>
+          <h1 className="font-display text-2xl tracking-[4px] text-[var(--text-primary)]">
+            캠페인
+          </h1>
+        </div>
+
+        <div className="flex w-full max-w-sm flex-col gap-4">
+          {activeCampaign ? (
+            <>
+              <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
+                <p className="text-xs text-[var(--text-muted)]">진행 중인 캠페인</p>
+                <p className="mt-1 font-display text-lg text-[var(--text-primary)]">
+                  {activeCampaign.name}
+                </p>
+                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                  시나리오 {activeCampaign.currentScenarioOrder}단계
+                  <span className="ml-2 text-xs text-[var(--text-muted)]">
+                    {activeCampaign.status === "COMPLETED" ? "완료" : "진행 중"}
+                  </span>
+                </p>
+              </div>
+              <button
+                onClick={handleContinueCampaign}
+                disabled={campaignLoading || activeCampaign.status === "COMPLETED"}
+                className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
+              >
+                {campaignLoading ? "불러오는 중..." : "다음 시나리오 시작"}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-center text-sm text-[var(--text-secondary)]">
+                진행 중인 캠페인이 없습니다. 새 캠페인을 시작하세요.
+              </p>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="campaign-name" className="text-xs text-[var(--text-muted)]">
+                  캠페인 이름
+                </label>
+                <input
+                  id="campaign-name"
+                  type="text"
+                  maxLength={50}
+                  value={campaignName}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleCreateCampaign(); }}
+                  placeholder="나의 첫 번째 캠페인"
+                  className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+                />
+              </div>
+              <button
+                onClick={handleCreateCampaign}
+                disabled={campaignLoading || !campaignName.trim()}
+                className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
+              >
+                {campaignLoading ? "생성 중..." : "캠페인 생성"}
+              </button>
+            </>
+          )}
+
+          {campaignError && (
+            <p className="text-sm text-[var(--hp-red)]">{campaignError}</p>
+          )}
+        </div>
+
+        <button
+          onClick={() => { setScreenPhase("TITLE"); setCampaignError(null); }}
+          className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+        >
+          &larr; 돌아가기
+        </button>
+      </div>
+    );
+  }
+
+  // Phase: CAMPAIGN_SCENARIO — select scenario
+  if (screenPhase === "CAMPAIGN_SCENARIO") {
+    return (
+      <div className="flex h-full flex-col bg-[var(--bg-primary)]">
+        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
+          <button
+            onClick={() => setScreenPhase("CAMPAIGN")}
+            className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+          >
+            &larr; 뒤로
+          </button>
+          <h2 className="font-display text-base text-[var(--text-primary)]">
+            시나리오 선택 — {activeCampaign?.name}
+          </h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+          <div className="mx-auto flex max-w-2xl flex-col gap-4">
+            {scenarios.length === 0 ? (
+              <p className="text-center text-sm text-[var(--text-muted)]">
+                사용 가능한 시나리오가 없습니다.
+              </p>
+            ) : (
+              scenarios.map((scenario) => {
+                const isAvailable = scenario.prerequisites.length === 0;
+                return (
+                  <button
+                    key={scenario.scenarioId}
+                    onClick={() => isAvailable && handleSelectScenario(scenario.scenarioId)}
+                    disabled={!isAvailable || isLoading}
+                    className={`flex flex-col gap-2 rounded-lg border p-4 text-left transition-all ${
+                      isAvailable
+                        ? "border-[var(--border-primary)] bg-[var(--bg-card)] hover:border-[var(--gold)] hover:bg-[rgba(201,169,98,0.04)]"
+                        : "cursor-not-allowed border-[var(--border-primary)] bg-[var(--bg-secondary)] opacity-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--gold)] font-display text-sm text-[var(--gold)]">
+                        {scenario.order}
+                      </span>
+                      <h3 className="font-display text-lg text-[var(--text-primary)]">
+                        {scenario.name}
+                      </h3>
+                    </div>
+                    <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                      {scenario.description}
+                    </p>
+                    {!isAvailable && (
+                      <p className="text-xs text-[var(--text-muted)]">
+                        선행 시나리오를 먼저 완료해야 합니다.
+                      </p>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Phase: CAMPAIGN_PRESET — preset selection for campaign first scenario
+  if (screenPhase === "CAMPAIGN_PRESET") {
+    return (
+      <div className="flex h-full flex-col bg-[var(--bg-primary)]">
+        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
+          <button
+            onClick={() => {
+              setScreenPhase("CAMPAIGN_SCENARIO");
+              setSelectedPresetId(null);
+              setGenderMap({});
+            }}
+            className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+          >
+            &larr; 뒤로
+          </button>
+          <h2 className="font-display text-base text-[var(--text-primary)]">
+            용병의 과거를 선택하세요
+          </h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+          <div className="mx-auto grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+            {PRESETS.map((preset) => (
+              <PresetCard
+                key={preset.presetId}
+                preset={preset}
+                selected={selectedPresetId === preset.presetId}
+                gender={genderMap[preset.presetId] ?? "male"}
+                onSelect={() => setSelectedPresetId(preset.presetId)}
+                onGenderChange={(g) =>
+                  setGenderMap((prev) => ({ ...prev, [preset.presetId]: g }))
+                }
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="border-t border-[var(--border-primary)] px-4 py-4 sm:px-6">
+          <div className="mx-auto max-w-3xl">
+            <button
+              onClick={handleStartCampaignWithPreset}
+              disabled={!selectedPresetId || isLoading}
+              className="flex h-12 w-full items-center justify-center border border-[var(--gold)] font-display text-lg tracking-[4px] transition-all disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-[var(--gold)] enabled:text-[var(--bg-primary)] enabled:hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
+            >
+              {isLoading ? "불러오는 중..." : "캠페인 시작"}
+            </button>
+          </div>
         </div>
       </div>
     );
