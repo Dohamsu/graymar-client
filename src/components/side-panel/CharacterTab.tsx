@@ -80,6 +80,30 @@ export function CharacterTab({ character }: CharacterTabProps) {
         </div>
       </div>
 
+      {/* Derived Combat Stats */}
+      <div className="flex flex-col gap-2">
+        <span className="text-[10px] font-semibold tracking-[1px] text-[var(--text-muted)]">
+          전투 수치
+        </span>
+        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+          {(() => {
+            const s = character.stats.reduce((acc, st) => ({ ...acc, [st.label.toLowerCase()]: st.value }), {} as Record<string, number>);
+            const derived = [
+              { label: 'ATK', value: s.str ?? 0, hint: '근접 데미지', color: 'var(--hp-red)' },
+              { label: 'DEF', value: s.con ?? 0, hint: '피해 감소', color: 'var(--info-blue)' },
+              { label: 'ACC', value: s.dex ?? 0, hint: '명중률', color: 'var(--success-green)' },
+              { label: 'EVA', value: Math.floor((s.dex ?? 0) * 0.6), hint: '회피율', color: 'var(--gold)' },
+            ];
+            return derived.map((d) => (
+              <div key={d.label} title={d.hint} className="flex cursor-help items-center gap-1.5 rounded border border-[var(--border-primary)]/50 bg-[var(--bg-card)]/50 px-2 py-1.5">
+                <span className="text-[9px] font-semibold" style={{ color: d.color }}>{d.label}</span>
+                <span className="text-sm font-medium text-[var(--text-secondary)]">{d.value}</span>
+              </div>
+            ));
+          })()}
+        </div>
+      </div>
+
       {/* Equipment */}
       <div className="flex flex-col gap-3">
         <span className="text-[10px] font-semibold tracking-[1px] text-[var(--text-secondary)]">

@@ -24,24 +24,34 @@ type Gender = "male" | "female";
 // 스탯 → 간략 요약 ("체력 높음 · 회피 낮음" 형태)
 // ---------------------------------------------------------------------------
 
+// 6개 기본 스탯 기준 (Living World v2)
 const STAT_LABELS: Record<string, string> = {
   MaxHP: "체력",
-  ATK: "공격력",
-  DEF: "방어력",
-  EVA: "회피",
-  CRIT: "치명타",
-  RESIST: "저항",
-  SPEED: "속도",
+  str: "힘",
+  dex: "민첩",
+  wit: "재치",
+  con: "체질",
+  per: "통찰",
+  cha: "카리스마",
+};
+
+const STAT_HINTS: Record<string, string> = {
+  str: "전투 · 협박",
+  dex: "잠입 · 절도 · 회피",
+  wit: "조사 · 수색",
+  con: "방어 · 저항 · 도움",
+  per: "관찰 · 발견",
+  cha: "설득 · 뇌물 · 거래",
 };
 
 const STAT_THRESHOLDS: Record<string, [number, number, number]> = {
   MaxHP: [110, 95, 85],
-  ATK: [16, 14, 12],
-  DEF: [12, 10, 8],
-  EVA: [6, 4, 3],
-  CRIT: [7, 5, 4],
-  RESIST: [8, 6, 4],
-  SPEED: [7, 5, 4],
+  str: [14, 11, 9],
+  dex: [10, 7, 6],
+  wit: [9, 7, 5],
+  con: [12, 10, 8],
+  per: [9, 7, 5],
+  cha: [9, 7, 5],
 };
 
 type StatGrade = "매우 높음" | "높음" | "보통" | "낮음";
@@ -55,15 +65,15 @@ function getStatGrade(key: string, value: number): StatGrade {
   return "낮음";
 }
 
-const SUMMARY_STATS = ["MaxHP", "ATK", "DEF", "EVA", "CRIT", "RESIST", "SPEED"] as const;
+const SUMMARY_STATS = ["MaxHP", "str", "dex", "wit", "con", "per", "cha"] as const;
 
-/** 눈에 띄는 스탯만 뽑아서 한 줄 요약 ("체력 높음 · 회피 낮음") */
-function buildStatSummary(stats: CharacterPreset["stats"]): Array<{ key: string; label: string; grade: StatGrade }> {
-  const items: Array<{ key: string; label: string; grade: StatGrade }> = [];
+/** 눈에 띄는 스탯만 뽑아서 한 줄 요약 ("힘 높음 · 민첩 낮음") */
+function buildStatSummary(stats: CharacterPreset["stats"]): Array<{ key: string; label: string; grade: StatGrade; hint?: string }> {
+  const items: Array<{ key: string; label: string; grade: StatGrade; hint?: string }> = [];
   for (const key of SUMMARY_STATS) {
-    const grade = getStatGrade(key, stats[key]);
+    const grade = getStatGrade(key, stats[key] ?? 0);
     if (grade === "매우 높음" || grade === "높음" || grade === "낮음") {
-      items.push({ key, label: STAT_LABELS[key], grade });
+      items.push({ key, label: STAT_LABELS[key], grade, hint: STAT_HINTS[key] });
     }
   }
   return items;
@@ -185,8 +195,8 @@ function PresetCard({
 
         {/* 능력치 한 줄 요약 */}
         <div className="flex flex-wrap gap-x-2 gap-y-1 text-sm">
-          {statSummary.map(({ key, label, grade }, i) => (
-            <StatTooltip key={key} hint={STAT_ACTION_HINTS[key] ?? ""}>
+          {statSummary.map(({ key, label, grade, hint }, i) => (
+            <StatTooltip key={key} hint={hint || (STAT_ACTION_HINTS[key.toUpperCase()] ?? "")}>
               <span className="cursor-help">
                 <span className="text-[var(--text-muted)]">{label}</span>{" "}
                 <span className={GRADE_COLOR[grade]}>{grade}</span>
@@ -196,6 +206,28 @@ function PresetCard({
               </span>
             </StatTooltip>
           ))}
+        </div>
+
+        {/* 스탯 바 그래프 */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+          {(["str", "dex", "wit", "con", "per", "cha"] as const).map((key) => {
+            const value = preset.stats[key] ?? 0;
+            const max = 18;
+            const pct = Math.min(100, Math.round((value / max) * 100));
+            const colors: Record<string, string> = {
+              str: 'var(--hp-red)', dex: 'var(--gold)', wit: 'var(--success-green)',
+              con: 'var(--info-blue)', per: '#c084fc', cha: '#f472b6',
+            };
+            return (
+              <div key={key} className="flex items-center gap-1.5" title={STAT_HINTS[key]}>
+                <span className="w-8 text-right font-semibold text-[var(--text-muted)]">{STAT_LABELS[key]}</span>
+                <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-[var(--bg-secondary)]">
+                  <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${pct}%`, backgroundColor: colors[key] }} />
+                </div>
+                <span className="w-5 text-center font-medium text-[var(--text-secondary)]">{value}</span>
+              </div>
+            );
+          })}
         </div>
 
         {/* 골드 & 아이템 */}
