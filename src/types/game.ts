@@ -178,6 +178,44 @@ export interface ServerResultV1 {
   };
 }
 
+// --- Location Dynamic State ---
+
+export interface LocationConditionUI {
+  id: string;
+  effects: {
+    blockedActions?: string[];
+    boostedActions?: string[];
+  };
+}
+
+export interface LocationDynamicStateUI {
+  locationId: string;
+  security: number;
+  prosperity: number;
+  unrest: number;
+  activeConditions: LocationConditionUI[];
+  presentNpcs: string[];
+  controllingFaction: string | null;
+}
+
+// --- Player Goal ---
+
+export interface PlayerGoalMilestoneUI {
+  description: string;
+  completed: boolean;
+}
+
+export interface PlayerGoalUI {
+  id: string;
+  type: 'EXPLICIT' | 'IMPLICIT';
+  description: string;
+  progress: number;
+  milestones: PlayerGoalMilestoneUI[];
+  completed: boolean;
+  relatedNpcs: string[];
+  relatedLocations: string[];
+}
+
 export interface WorldStateUI {
   hubHeat: number;
   hubSafety: 'SAFE' | 'ALERT' | 'DANGER';
@@ -185,6 +223,8 @@ export interface WorldStateUI {
   phaseV2?: 'DAWN' | 'DAY' | 'DUSK' | 'NIGHT';
   day?: number;
   currentLocationId: string | null;
+  locationDynamicStates?: Record<string, LocationDynamicStateUI>;
+  playerGoals?: PlayerGoalUI[];
 }
 
 export type ResolveOutcome = 'SUCCESS' | 'PARTIAL' | 'FAIL';

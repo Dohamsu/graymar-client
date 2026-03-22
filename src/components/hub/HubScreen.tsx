@@ -11,7 +11,25 @@ import { NpcRelationshipCard } from "./NpcRelationshipCard";
 import { PinnedAlertStack } from "./PinnedAlertStack";
 import { WorldDeltaSummaryCard } from "./WorldDeltaSummaryCard";
 import { HubNotificationList } from "./HubNotificationList";
-import type { Choice } from "@/types/game";
+import type { Choice, LocationDynamicStateUI } from "@/types/game";
+
+// choiceId → locationId 매핑
+const CHOICE_TO_LOCATION_ID: Record<string, string> = {
+  go_market: "LOC_MARKET",
+  go_guard: "LOC_GUARD",
+  go_harbor: "LOC_HARBOR",
+  go_slums: "LOC_SLUMS",
+};
+
+// 조건 ID → 표시 라벨
+const CONDITION_LABELS: Record<string, { label: string; emoji: string }> = {
+  LOCKDOWN: { label: "봉쇄", emoji: "\u{1F512}" },
+  CURFEW: { label: "통금", emoji: "\u{1F6D1}" },
+  FESTIVAL: { label: "축제", emoji: "\u{1F389}" },
+  BLACK_MARKET: { label: "암시장", emoji: "\u{1F4B0}" },
+  RIOT: { label: "소요", emoji: "\u26A0\uFE0F" },
+  MARTIAL_LAW: { label: "계엄", emoji: "\u2694\uFE0F" },
+};
 
 // LOCATION 정보 (클라이언트 표시용)
 const LOCATION_INFO: Record<
@@ -55,14 +73,33 @@ const DANGER_COLORS = [
   "border-[var(--hp-red)]",
 ];
 
+function SecurityBar({ value }: { value: number }) {
+  const color =
+    value >= 70 ? "var(--success-green)" : value >= 40 ? "var(--gold)" : "var(--hp-red)";
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[8px] text-[var(--text-muted)]">치안</span>
+      <div className="h-1 w-12 overflow-hidden rounded-full bg-[var(--border-primary)]">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${Math.min(100, value)}%`, backgroundColor: color }}
+        />
+      </div>
+      <span className="text-[8px] text-[var(--text-muted)]">{value}</span>
+    </div>
+  );
+}
+
 function LocationCard({
   choiceId,
   onSelect,
   disabled,
+  locState,
 }: {
   choiceId: string;
   onSelect: () => void;
   disabled: boolean;
+  locState?: LocationDynamicStateUI;
 }) {
   const info = LOCATION_INFO[choiceId];
   if (!info) return null;
@@ -85,7 +122,7 @@ function LocationCard({
           className="object-cover"
         />
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center gap-2">
           <Icon size={14} className="text-[var(--text-muted)]" />
           <span className="font-display text-sm font-semibold text-[var(--text-primary)]">
@@ -98,6 +135,33 @@ function LocationCard({
         <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
           {info.description}
         </p>
+        {/* Location Dynamic State */}
+        {locState && (
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <SecurityBar value={locState.security} />
+            {locState.unrest > 0 && (
+              <span className="text-[8px] text-[var(--hp-red)]">
+                불안 {locState.unrest}
+              </span>
+            )}
+            {locState.activeConditions.map((cond) => {
+              const label = CONDITION_LABELS[cond.id] ?? { label: cond.id, emoji: "\u{1F7E1}" };
+              return (
+                <span
+                  key={cond.id}
+                  className="rounded bg-[var(--bg-secondary)] px-1.5 py-0.5 text-[8px] font-semibold text-[var(--text-secondary)]"
+                >
+                  {label.emoji} {label.label}
+                </span>
+              );
+            })}
+            {locState.presentNpcs.length > 0 && (
+              <span className="text-[8px] text-[var(--info-blue)]">
+                {locState.presentNpcs.join(", ")}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </button>
   );
@@ -148,6 +212,7 @@ export function HubScreen() {
   const pinnedAlerts = useGameStore((s) => s.pinnedAlerts);
   const worldDeltaSummary = useGameStore((s) => s.worldDeltaSummary);
   const notifications = useGameStore((s) => s.notifications);
+  const locationDynamicStates = useGameStore((s) => s.locationDynamicStates);
 
   const locationChoices = choices.filter((c) =>
     c.id.startsWith("go_"),
@@ -202,14 +267,19 @@ export function HubScreen() {
             행선지 선택
           </h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {locationChoices.map((choice) => (
-              <LocationCard
-                key={choice.id}
-                choiceId={choice.id}
-                onSelect={() => submitChoice(choice.id)}
-                disabled={isSubmitting}
-              />
-            ))}
+            {locationChoices.map((choice) => {
+              const locId = CHOICE_TO_LOCATION_ID[choice.id];
+              const locState = locId ? locationDynamicStates[locId] : undefined;
+              return (
+                <LocationCard
+                  key={choice.id}
+                  choiceId={choice.id}
+                  onSelect={() => submitChoice(choice.id)}
+                  disabled={isSubmitting}
+                  locState={locState}
+                />
+              );
+            })}
           </div>
         </div>
 

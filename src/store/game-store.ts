@@ -22,6 +22,8 @@ import type {
   NarrativeMarkUI,
   MainArcClockUI,
   PlayerThreadSummaryUI,
+  PlayerGoalUI,
+  LocationDynamicStateUI,
 } from '@/types/game';
 import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, type LlmTokenStats } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -84,6 +86,9 @@ export interface GameState {
   mainArcClock: MainArcClockUI | null;
   playerThreads: PlayerThreadSummaryUI[];
   day: number;
+  // Player Goals & Location Dynamic States
+  playerGoals: PlayerGoalUI[];
+  locationDynamicStates: Record<string, LocationDynamicStateUI>;
   // Campaign
   campaignId: string | null;
 
@@ -408,6 +413,8 @@ function processTurnResponse(
   const wsUI = result.ui?.worldState as WorldStateUI | undefined;
   if (wsUI) {
     set({ worldState: wsUI });
+    if (wsUI.playerGoals) set({ playerGoals: wsUI.playerGoals });
+    if (wsUI.locationDynamicStates) set({ locationDynamicStates: wsUI.locationDynamicStates });
   }
 
   // Narrative Engine v1 UI 업데이트
@@ -585,6 +592,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   mainArcClock: null,
   playerThreads: [],
   day: 1,
+  // Player Goals & Location Dynamic States
+  playerGoals: [],
+  locationDynamicStates: {},
   // Campaign
   campaignId: null,
 
@@ -715,6 +725,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
         playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
         day: (wsObj?.day as number) ?? 1,
+        playerGoals: (wsObj?.playerGoals as PlayerGoalUI[]) ?? (resumeWs?.playerGoals ?? []),
+        locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (resumeWs?.locationDynamicStates ?? {}),
       });
     } catch (err) {
       set({
@@ -817,6 +829,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
         playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
         day: (wsObj?.day as number) ?? 1,
+        playerGoals: (wsObj?.playerGoals as PlayerGoalUI[]) ?? (wsUI?.playerGoals ?? []),
+        locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (wsUI?.locationDynamicStates ?? {}),
         // Narrative Engine 상태
         activeIncidents: (wsObj?.activeIncidents as IncidentSummaryUI[]) ?? [],
         signalFeed: (wsObj?.signalFeed as SignalFeedItemUI[]) ?? [],
@@ -930,6 +944,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
         playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
         day: (wsObj?.day as number) ?? 1,
+        playerGoals: (wsObj?.playerGoals as PlayerGoalUI[]) ?? (wsUI?.playerGoals ?? []),
+        locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (wsUI?.locationDynamicStates ?? {}),
         activeIncidents: (wsObj?.activeIncidents as IncidentSummaryUI[]) ?? [],
         signalFeed: (wsObj?.signalFeed as SignalFeedItemUI[]) ?? [],
       });
@@ -1187,6 +1203,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       mainArcClock: null,
       playerThreads: [],
       day: 1,
+      playerGoals: [],
+      locationDynamicStates: {},
       campaignId: null,
     });
   },
