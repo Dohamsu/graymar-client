@@ -762,6 +762,21 @@ export const useGameStore = create<GameState>((set, get) => ({
       let initialMessages: StoryMessage[] = [];
       let initialChoices: Choice[] = [];
 
+      // 튜토리얼: 첫 게임 시작 시 스탯-행동 안내
+      const tutorialMessage: StoryMessage = {
+        id: 'tutorial_stats',
+        type: 'SYSTEM',
+        text: '💡 능력치 안내\n\n' +
+          '• 힘(STR) — 전투, 협박\n' +
+          '• 민첩(DEX) — 잠입, 절도, 회피\n' +
+          '• 재치(WIT) — 조사, 수색\n' +
+          '• 체질(CON) — 방어, 도움\n' +
+          '• 통찰(PER) — 관찰, 발견\n' +
+          '• 카리스마(CHA) — 설득, 뇌물, 거래\n\n' +
+          '행동의 성패는 1d6 + 능력치 보너스로 결정됩니다. 캐릭터의 강점을 살려 행동하세요.',
+      };
+      initialMessages.push(tutorialMessage);
+
       if (serverResult) {
         initialMessages = mapResultToMessages(serverResult);
         initialChoices = (serverResult.choices ?? []).map((c) => ({
