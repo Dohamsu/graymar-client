@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Clock, AlertTriangle, Award, GitBranch } from "lucide-react";
+import { Compass, Clock, AlertTriangle, Award, GitBranch, Target } from "lucide-react";
 import { useGameStore } from "@/store/game-store";
 import type { ArcRoute } from "@/types/game";
 
@@ -94,6 +94,9 @@ export function QuestTab() {
   const activeIncidents = useGameStore((s) => s.activeIncidents);
   const narrativeMarks = useGameStore((s) => s.narrativeMarks);
   const playerThreads = useGameStore((s) => s.playerThreads);
+  const playerGoals = useGameStore((s) => s.playerGoals);
+
+  const activeGoals = playerGoals.filter((g) => !g.completed);
 
   return (
     <div className="flex flex-col gap-5">
@@ -315,6 +318,61 @@ export function QuestTab() {
           </div>
         ) : (
           <EmptyState text="아직 패턴이 감지되지 않았다" />
+        )}
+      </section>
+
+      {/* F. Player Goals */}
+      <section className="flex flex-col gap-2">
+        <SectionHeader icon={Target} title="활성 목표" />
+        {activeGoals.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {activeGoals.map((goal) => (
+              <div
+                key={goal.id}
+                className="flex flex-col gap-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px]">
+                    {goal.type === "EXPLICIT" ? "\u{1F4CB}" : "\u{1F50D}"}
+                  </span>
+                  <span className="text-[11px] font-medium text-[var(--text-primary)]">
+                    {goal.description}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-8 text-[9px] text-[var(--text-muted)]">진행</span>
+                  <MiniBar
+                    value={goal.progress}
+                    max={100}
+                    color={goal.progress >= 70 ? "var(--success-green)" : goal.progress >= 30 ? "var(--gold)" : "var(--info-blue)"}
+                  />
+                  <span className="text-[9px] text-[var(--text-muted)]">{goal.progress}%</span>
+                </div>
+                {goal.milestones.length > 0 && (
+                  <div className="mt-1 flex flex-col gap-0.5">
+                    {goal.milestones.map((ms, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <span className="text-[9px]">
+                          {ms.completed ? "\u2705" : "\u2B1C"}
+                        </span>
+                        <span
+                          className={`text-[9px] leading-relaxed ${
+                            ms.completed
+                              ? "text-[var(--text-muted)] line-through"
+                              : "text-[var(--text-secondary)]"
+                          }`}
+                        >
+                          {ms.description}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState text="아직 감지된 목표가 없다" />
         )}
       </section>
     </div>
