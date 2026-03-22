@@ -168,10 +168,12 @@ function buildCharacterInfo(presetId: string, gender: 'male' | 'female' = 'male'
       exp: 0,
       maxExp: 100,
       stats: [
-        { label: 'ATK', value: 15, color: 'var(--hp-red)' },
-        { label: 'DEF', value: 10, color: 'var(--info-blue)' },
-        { label: 'ACC', value: 5, color: 'var(--success-green)' },
-        { label: 'EVA', value: 3, color: 'var(--gold)' },
+        { label: 'STR', value: 12, color: 'var(--hp-red)' },
+        { label: 'DEX', value: 10, color: 'var(--gold)' },
+        { label: 'WIT', value: 8, color: 'var(--success-green)' },
+        { label: 'CON', value: 10, color: 'var(--info-blue)' },
+        { label: 'PER', value: 7, color: '#c084fc' },
+        { label: 'CHA', value: 8, color: '#f472b6' },
       ],
       equipment: [],
     };
@@ -185,10 +187,10 @@ function buildCharacterInfo(presetId: string, gender: 'male' | 'female' = 'male'
     exp: 0,
     maxExp: 100,
     stats: (
-      ['ATK', 'DEF', 'ACC', 'EVA', 'CRIT', 'SPEED', 'RESIST'] as const
+      ['STR', 'DEX', 'WIT', 'CON', 'PER', 'CHA'] as const
     ).map((key) => ({
       label: key,
-      value: preset.stats[key],
+      value: preset.stats[key.toLowerCase()] ?? preset.stats[key] ?? 0,
       color: STAT_COLORS[key] ?? 'var(--text-primary)',
     })),
     equipment: [],
