@@ -52,7 +52,7 @@ export const PRESETS: CharacterPreset[] = [
     subtitle: "어둠의 운반책",
     description:
       "밀수 조직 '검은 조류'의 하급 운반책이었다. 조직 와해 후 제거 대상이 되었다.",
-    playstyleHint: "높은 민첩과 카리스마. 빠르게 움직이며 사회적 상황에 강하다.",
+    playstyleHint: "높은 민첩과 카리스마. 은밀한 행동과 사회적 상황에 강하다.",
     stats: {
       MaxHP: 80,
       MaxStamina: 6,
@@ -65,8 +65,8 @@ export const PRESETS: CharacterPreset[] = [
     },
     startingGold: 60,
     startingItems: [
-      { name: "연막탄", qty: 1 },
-      { name: "독침", qty: 1 },
+      { name: "하급 치료제", qty: 1 },
+      { name: "잠금해제 도구", qty: 1 },
     ],
   },
   {
