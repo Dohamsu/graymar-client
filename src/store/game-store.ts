@@ -781,6 +781,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       const nodeType = (currentNode?.nodeType as string) ?? null;
       const initialPhase = derivePhase(nodeType);
 
+      // Quest / Arc / Narrative State 추출 (resumeRun 패턴)
+      const rsAny = runState as Record<string, unknown> | undefined;
+      const wsObj = (rsAny?.worldState ?? {}) as Record<string, unknown>;
+
       set({
         phase: initialPhase,
         runId,
@@ -807,6 +811,15 @@ export const useGameStore = create<GameState>((set, get) => ({
         worldState: wsUI ?? null,
         resolveOutcome: null,
         locationName: null,
+        // Quest / Arc State (runState에서 추출)
+        arcState: (rsAny?.arcState as ArcStateUI) ?? null,
+        narrativeMarks: (wsObj?.narrativeMarks as NarrativeMarkUI[]) ?? [],
+        mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
+        playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
+        day: (wsObj?.day as number) ?? 1,
+        // Narrative Engine 상태
+        activeIncidents: (wsObj?.activeIncidents as IncidentSummaryUI[]) ?? [],
+        signalFeed: (wsObj?.signalFeed as SignalFeedItemUI[]) ?? [],
       });
 
       // 첫 턴 LLM 폴링 시작
@@ -881,6 +894,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       const nodeType = (currentNode?.nodeType as string) ?? null;
       const initialPhase = derivePhase(nodeType);
 
+      // Quest / Arc / Narrative State 추출 (resumeRun 패턴)
+      const rsAny = runState as Record<string, unknown> | undefined;
+      const wsObj = (rsAny?.worldState ?? {}) as Record<string, unknown>;
+
       set({
         phase: initialPhase,
         runId,
@@ -907,6 +924,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         worldState: wsUI ?? null,
         resolveOutcome: null,
         locationName: null,
+        // Quest / Arc State (runState에서 추출)
+        arcState: (rsAny?.arcState as ArcStateUI) ?? null,
+        narrativeMarks: (wsObj?.narrativeMarks as NarrativeMarkUI[]) ?? [],
+        mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
+        playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
+        day: (wsObj?.day as number) ?? 1,
+        activeIncidents: (wsObj?.activeIncidents as IncidentSummaryUI[]) ?? [],
+        signalFeed: (wsObj?.signalFeed as SignalFeedItemUI[]) ?? [],
       });
 
       if (hasNarratorLoading) {
