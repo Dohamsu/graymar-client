@@ -69,18 +69,7 @@ export interface CharacterPreset {
   description: string;
   playstyleHint: string;
   portraits?: { male: string; female: string };
-  stats: {
-    MaxHP: number;
-    MaxStamina: number;
-    ATK: number;
-    DEF: number;
-    ACC: number;
-    EVA: number;
-    CRIT: number;
-    CRIT_DMG: number;
-    RESIST: number;
-    SPEED: number;
-  };
+  stats: Record<string, number>;
   startingGold: number;
   startingItems: Array<{ name: string; qty: number }>;
 }
