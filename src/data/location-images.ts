@@ -18,19 +18,35 @@ const LOC_PREFIX: Record<string, string> = {
   LOC_SLUMS: 'slums',
 };
 
-// 존재하는 이미지 조합 (프롬프트 기반)
+// 전체 24 조합 이미지 (4장소 × 2시간 × 3안전도)
 const IMAGE_MAP: Record<string, string> = {
+  // Market (시장)
   'market_day_safe': '/locations/market_day_safe.png',
-  'market_night_safe': '/locations/market_night_safe.png',
+  'market_day_alert': '/locations/market_day_alert.png',
   'market_day_danger': '/locations/market_day_danger.png',
+  'market_night_safe': '/locations/market_night_safe.png',
+  'market_night_alert': '/locations/market_night_alert.png',
+  'market_night_danger': '/locations/market_night_danger.png',
+  // Guard (경비대)
   'guard_day_safe': '/locations/guard_day_safe.png',
-  'guard_night_alert': '/locations/guard_night_alert.png',
+  'guard_day_alert': '/locations/guard_day_alert.png',
   'guard_day_danger': '/locations/guard_day_danger.png',
+  'guard_night_safe': '/locations/guard_night_safe.png',
+  'guard_night_alert': '/locations/guard_night_alert.png',
+  'guard_night_danger': '/locations/guard_night_danger.png',
+  // Harbor (항구)
   'harbor_day_safe': '/locations/harbor_day_safe.png',
+  'harbor_day_alert': '/locations/harbor_day_alert.png',
+  'harbor_day_danger': '/locations/harbor_day_danger.png',
+  'harbor_night_safe': '/locations/harbor_night_safe.png',
   'harbor_night_alert': '/locations/harbor_night_alert.png',
   'harbor_night_danger': '/locations/harbor_night_danger.png',
+  // Slums (빈민가)
   'slums_day_safe': '/locations/slums_day_safe.png',
+  'slums_day_alert': '/locations/slums_day_alert.png',
+  'slums_day_danger': '/locations/slums_day_danger.png',
   'slums_night_safe': '/locations/slums_night_safe.png',
+  'slums_night_alert': '/locations/slums_night_alert.png',
   'slums_night_danger': '/locations/slums_night_danger.png',
 };
 
