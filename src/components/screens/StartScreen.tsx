@@ -193,21 +193,6 @@ function PresetCard({
           {preset.description}
         </p>
 
-        {/* 능력치 한 줄 요약 */}
-        <div className="flex flex-wrap gap-x-2 gap-y-1 text-sm">
-          {statSummary.map(({ key, label, grade, hint }, i) => (
-            <StatTooltip key={key} hint={hint || (STAT_ACTION_HINTS[key.toUpperCase()] ?? "")}>
-              <span className="cursor-help">
-                <span className="text-[var(--text-muted)]">{label}</span>{" "}
-                <span className={GRADE_COLOR[grade]}>{grade}</span>
-                {i < statSummary.length - 1 && (
-                  <span className="text-[var(--border-primary)]"> · </span>
-                )}
-              </span>
-            </StatTooltip>
-          ))}
-        </div>
-
         {/* 스탯 바 그래프 */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
           {(["str", "dex", "wit", "con", "per", "cha"] as const).map((key) => {
@@ -228,6 +213,16 @@ function PresetCard({
               </div>
             );
           })}
+        </div>
+
+        {/* 능력치 영향 설명 */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] text-[var(--text-muted)] border-t border-[var(--border-primary)] pt-2">
+          <span><span className="font-semibold" style={{color:'var(--hp-red)'}}>힘</span> 전투 · 협박</span>
+          <span><span className="font-semibold" style={{color:'var(--gold)'}}>민첩</span> 잠입 · 절도 · 회피</span>
+          <span><span className="font-semibold" style={{color:'var(--success-green)'}}>지력</span> 조사 · 수색</span>
+          <span><span className="font-semibold" style={{color:'var(--info-blue)'}}>체질</span> 체력 · 저항 · 도움</span>
+          <span><span className="font-semibold" style={{color:'#c084fc'}}>지각</span> 관찰 · 탐색</span>
+          <span><span className="font-semibold" style={{color:'#f472b6'}}>카리스마</span> 설득 · 거래 · 뇌물</span>
         </div>
 
         {/* 골드 & 아이템 */}
