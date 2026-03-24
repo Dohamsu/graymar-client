@@ -60,6 +60,23 @@ export interface EquipmentItem {
   prefixName?: string;
   suffixName?: string;
   statBonus?: Record<string, number>;
+  baseItemId?: string;
+  setId?: string;
+}
+
+/** equipmentBag 내 미장착 장비 인스턴스 (서버 ItemInstance 대응) */
+export interface EquipmentBagItem {
+  instanceId: string;
+  baseItemId: string;
+  prefixAffixId?: string;
+  suffixAffixId?: string;
+  displayName: string;
+  slot: string;
+  rarity?: string;
+  icon: string;
+  color: string;
+  setId?: string;
+  statBonus?: Record<string, number>;
 }
 
 export interface CharacterPreset {

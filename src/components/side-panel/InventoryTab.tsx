@@ -1,9 +1,10 @@
 "use client";
 
-import { Coins, FlaskConical, Key, Search, TrendingUp, TrendingDown } from "lucide-react";
+import { Coins, FlaskConical, Key, Search, Shield, TrendingUp, TrendingDown } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { InventoryItem, InventoryChanges } from "@/types/game";
+import type { InventoryItem, InventoryChanges, EquipmentBagItem } from "@/types/game";
 import { ITEM_CATALOG, type ItemMeta } from "@/data/items";
+import { useGameStore } from "@/store/game-store";
 
 const TYPE_CONFIG: Record<
   string,
@@ -16,6 +17,21 @@ const TYPE_CONFIG: Record<
 
 const TYPE_ORDER = ["CONSUMABLE", "CLUE", "KEY_ITEM"];
 
+const RARITY_COLORS: Record<string, string> = {
+  COMMON: "#9CA3AF",
+  RARE: "#3B82F6",
+  UNIQUE: "#A855F7",
+  LEGENDARY: "#F59E0B",
+};
+
+const SLOT_LABELS: Record<string, string> = {
+  WEAPON: "무기",
+  ARMOR: "방어구",
+  TACTICAL: "전술",
+  POLITICAL: "정치",
+  RELIC: "유물",
+};
+
 interface InventoryTabProps {
   inventory: InventoryItem[];
   gold: number;
@@ -23,6 +39,10 @@ interface InventoryTabProps {
 }
 
 export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
+  const equipmentBag = useGameStore((s) => s.equipmentBag);
+  const submitAction = useGameStore((s) => s.submitAction);
+  const isSubmitting = useGameStore((s) => s.isSubmitting);
+
   // 변경된 아이템 ID 추적
   const addedMap = new Map<string, number>();
   const removedMap = new Map<string, number>();
@@ -46,6 +66,11 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
         meta: ITEM_CATALOG[item.itemId] as ItemMeta,
       })),
   })).filter((g) => g.items.length > 0);
+
+  const handleEquip = (bagItem: EquipmentBagItem) => {
+    if (isSubmitting) return;
+    submitAction(`${bagItem.displayName} 장착`);
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -82,8 +107,73 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
         </div>
       </div>
 
+      {/* Equipment Bag */}
+      {equipmentBag.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Shield size={12} className="text-[var(--purple)]" />
+            <span className="text-[10px] font-semibold tracking-[1px] text-[var(--text-secondary)]">
+              미장착 장비
+            </span>
+            <span className="text-[10px] text-[var(--text-muted)]">
+              ({equipmentBag.length})
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {equipmentBag.map((bagItem) => {
+              const rarityColor = bagItem.rarity
+                ? RARITY_COLORS[bagItem.rarity] ?? "var(--text-muted)"
+                : "var(--text-muted)";
+
+              return (
+                <div
+                  key={bagItem.instanceId}
+                  className="flex items-center gap-3 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-3"
+                  style={{ borderColor: `${rarityColor}30` }}
+                >
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="truncate text-[11px] font-medium"
+                        style={{ color: rarityColor }}
+                      >
+                        {bagItem.displayName}
+                      </span>
+                      {bagItem.rarity && (
+                        <span
+                          className="shrink-0 rounded px-1 py-0.5 text-[8px] font-semibold"
+                          style={{
+                            backgroundColor: `color-mix(in srgb, ${rarityColor} 15%, transparent)`,
+                            color: rarityColor,
+                          }}
+                        >
+                          {bagItem.rarity}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[9px] text-[var(--text-muted)]">
+                      {SLOT_LABELS[bagItem.slot] ?? bagItem.slot}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleEquip(bagItem)}
+                    className="shrink-0 rounded border border-[var(--gold)]/30 bg-[var(--gold)]/8 px-2.5 py-1.5 text-[10px] font-medium text-[var(--gold)] transition-colors hover:bg-[var(--gold)]/15 disabled:opacity-50"
+                  >
+                    장착
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Items */}
-      {grouped.length === 0 && inventory.length === 0 ? (
+      {grouped.length === 0 && inventory.length === 0 && equipmentBag.length === 0 ? (
         <p className="py-8 text-center text-sm text-[var(--text-muted)]">
           소지품이 없습니다
         </p>
