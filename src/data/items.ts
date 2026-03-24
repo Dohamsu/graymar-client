@@ -7,6 +7,8 @@ export interface ItemMeta {
   rarity?: string;
   slot?: string;
   icon?: string;
+  statBonus?: Record<string, number>;
+  setId?: string;
 }
 
 export const ITEM_CATALOG: Record<string, ItemMeta> = {
@@ -75,6 +77,8 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'RARE',
     slot: 'WEAPON',
     icon: 'sword',
+    statBonus: { atk: 3, speed: 1 },
+    setId: 'SET_HARBOR_WARRIOR',
   },
   EQ_DOCK_VEST: {
     name: '두꺼운 방수 조끼',
@@ -82,6 +86,8 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'RARE',
     slot: 'ARMOR',
     icon: 'shirt',
+    statBonus: { def: 3, maxHP: 10 },
+    setId: 'SET_HARBOR_WARRIOR',
   },
   EQ_DOCK_BOOTS: {
     name: '항만 전투화',
@@ -89,6 +95,8 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'RARE',
     slot: 'TACTICAL',
     icon: 'hard-hat',
+    statBonus: { eva: 2, speed: 2 },
+    setId: 'SET_HARBOR_WARRIOR',
   },
   EQ_MERCHANT_LEDGER: {
     name: '상인 길드 원장',
@@ -96,6 +104,8 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'RARE',
     slot: 'POLITICAL',
     icon: 'gem',
+    statBonus: { acc: 2 },
+    setId: 'SET_GUILD_DIPLOMAT',
   },
   EQ_MERCHANT_RING: {
     name: '상단 인장 반지',
@@ -103,6 +113,8 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'RARE',
     slot: 'POLITICAL',
     icon: 'gem',
+    statBonus: { acc: 1, speed: 1 },
+    setId: 'SET_GUILD_DIPLOMAT',
   },
   EQ_MERCHANT_CLOAK: {
     name: '길드 외교관 망토',
@@ -110,6 +122,8 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'UNIQUE',
     slot: 'ARMOR',
     icon: 'shirt',
+    statBonus: { def: 2, resist: 3 },
+    setId: 'SET_GUILD_DIPLOMAT',
   },
   EQ_RUSTY_BLADE: {
     name: '녹슨 단검',
@@ -117,6 +131,7 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'RARE',
     slot: 'WEAPON',
     icon: 'sword',
+    statBonus: { atk: 2 },
   },
   EQ_SHADOW_DAGGER: {
     name: '암살자의 단도',
@@ -124,6 +139,7 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'UNIQUE',
     slot: 'WEAPON',
     icon: 'sword',
+    statBonus: { atk: 4, crit: 5, critDmg: 20 },
   },
   EQ_PATROL_ARMOR: {
     name: '순찰대 경갑',
@@ -131,6 +147,7 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'RARE',
     slot: 'ARMOR',
     icon: 'shirt',
+    statBonus: { def: 4, maxHP: 15 },
   },
   EQ_SCOUTS_GOGGLES: {
     name: '정찰병 고글',
@@ -138,6 +155,7 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'RARE',
     slot: 'TACTICAL',
     icon: 'hard-hat',
+    statBonus: { acc: 3, eva: 1 },
   },
   EQ_HARBOR_SEAL: {
     name: '항만 관리관의 봉인',
@@ -145,6 +163,7 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'UNIQUE',
     slot: 'POLITICAL',
     icon: 'gem',
+    statBonus: { acc: 3, resist: 2 },
   },
   EQ_RELIC_TIDE_COMPASS: {
     name: '조류의 나침반',
@@ -152,6 +171,7 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'LEGENDARY',
     slot: 'RELIC',
     icon: 'gem',
+    statBonus: { acc: 5, speed: 3, resist: 3 },
   },
   EQ_SMUGGLER_DAGGER: {
     name: '밀수업자의 단검',
@@ -159,6 +179,8 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'RARE',
     slot: 'WEAPON',
     icon: 'sword',
+    statBonus: { atk: 4, eva: 1 },
+    setId: 'SET_HARBOR_SHADOW',
   },
   EQ_SHADOW_CLOAK: {
     name: '그림자 망토',
@@ -166,6 +188,8 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'UNIQUE',
     slot: 'ARMOR',
     icon: 'shirt',
+    statBonus: { eva: 3, speed: 2 },
+    setId: 'SET_HARBOR_SHADOW',
   },
   EQ_SILENT_BOOTS: {
     name: '무음 장화',
@@ -173,5 +197,7 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     rarity: 'RARE',
     slot: 'TACTICAL',
     icon: 'hard-hat',
+    statBonus: { eva: 2, speed: 1 },
+    setId: 'SET_HARBOR_SHADOW',
   },
 };

@@ -24,6 +24,7 @@ import type {
   PlayerThreadSummaryUI,
   PlayerGoalUI,
   LocationDynamicStateUI,
+  EquipmentBagItem,
 } from '@/types/game';
 import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, type LlmTokenStats } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -89,6 +90,8 @@ export interface GameState {
   // Player Goals & Location Dynamic States
   playerGoals: PlayerGoalUI[];
   locationDynamicStates: Record<string, LocationDynamicStateUI>;
+  // Equipment Bag (미장착 장비)
+  equipmentBag: EquipmentBagItem[];
   // Campaign
   campaignId: string | null;
 
@@ -127,6 +130,14 @@ const RARITY_COLORS: Record<string, string> = {
   LEGENDARY: 'var(--gold)',
 };
 
+/** 서버 runState에서 수신하는 구조 (인라인 타입 대체) */
+type RunStateSnapshot = {
+  hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number;
+  inventory?: Array<{ itemId: string; qty: number }>;
+  equipped?: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }>;
+  equipmentBag?: Array<{ instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }>;
+};
+
 const SLOT_ICONS: Record<string, string> = {
   WEAPON: 'sword',
   ARMOR: 'shirt',
@@ -153,9 +164,36 @@ function mapEquippedToDisplay(
       color: rarity ? (RARITY_COLORS[rarity] ?? 'var(--text-primary)') : 'var(--text-primary)',
       prefixName: instance.prefixAffixId ? undefined : undefined, // affix 이름은 서버에서 displayName에 포함
       suffixName: instance.suffixAffixId ? undefined : undefined,
+      statBonus: meta?.statBonus,
+      baseItemId: instance.baseItemId,
+      setId: meta?.setId,
     });
   }
   return items;
+}
+
+function mapEquipmentBag(
+  bag?: Array<{ instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }>,
+): EquipmentBagItem[] {
+  if (!bag || bag.length === 0) return [];
+  return bag.map((instance) => {
+    const meta = ITEM_CATALOG[instance.baseItemId];
+    const rarity = meta?.rarity ?? undefined;
+    const slot = meta?.slot ?? 'WEAPON';
+    return {
+      instanceId: instance.instanceId,
+      baseItemId: instance.baseItemId,
+      prefixAffixId: instance.prefixAffixId,
+      suffixAffixId: instance.suffixAffixId,
+      displayName: instance.displayName,
+      slot,
+      rarity,
+      icon: meta?.icon ?? SLOT_ICONS[slot] ?? 'gem',
+      color: rarity ? (RARITY_COLORS[rarity] ?? 'var(--text-primary)') : 'var(--text-primary)',
+      setId: meta?.setId,
+      statBonus: meta?.statBonus,
+    };
+  });
 }
 
 function buildCharacterInfo(presetId: string, gender: 'male' | 'female' = 'male'): CharacterInfo {
@@ -548,6 +586,32 @@ function processTurnResponse(
       }
     }
   }
+
+  // EQUIP/UNEQUIP 이벤트 감지 → 장비 상태 동기화 (비동기 re-fetch)
+  const hasEquipEvent = result.events?.some(
+    (e) => e.tags?.includes('EQUIP') || e.tags?.includes('UNEQUIP'),
+  );
+  if (hasEquipEvent) {
+    const eqRunId = get().runId;
+    if (eqRunId) {
+      getRun(eqRunId).then((runData) => {
+        const rd = runData as Record<string, unknown>;
+        const rs = rd.runState as RunStateSnapshot | undefined;
+        if (rs) {
+          const currentCharInfo = get().characterInfo;
+          if (currentCharInfo) {
+            set({
+              characterInfo: {
+                ...currentCharInfo,
+                equipment: mapEquippedToDisplay(rs.equipped),
+              },
+              equipmentBag: mapEquipmentBag(rs.equipmentBag),
+            });
+          }
+        }
+      }).catch(() => { /* silent — equipment sync is best-effort */ });
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -597,6 +661,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Player Goals & Location Dynamic States
   playerGoals: [],
   locationDynamicStates: {},
+  // Equipment Bag
+  equipmentBag: [],
   // Campaign
   campaignId: null,
 
@@ -634,7 +700,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const lastResult = data.lastResult as ServerResultV1 | undefined;
       const battleState = data.battleState as unknown | undefined;
       const runState = data.runState as
-        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }>; equipped?: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }> }
+        | RunStateSnapshot
         | undefined;
       const turnsArr = data.turns as TurnHistoryItem[] | undefined;
 
@@ -718,6 +784,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           ),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
+        equipmentBag: mapEquipmentBag(runState?.equipmentBag),
         worldState: resumeWs ?? null,
         resolveOutcome: null,
         locationName: null,
@@ -755,7 +822,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const serverResult = data.lastResult as ServerResultV1 | undefined;
       const battleState = data.battleState as unknown | undefined;
       const runState = data.runState as
-        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }>; equipped?: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }> }
+        | RunStateSnapshot
         | undefined;
 
       // Build initial messages / choices from the enter result
@@ -837,6 +904,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           ...buildCharacterInfo(presetId, gender),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
+        equipmentBag: mapEquipmentBag(runState?.equipmentBag),
         worldState: wsUI ?? null,
         resolveOutcome: null,
         locationName: null,
@@ -888,7 +956,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const serverResult = data.lastResult as ServerResultV1 | undefined;
       const battleState = data.battleState as unknown | undefined;
       const runState = data.runState as
-        | { hp: number; maxHp: number; stamina: number; maxStamina: number; gold: number; inventory?: Array<{ itemId: string; qty: number }>; equipped?: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }> }
+        | RunStateSnapshot
         | undefined;
 
       let initialMessages: StoryMessage[] = [];
@@ -952,6 +1020,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           ...buildCharacterInfo(presetId, gender),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
+        equipmentBag: mapEquipmentBag(runState?.equipmentBag),
         worldState: wsUI ?? null,
         resolveOutcome: null,
         locationName: null,
@@ -1222,6 +1291,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       day: 1,
       playerGoals: [],
       locationDynamicStates: {},
+      equipmentBag: [],
       campaignId: null,
     });
   },
