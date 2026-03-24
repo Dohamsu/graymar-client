@@ -22,6 +22,7 @@ import { RunEndScreen } from "@/components/screens/RunEndScreen";
 import { EndingScreen } from "@/components/screens/EndingScreen";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { LlmFailureModal } from "@/components/ui/LlmFailureModal";
+import { BugReportButton } from "@/components/ui/BugReportButton";
 import { LocationHeader } from "@/components/hub/LocationHeader";
 import { TurnResultBanner } from "@/components/location/TurnResultBanner";
 import { LocationToastLayer } from "@/components/location/LocationToastLayer";
@@ -202,6 +203,9 @@ export default function GamePage() {
       {phase === "LOCATION" && (
         <LocationToastLayer notifications={notifications} />
       )}
+
+      {/* Bug Report floating button */}
+      <BugReportButton />
     </div>
   );
 }

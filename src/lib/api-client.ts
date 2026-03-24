@@ -244,3 +244,24 @@ export function getCampaign(campaignId: string) {
 export function getAvailableScenarios(campaignId: string) {
   return request<ScenarioInfo[]>(`/v1/campaigns/${campaignId}/scenarios`);
 }
+
+// --- Bug Report ---
+
+/** POST /v1/runs/:runId/bug-report — submit an in-game bug report. */
+export function submitBugReport(
+  runId: string,
+  body: {
+    category: string;
+    description?: string;
+    recentTurns: Array<{
+      turnNo: number;
+      nodeType: string | null;
+      messages: Array<{ type: string; text: string }>;
+    }>;
+  },
+) {
+  return request<{ success: boolean }>(`/v1/runs/${runId}/bug-report`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
