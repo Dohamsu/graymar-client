@@ -53,6 +53,7 @@ export const PRESETS: CharacterPreset[] = [
     description:
       "밀수 조직 '검은 조류'의 하급 운반책이었다. 조직 와해 후 제거 대상이 되었다.",
     playstyleHint: "높은 민첩과 카리스마. 은밀한 행동과 사회적 상황에 강하다.",
+    portraits: { male: "/smuggler_m.png", female: "/smuggler_f.png" },
     stats: {
       MaxHP: 85,
       MaxStamina: 6,
@@ -76,6 +77,7 @@ export const PRESETS: CharacterPreset[] = [
     description:
       "항만 뒷골목에서 합법 약재와 밀수 독초를 함께 취급하는 약사. 세 세력 모두와 거래해왔다.",
     playstyleHint: "높은 재치와 통찰. 조사와 관찰에 특화된 지원형.",
+    portraits: { male: "/herbalist_m.png", female: "/herbalist_f.png" },
     stats: {
       MaxHP: 90,
       MaxStamina: 7,
