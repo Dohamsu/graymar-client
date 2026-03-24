@@ -8,7 +8,7 @@ export const PRESETS: CharacterPreset[] = [
     description:
       "그레이마르 항만에서 10년간 화물을 나른 노동자. 길드 간부의 횡령을 목격한 뒤 쫓겨났다.",
     playstyleHint: "높은 체력과 힘. 맞으면서 싸우는 근접 탱커.",
-    portraits: { male: "/horbor_ca.png", female: "/harbor_ca_fe.png" },
+    portraits: { male: "/dockworker_m.png", female: "/dockworker_f.png" },
     stats: {
       MaxHP: 120,
       MaxStamina: 5,
@@ -29,7 +29,7 @@ export const PRESETS: CharacterPreset[] = [
     description:
       "왕국 남부 수비대 출신. 상관의 민간인 약탈 명령에 항명하여 탈영했다. 현재 수배 중.",
     playstyleHint: "균형 잡힌 스탯. 정석적인 전투와 탐험.",
-    portraits: { male: "/soldier_ca.png", female: "/soldier_ca_fe.png" },
+    portraits: { male: "/deserter_m.png", female: "/deserter_f.png" },
     stats: {
       MaxHP: 100,
       MaxStamina: 5,
