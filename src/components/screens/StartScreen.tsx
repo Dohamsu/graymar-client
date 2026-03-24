@@ -215,16 +215,6 @@ function PresetCard({
           })}
         </div>
 
-        {/* 능력치 영향 설명 */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] text-[var(--text-muted)] border-t border-[var(--border-primary)] pt-2">
-          <span><span className="font-semibold" style={{color:'var(--hp-red)'}}>힘</span> 전투 · 협박</span>
-          <span><span className="font-semibold" style={{color:'var(--gold)'}}>민첩</span> 잠입 · 절도 · 회피</span>
-          <span><span className="font-semibold" style={{color:'var(--success-green)'}}>지력</span> 조사 · 수색</span>
-          <span><span className="font-semibold" style={{color:'var(--info-blue)'}}>체질</span> 체력 · 저항 · 도움</span>
-          <span><span className="font-semibold" style={{color:'#c084fc'}}>지각</span> 관찰 · 탐색</span>
-          <span><span className="font-semibold" style={{color:'#f472b6'}}>카리스마</span> 설득 · 거래 · 뇌물</span>
-        </div>
-
         {/* 골드 & 아이템 */}
         <div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-primary)] pt-3 text-sm text-[var(--text-muted)]">
           <span className="text-[var(--gold)]">{preset.startingGold}G</span>
@@ -1021,6 +1011,18 @@ export function StartScreen() {
               }
             />
           ))}
+        </div>
+      </div>
+
+      {/* 능력치 영향 안내 */}
+      <div className="border-t border-[var(--border-primary)] px-4 pt-3 pb-1 sm:px-6">
+        <div className="mx-auto max-w-3xl grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
+          <span><span className="font-semibold" style={{color:'var(--hp-red)'}}>힘</span> 전투·협박</span>
+          <span><span className="font-semibold" style={{color:'var(--gold)'}}>민첩</span> 잠입·절도</span>
+          <span><span className="font-semibold" style={{color:'var(--success-green)'}}>지력</span> 조사·수색</span>
+          <span><span className="font-semibold" style={{color:'var(--info-blue)'}}>체질</span> 체력·저항</span>
+          <span><span className="font-semibold" style={{color:'#c084fc'}}>지각</span> 관찰·탐색</span>
+          <span><span className="font-semibold" style={{color:'#f472b6'}}>매력</span> 설득·거래</span>
         </div>
       </div>
 
