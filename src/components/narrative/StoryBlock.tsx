@@ -1,8 +1,20 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Image from "next/image";
 import type { StoryMessage } from "@/types/game";
 import { ResolveOutcomeInline } from "@/components/hub/ResolveOutcomeBanner";
 import { useSettingsStore, TEXT_SPEED_PRESETS, FONT_SIZE_PRESETS } from "@/store/settings-store";
+import { STAT_COLORS, STAT_KOREAN_NAMES } from "@/data/stat-descriptions";
+import { useGameStore } from "@/store/game-store";
+
+/** Affordance → 스탯 키 매핑 (서버 resolve.service.ts 와 동기화) */
+const AFFORDANCE_TO_STAT: Record<string, string> = {
+  FIGHT: 'str', THREATEN: 'str',
+  SNEAK: 'dex', STEAL: 'dex',
+  OBSERVE: 'per',
+  INVESTIGATE: 'wit', SEARCH: 'wit',
+  PERSUADE: 'cha', BRIBE: 'cha', TRADE: 'cha', TALK: 'cha',
+  HELP: 'con',
+};
 
 const LOADING_MESSAGES = [
   "서술 생성 중...",
@@ -183,6 +195,90 @@ function TypewriterText({ text, onComplete }: { text: string; onComplete?: () =>
 }
 
 // ---------------------------------------------------------------------------
+// SceneImageButton — NARRATOR 메시지 하단에 장면 이미지 생성 버튼
+// ---------------------------------------------------------------------------
+
+function extractTurnNo(messageId: string): number | null {
+  const match = messageId.match(/^narrator-(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
+function SceneImageButton({ messageId }: { messageId: string }) {
+  const turnNo = extractTurnNo(messageId);
+  const sceneImages = useGameStore((s) => s.sceneImages);
+  const sceneImageRemaining = useGameStore((s) => s.sceneImageRemaining);
+  const sceneImageLoading = useGameStore((s) => s.sceneImageLoading);
+  const requestSceneImage = useGameStore((s) => s.requestSceneImage);
+
+  const [fadeIn, setFadeIn] = useState(false);
+
+  const imageUrl = turnNo !== null ? sceneImages[turnNo] : undefined;
+  const isLoading = turnNo !== null ? !!sceneImageLoading[turnNo] : false;
+  const isExhausted = sceneImageRemaining <= 0;
+
+  const handleClick = useCallback(() => {
+    if (turnNo === null || isLoading || imageUrl) return;
+    requestSceneImage(turnNo);
+  }, [turnNo, isLoading, imageUrl, requestSceneImage]);
+
+  useEffect(() => {
+    if (imageUrl) {
+      const timer = setTimeout(() => setFadeIn(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [imageUrl]);
+
+  if (turnNo === null) return null;
+
+  // Already generated — show image
+  if (imageUrl) {
+    return (
+      <div className="mt-3">
+        <div
+          className="relative w-full overflow-hidden rounded-lg transition-opacity duration-700"
+          style={{ opacity: fadeIn ? 1 : 0 }}
+        >
+          <Image
+            src={imageUrl}
+            alt="장면 이미지"
+            width={768}
+            height={432}
+            className="h-auto w-full rounded-lg"
+            unoptimized
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="mt-2 flex items-center gap-2">
+        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--gold)] border-t-transparent" />
+        <span className="text-xs text-[var(--text-muted)]">이미지 생성 중...</span>
+      </div>
+    );
+  }
+
+  // Button
+  return (
+    <button
+      onClick={handleClick}
+      disabled={isExhausted}
+      className="mt-2 cursor-pointer rounded px-2 py-1 text-xs transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+      style={{
+        color: isExhausted ? 'var(--text-muted)' : 'var(--gold)',
+        backgroundColor: 'var(--bg-card)',
+        border: `1px solid ${isExhausted ? 'var(--border-primary)' : 'var(--gold)'}`,
+      }}
+    >
+      {isExhausted ? '이미지 생성 한도 초과' : '\uD83C\uDFA8 장면 그리기'}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // StoryBlock
 // ---------------------------------------------------------------------------
 
@@ -271,6 +367,20 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
                 }}
               >
                 {i + 1}. {choice.label}
+                {(() => {
+                  const statKey = choice.affordance ? AFFORDANCE_TO_STAT[choice.affordance] : undefined;
+                  if (!statKey) return null;
+                  const color = STAT_COLORS[statKey.toUpperCase()];
+                  const name = STAT_KOREAN_NAMES[statKey];
+                  return (
+                    <span
+                      className="ml-1.5 inline-block rounded px-1 py-0.5 text-[10px] font-semibold leading-none opacity-80"
+                      style={{ color, borderWidth: 1, borderStyle: 'solid', borderColor: color }}
+                    >
+                      {name}
+                    </span>
+                  );
+                })()}
               </button>
             ))
           )}
@@ -292,6 +402,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
           ) : (
             <NarratorContent text={message.text} />
           )}
+          {!isNarratorTypewriting && <SceneImageButton messageId={message.id} />}
         </div>
       ) : (
         /* ── 일반 메시지 (PLAYER, SYSTEM) ── */

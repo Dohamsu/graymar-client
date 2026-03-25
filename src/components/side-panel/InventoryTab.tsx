@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import type { InventoryItem, InventoryChanges, EquipmentBagItem } from "@/types/game";
 import { ITEM_CATALOG, type ItemMeta } from "@/data/items";
 import { useGameStore } from "@/store/game-store";
+import { STAT_COLORS, STAT_KOREAN_NAMES } from "@/data/stat-descriptions";
 
 const TYPE_CONFIG: Record<
   string,
@@ -155,6 +156,19 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
                     <span className="text-[9px] text-[var(--text-muted)]">
                       {SLOT_LABELS[bagItem.slot] ?? bagItem.slot}
                     </span>
+                    {bagItem.statBonus && Object.keys(bagItem.statBonus).length > 0 && (
+                      <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                        {Object.entries(bagItem.statBonus).map(([stat, val]) => (
+                          <span
+                            key={stat}
+                            className="text-[9px] font-medium"
+                            style={{ color: STAT_COLORS[stat.toUpperCase()] ?? 'var(--text-muted)' }}
+                          >
+                            {STAT_KOREAN_NAMES[stat.toLowerCase()] ?? stat} {val > 0 ? '+' : ''}{val}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <button

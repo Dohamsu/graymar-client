@@ -245,6 +245,38 @@ export function getAvailableScenarios(campaignId: string) {
   return request<ScenarioInfo[]>(`/v1/campaigns/${campaignId}/scenarios`);
 }
 
+// --- Scene Image ---
+
+export interface SceneImageResponse {
+  imageUrl: string;
+  remainingCount: number;
+  cached: boolean;
+}
+
+export interface SceneImageStatusResponse {
+  totalGenerated: number;
+  maxAllowed: number;
+  remaining: number;
+}
+
+/** POST /v1/runs/:runId/turns/:turnNo/scene-image — generate a scene image for a turn. */
+export function generateSceneImage(runId: string, turnNo: number) {
+  return request<SceneImageResponse>(
+    `/v1/runs/${runId}/turns/${turnNo}/scene-image`,
+    { method: 'POST' },
+  );
+}
+
+/** GET /v1/scene-images/status — fetch scene image generation quota status. */
+export function getSceneImageStatus() {
+  return request<SceneImageStatusResponse>('/v1/scene-images/status');
+}
+
+/** GET /v1/runs/:runId/scene-images — list all generated scene images for a run. */
+export function listSceneImages(runId: string) {
+  return request<Array<{ turnNo: number; imageUrl: string }>>(`/v1/runs/${runId}/scene-images`);
+}
+
 // --- Bug Report ---
 
 /** POST /v1/runs/:runId/bug-report — submit an in-game bug report. */
