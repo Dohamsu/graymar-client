@@ -115,32 +115,33 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
   );
 }
 
-export function MobileHeader() {
+interface MobileHeaderProps {
+  location?: string;
+  visible?: boolean;
+}
+
+export function MobileHeader({ location, visible = true }: MobileHeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <>
-      <header className="flex h-14 w-full items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center border border-[var(--gold)]">
-            <span className="font-display text-xs font-bold text-[var(--gold)]">R</span>
-          </div>
-          <span className="font-display text-sm tracking-[1px] text-[var(--text-primary)]">
-            왕국
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-md bg-[var(--bg-card)]"
-            title="AI 모델 설정"
-          >
-            <Settings size={16} className="text-[var(--text-primary)]" />
-          </button>
-          <button className="flex h-9 w-9 items-center justify-center rounded-md bg-[var(--bg-card)]">
-            <Menu size={18} className="text-[var(--text-primary)]" />
-          </button>
-        </div>
+      <header
+        className="fixed top-0 left-0 z-40 flex h-12 w-full items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 transition-transform duration-300 ease-in-out lg:hidden"
+        style={{ transform: visible ? "translateY(0)" : "translateY(-100%)" }}
+      >
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--bg-card)]"
+          title="AI 모델 설정"
+        >
+          <Settings size={16} className="text-[var(--text-primary)]" />
+        </button>
+        <span className="font-display text-xs tracking-[1px] text-[var(--text-secondary)] truncate max-w-[60%] text-center">
+          {location ?? ""}
+        </span>
+        <button className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--bg-card)]">
+          <Menu size={16} className="text-[var(--text-primary)]" />
+        </button>
       </header>
       <LlmSettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>

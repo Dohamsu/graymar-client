@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameStore } from "@/store/game-store";
 import { useAuthStore } from "@/store/auth-store";
 import {
   Header,
   MobileHeader,
-  MobileLocationBar,
-  MobileHudBar,
 } from "@/components/layout/Header";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { NarrativePanel } from "@/components/narrative/NarrativePanel";
@@ -54,6 +52,46 @@ export default function GamePage() {
   const notifications = useGameStore((s) => s.notifications);
 
   const [mobileTab, setMobileTab] = useState("story");
+
+  // --- Mobile header auto-hide on scroll ---
+  const [mobileHeaderVisible, setMobileHeaderVisible] = useState(false);
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
+
+  const handleScroll = useCallback(() => {
+    if (ticking.current) return;
+    ticking.current = true;
+    requestAnimationFrame(() => {
+      const scrollEl = document.getElementById("mobile-narrative-scroll");
+      if (scrollEl) {
+        const currentY = scrollEl.scrollTop;
+        if (currentY < lastScrollY.current - 8) {
+          setMobileHeaderVisible(true);
+        } else if (currentY > lastScrollY.current + 8) {
+          setMobileHeaderVisible(false);
+        }
+        lastScrollY.current = currentY;
+      }
+      ticking.current = false;
+    });
+  }, []);
+
+  useEffect(() => {
+    const scrollEl = document.getElementById("mobile-narrative-scroll");
+    if (!scrollEl) return;
+    scrollEl.addEventListener("scroll", handleScroll, { passive: true });
+    return () => scrollEl.removeEventListener("scroll", handleScroll);
+  }, [handleScroll, mobileTab]);
+
+  // --- Phase transition key for fade animation ---
+  const prevPhaseRef = useRef(phase);
+  const [phaseKey, setPhaseKey] = useState(0);
+  useEffect(() => {
+    if (phase !== prevPhaseRef.current) {
+      prevPhaseRef.current = phase;
+      setPhaseKey((k) => k + 1);
+    }
+  }, [phase]);
 
   // --- Phase routing ---
   if (!authToken || phase === "TITLE" || phase === "LOADING") {
@@ -110,7 +148,7 @@ export default function GamePage() {
       <LlmFailureModal />
 
       {/* ===== Desktop Layout (lg+) ===== */}
-      <div className="hidden h-full flex-col lg:flex">
+      <div className="hidden h-full flex-col lg:flex animate-phase-fade" key={`desktop-${phaseKey}`}>
         <Header location={location} hud={hud} worldState={worldState} llmStats={llmStats} />
 
         {/* LOCATION 헤더 (LOCATION phase) */}
@@ -147,12 +185,10 @@ export default function GamePage() {
       </div>
 
       {/* ===== Mobile & Tablet Layout (<lg) ===== */}
-      <div className="flex h-full flex-col lg:hidden">
-        <MobileHeader />
-        <MobileLocationBar location={location} />
-        <MobileHudBar hud={hud} />
+      <div className="flex h-full flex-col lg:hidden" key={`mobile-${phaseKey}`}>
+        <MobileHeader location={location} visible={mobileHeaderVisible} />
 
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="animate-phase-fade flex flex-1 flex-col overflow-hidden">
           {mobileTab === "story" && (
             <>
               {phase === "COMBAT" &&
@@ -162,11 +198,12 @@ export default function GamePage() {
                 messages={displayMessages}
                 onChoiceSelect={handleChoiceSelect}
                 onNarrationComplete={flushPending}
+                scrollId="mobile-narrative-scroll"
               />
             </>
           )}
           {mobileTab === "character" && characterInfo && (
-            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="flex-1 overflow-y-auto p-3 md:p-6">
               <CharacterTab character={characterInfo} />
             </div>
           )}
@@ -176,7 +213,7 @@ export default function GamePage() {
             </div>
           )}
           {mobileTab === "inventory" && (
-            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="flex-1 overflow-y-auto p-3 md:p-6">
               <InventoryTab inventory={inventory} gold={hud.gold} changes={inventoryChanges} />
             </div>
           )}
