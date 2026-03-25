@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
         source: "/v1/:path*",
         destination: "http://localhost:3000/v1/:path*",
       },
+      {
+        source: "/scene-images/:path*",
+        destination: "http://localhost:3000/scene-images/:path*",
+      },
     ];
   },
 };

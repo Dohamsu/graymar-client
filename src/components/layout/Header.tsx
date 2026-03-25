@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Coins, Menu, Settings } from "lucide-react";
+import { MapPin, Coins, Menu, Settings, Home } from "lucide-react";
 import type { PlayerHud, WorldStateUI } from "@/types/game";
 import type { LlmTokenStats } from "@/lib/api-client";
 import { LlmSettingsModal } from "@/components/ui/LlmSettingsModal";
 import { HeatGauge } from "@/components/hub/HeatGauge";
 import { TimePhaseIndicator } from "@/components/hub/TimePhaseIndicator";
+import { useGameStore } from "@/store/game-store";
 
 interface HeaderProps {
   location: string;
@@ -53,19 +54,23 @@ function StaminaBar({ current, max }: { current: number; max: number }) {
 
 export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const reset = useGameStore((s) => s.reset);
 
   return (
     <>
       <header className="flex h-16 w-full items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-8">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
+        {/* Logo — 클릭 시 타이틀 화면으로 */}
+        <button
+          onClick={() => { if (confirm('타이틀 화면으로 돌아갑니다. 진행 중인 게임은 자동 저장됩니다.')) reset(); }}
+          className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
+        >
           <div className="flex h-9 w-9 items-center justify-center border border-[var(--gold)]">
             <span className="font-display text-sm font-bold text-[var(--gold)]">R</span>
           </div>
           <span className="font-display text-lg tracking-[2px] text-[var(--text-primary)]">
             그림자의 왕국
           </span>
-        </div>
+        </button>
 
         {/* Location + WorldState */}
         <div className="flex items-center gap-4">
@@ -125,6 +130,7 @@ interface MobileHeaderProps {
 export function MobileHeader({ location, visible = true, activeTab, onTabChange }: MobileHeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const reset = useGameStore((s) => s.reset);
 
   return (
     <>
@@ -173,6 +179,14 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange 
                 <span>{item.label}</span>
               </button>
             ))}
+            <div className="mx-2 my-1 border-t border-[var(--border-primary)]" />
+            <button
+              onClick={() => { setMenuOpen(false); if (confirm('타이틀 화면으로 돌아갑니다.')) reset(); }}
+              className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+            >
+              <Home size={14} />
+              <span>타이틀로 돌아가기</span>
+            </button>
           </div>
         </div>
       )}

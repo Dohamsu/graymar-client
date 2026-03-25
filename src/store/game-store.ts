@@ -26,7 +26,7 @@ import type {
   LocationDynamicStateUI,
   EquipmentBagItem,
 } from '@/types/game';
-import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, type LlmTokenStats } from '@/lib/api-client';
+import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, type LlmTokenStats } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { PRESETS } from '@/data/presets';
 import { ITEM_CATALOG } from '@/data/items';
@@ -92,6 +92,11 @@ export interface GameState {
   locationDynamicStates: Record<string, LocationDynamicStateUI>;
   // Equipment Bag (미장착 장비)
   equipmentBag: EquipmentBagItem[];
+  // Scene Image
+  sceneImages: Record<number, string>;
+  sceneImageRemaining: number;
+  sceneImageLoading: Record<number, boolean>;
+
   // Campaign
   campaignId: string | null;
 
@@ -108,6 +113,8 @@ export interface GameState {
   retryLlmNarrative: () => Promise<void>;
   skipLlmNarrative: () => void;
   clearInventoryChanges: () => void;
+  requestSceneImage: (turnNo: number) => Promise<void>;
+  fetchSceneImageStatus: () => Promise<void>;
   reset: () => void;
 }
 
@@ -309,7 +316,7 @@ function pollForNarrative(
         }
         // LLM 맥락 선택지로 교체
         if (detail.llm.choices && detail.llm.choices.length > 0) {
-          set({ pendingChoices: detail.llm.choices.map(c => ({ id: c.id, label: c.label })) });
+          set({ pendingChoices: detail.llm.choices.map(c => ({ id: c.id, label: c.label, affordance: c.action?.payload?.affordance as string | undefined })) });
         }
         flushNarrator(stripNarratorChoices(detail.llm.output!), turnNo, get, set);
         return;
@@ -386,6 +393,12 @@ function processTurnResponse(
     ? applyInventoryDiff(get().inventory, result.diff.inventory)
     : get().inventory;
 
+  // Apply diff to equipment bag
+  const newEquipment = result.diff?.equipmentAdded;
+  const updatedEquipmentBag = newEquipment && newEquipment.length > 0
+    ? [...get().equipmentBag, ...mapEquipmentBag(newEquipment)]
+    : get().equipmentBag;
+
   // Track inventory changes for UI feedback
   const invDiff = result.diff?.inventory;
   const hasInvChanges = invDiff && (
@@ -401,6 +414,7 @@ function processTurnResponse(
   const newChoices: Choice[] = (result.choices ?? []).map((c) => ({
     id: c.id,
     label: c.label,
+    affordance: c.action?.payload?.affordance as string | undefined,
   }));
 
   const hasLlmPending = turnRes.llm?.status === 'PENDING' && !hasTransition;
@@ -416,6 +430,7 @@ function processTurnResponse(
       pendingMessages: otherMsgs,
       hud: updatedHud,
       inventory: updatedInventory,
+      equipmentBag: updatedEquipmentBag,
       inventoryChanges: newInventoryChanges,
       choices: [],
       pendingChoices: newChoices,
@@ -434,6 +449,7 @@ function processTurnResponse(
       pendingMessages: [],
       hud: updatedHud,
       inventory: updatedInventory,
+      equipmentBag: updatedEquipmentBag,
       inventoryChanges: newInventoryChanges,
       choices: hasTransition ? [] : newChoices,
       pendingChoices: [],
@@ -511,7 +527,7 @@ function processTurnResponse(
       const enterMessages = mapResultToMessages(t.enterResult);
       const enterChoices: Choice[] = (
         t.enterResult.choices ?? []
-      ).map((c) => ({ id: c.id, label: c.label }));
+      ).map((c) => ({ id: c.id, label: c.label, affordance: c.action?.payload?.affordance as string | undefined }));
 
       const narratorMsgs = enterMessages.filter((m) => m.type === 'NARRATOR');
       const systemMsgs = enterMessages.filter((m) => m.type === 'SYSTEM');
@@ -663,6 +679,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   locationDynamicStates: {},
   // Equipment Bag
   equipmentBag: [],
+  // Scene Image
+  sceneImages: {},
+  sceneImageRemaining: 100,
+  sceneImageLoading: {},
   // Campaign
   campaignId: null,
 
@@ -751,6 +771,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         restoredChoices = (lastResult.choices ?? []).map((c) => ({
           id: c.id,
           label: c.label,
+          affordance: c.action?.payload?.affordance as string | undefined,
         }));
       }
 
@@ -797,6 +818,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         playerGoals: (wsObj?.playerGoals as PlayerGoalUI[]) ?? (resumeWs?.playerGoals ?? []),
         locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (resumeWs?.locationDynamicStates ?? {}),
       });
+      // 기존 씬 이미지 복원
+      get().fetchSceneImageStatus();
     } catch (err) {
       set({
         phase: 'ERROR',
@@ -849,6 +872,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         initialChoices = (serverResult.choices ?? []).map((c) => ({
           id: c.id,
           label: c.label,
+          affordance: c.action?.payload?.affordance as string | undefined,
         }));
       }
 
@@ -967,6 +991,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         initialChoices = (serverResult.choices ?? []).map((c) => ({
           id: c.id,
           label: c.label,
+          affordance: c.action?.payload?.affordance as string | undefined,
         }));
       }
 
@@ -1246,6 +1271,46 @@ export const useGameStore = create<GameState>((set, get) => ({
     flushNarrator('...', turnNo, get, set);
   },
 
+  requestSceneImage: async (turnNo: number) => {
+    const { runId, sceneImages, sceneImageRemaining, sceneImageLoading } = get();
+    if (!runId) return;
+    if (sceneImages[turnNo]) return; // already generated
+    if (sceneImageRemaining <= 0) return;
+    if (sceneImageLoading[turnNo]) return; // already loading
+
+    set({ sceneImageLoading: { ...get().sceneImageLoading, [turnNo]: true } });
+
+    try {
+      const resp = await generateSceneImage(runId, turnNo);
+      set({
+        sceneImages: { ...get().sceneImages, [turnNo]: resp.imageUrl },
+        sceneImageRemaining: resp.remainingCount,
+        sceneImageLoading: { ...get().sceneImageLoading, [turnNo]: false },
+      });
+    } catch {
+      set({ sceneImageLoading: { ...get().sceneImageLoading, [turnNo]: false } });
+    }
+  },
+
+  fetchSceneImageStatus: async () => {
+    try {
+      const resp = await getSceneImageStatus();
+      set({ sceneImageRemaining: resp.remaining });
+      // 현재 런의 기존 이미지 복원
+      const runId = get().runId;
+      if (runId) {
+        const images = await listSceneImages(runId);
+        if (images.length > 0) {
+          const restored: Record<number, string> = {};
+          for (const img of images) restored[img.turnNo] = img.imageUrl;
+          set({ sceneImages: { ...get().sceneImages, ...restored } });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  },
+
   clearInventoryChanges: () => {
     set({ inventoryChanges: null });
   },
@@ -1292,6 +1357,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerGoals: [],
       locationDynamicStates: {},
       equipmentBag: [],
+      sceneImages: {},
+      sceneImageRemaining: 100,
+      sceneImageLoading: {},
       campaignId: null,
     });
   },

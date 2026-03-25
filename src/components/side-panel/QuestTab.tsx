@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Clock, AlertTriangle, Award, GitBranch, Target } from "lucide-react";
+import { Compass, Clock, AlertTriangle, Award, GitBranch, Target, Shield } from "lucide-react";
 import { useGameStore } from "@/store/game-store";
 import type { ArcRoute } from "@/types/game";
 
@@ -55,6 +55,12 @@ const GOAL_LABELS: Record<string, string> = {
   EARN_GOLD: "금화 벌기",
 };
 
+const FACTION_LABELS: Record<string, string> = {
+  CITY_GUARD: "경비대",
+  LABOR_GUILD: "노동 길드",
+  MERCHANT_CONSORTIUM: "상인 연합",
+};
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -83,6 +89,29 @@ function EmptyState({ text }: { text: string }) {
   return <p className="py-2 text-[11px] text-[var(--text-muted)]">{text}</p>;
 }
 
+function ReputationBar({ value }: { value: number }) {
+  const clamped = Math.max(-100, Math.min(100, value));
+  const pct = ((clamped + 100) / 200) * 100;
+  const color = value > 0 ? "var(--success-green)" : value < 0 ? "var(--hp-red)" : "var(--text-muted)";
+  return (
+    <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-[var(--border-primary)]">
+      {/* center marker */}
+      <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-[var(--text-muted)] opacity-40" />
+      {/* filled portion from center */}
+      {value !== 0 && (
+        <div
+          className="absolute top-0 h-full rounded-full transition-all"
+          style={{
+            left: value > 0 ? "50%" : `${pct}%`,
+            width: `${Math.abs(pct - 50)}%`,
+            backgroundColor: color,
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
@@ -95,8 +124,10 @@ export function QuestTab() {
   const narrativeMarks = useGameStore((s) => s.narrativeMarks);
   const playerThreads = useGameStore((s) => s.playerThreads);
   const playerGoals = useGameStore((s) => s.playerGoals);
+  const reputation = useGameStore((s) => s.worldState?.reputation);
 
   const activeGoals = playerGoals.filter((g) => !g.completed);
+  const reputationEntries = reputation ? Object.entries(reputation) : [];
 
   return (
     <div className="flex flex-col gap-5">
@@ -143,6 +174,38 @@ export function QuestTab() {
           </div>
         ) : (
           <EmptyState text="아직 노선을 정하지 않았다" />
+        )}
+      </section>
+
+      {/* A-2. Faction Reputation */}
+      <section className="flex flex-col gap-2">
+        <SectionHeader icon={Shield} title="세력 관계" />
+        {reputationEntries.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {reputationEntries.map(([factionId, value]) => (
+              <div
+                key={factionId}
+                className="flex flex-col gap-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-3"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-[var(--text-primary)]">
+                    {FACTION_LABELS[factionId] ?? factionId}
+                  </span>
+                  <span
+                    className="text-[10px] font-semibold"
+                    style={{
+                      color: value > 0 ? "var(--success-green)" : value < 0 ? "var(--hp-red)" : "var(--text-muted)",
+                    }}
+                  >
+                    {value > 0 ? `+${value}` : value}
+                  </span>
+                </div>
+                <ReputationBar value={value} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState text="세력 정보 없음" />
         )}
       </section>
 

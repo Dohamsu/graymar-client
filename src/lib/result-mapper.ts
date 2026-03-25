@@ -198,6 +198,7 @@ export function mapResultToMessages(
     const mapped: Choice[] = result.choices.map((c) => ({
       id: c.id,
       label: c.label,
+      affordance: c.action?.payload?.affordance as string | undefined,
     }));
 
     messages.push({

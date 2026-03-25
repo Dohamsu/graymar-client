@@ -15,6 +15,8 @@ export interface Choice {
   id: string;
   label: string;
   disabled?: boolean;
+  /** 판정에 사용되는 행동 유형 (INVESTIGATE, PERSUADE 등) */
+  affordance?: string;
 }
 
 export interface PlayerHud {
@@ -152,6 +154,13 @@ export interface ServerResultV1 {
       itemsRemoved: Array<{ itemId: string; qty: number }>;
       goldDelta: number;
     };
+    equipmentAdded?: Array<{
+      instanceId: string;
+      baseItemId: string;
+      prefixAffixId?: string;
+      suffixAffixId?: string;
+      displayName: string;
+    }>;
     meta: {
       battle: { phase: string };
       position: { env: string[] };
@@ -231,6 +240,7 @@ export interface WorldStateUI {
   currentLocationId: string | null;
   locationDynamicStates?: Record<string, LocationDynamicStateUI>;
   playerGoals?: PlayerGoalUI[];
+  reputation?: Record<string, number>;
 }
 
 export type ResolveOutcome = 'SUCCESS' | 'PARTIAL' | 'FAIL';
