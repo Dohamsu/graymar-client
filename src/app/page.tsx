@@ -54,7 +54,7 @@ export default function GamePage() {
   const [mobileTab, setMobileTab] = useState("story");
 
   // --- Mobile header auto-hide on scroll ---
-  const [mobileHeaderVisible, setMobileHeaderVisible] = useState(false);
+  const [mobileHeaderVisible, setMobileHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
 
@@ -78,7 +78,11 @@ export default function GamePage() {
 
   useEffect(() => {
     const scrollEl = document.getElementById("mobile-narrative-scroll");
-    if (!scrollEl) return;
+    if (!scrollEl) {
+      // 서술 탭이 아닌 경우 헤더 항상 표시
+      setMobileHeaderVisible(true);
+      return;
+    }
     scrollEl.addEventListener("scroll", handleScroll, { passive: true });
     return () => scrollEl.removeEventListener("scroll", handleScroll);
   }, [handleScroll, mobileTab]);
