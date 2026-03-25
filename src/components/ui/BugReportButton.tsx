@@ -15,7 +15,7 @@ export function BugReportButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-primary)] bg-[var(--bg-card)] text-[var(--text-muted)] shadow-lg transition hover:border-[var(--gold)]/40 hover:text-[var(--gold)] lg:bottom-8 lg:right-8"
+        className="fixed bottom-16 right-4 z-40 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-primary)] bg-[var(--bg-card)] text-[var(--text-muted)] shadow-lg transition hover:border-[var(--gold)]/40 hover:text-[var(--gold)] lg:bottom-8 lg:right-8 lg:h-10 lg:w-10"
         title="버그 신고"
       >
         <Bug size={18} />
