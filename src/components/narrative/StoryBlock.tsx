@@ -41,7 +41,7 @@ function NarratorLoading() {
   useEffect(() => {
     const timer = setInterval(() => {
       setMsgIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-    }, 3000);
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
 

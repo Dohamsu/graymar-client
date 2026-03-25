@@ -162,3 +162,14 @@
 .animate-highlight-new {
   animation: highlightNew 1.5s ease-in-out 2;
 }
+
+/* ── Phase transition fade-in ── */
+
+@keyframes phaseFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-phase-fade {
+  animation: phaseFadeIn 0.35s ease-out;
+}

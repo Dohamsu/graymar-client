@@ -8,9 +8,11 @@ interface NarrativePanelProps {
   messages: StoryMessage[];
   onChoiceSelect?: (choiceId: string) => void;
   onNarrationComplete?: () => void;
+  /** Optional id attribute for the scroll container (used for mobile scroll tracking) */
+  scrollId?: string;
 }
 
-export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete }: NarrativePanelProps) {
+export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, scrollId }: NarrativePanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // 메시지 변경 시 스크롤
@@ -32,7 +34,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete }
   }, []);
 
   return (
-    <div ref={scrollRef} className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 md:p-6">
+    <div ref={scrollRef} id={scrollId} className="flex flex-1 flex-col gap-4 overflow-y-auto p-3 pb-20 md:p-6 lg:p-6 lg:pb-6">
       {messages.map((msg) => (
         <StoryBlock key={msg.id} message={msg} onChoiceSelect={onChoiceSelect} onNarrationComplete={onNarrationComplete} />
       ))}

@@ -88,7 +88,7 @@ export function MobileInputSection({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-          placeholder="행동을 입력하세요..."
+          placeholder={disabled ? "처리 중..." : "행동을 입력하세요..."}
           disabled={disabled}
           className="h-11 flex-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-50"
         />

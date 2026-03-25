@@ -1,11 +1,21 @@
 "use client";
 
+import { useEffect } from "react";
 import { X, AlertTriangle } from "lucide-react";
 import { useGameStore } from "@/store/game-store";
 
 export function ErrorBanner() {
   const error = useGameStore((s) => s.error);
   const clearError = useGameStore((s) => s.clearError);
+
+  // Auto-dismiss after 5 seconds
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => {
+      clearError();
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [error, clearError]);
 
   if (!error) return null;
 
