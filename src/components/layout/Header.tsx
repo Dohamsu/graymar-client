@@ -118,10 +118,13 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
 interface MobileHeaderProps {
   location?: string;
   visible?: boolean;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-export function MobileHeader({ location, visible = true }: MobileHeaderProps) {
+export function MobileHeader({ location, visible = true, activeTab, onTabChange }: MobileHeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <>
@@ -139,10 +142,41 @@ export function MobileHeader({ location, visible = true }: MobileHeaderProps) {
         <span className="font-display text-xs tracking-[1px] text-[var(--text-secondary)] truncate max-w-[60%] text-center">
           {location ?? ""}
         </span>
-        <button className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--bg-card)]">
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--bg-card)]"
+        >
           <Menu size={16} className="text-[var(--text-primary)]" />
         </button>
       </header>
+
+      {/* 드롭다운 메뉴 */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setMenuOpen(false)}>
+          <div className="absolute right-3 top-13 w-40 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] py-1 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            {([
+              { id: "story", label: "이야기", icon: "📖" },
+              { id: "character", label: "캐릭터", icon: "👤" },
+              { id: "inventory", label: "소지품", icon: "🎒" },
+              { id: "quests", label: "퀘스트", icon: "📜" },
+            ] as const).map((item) => (
+              <button
+                key={item.id}
+                onClick={() => { onTabChange?.(item.id); setMenuOpen(false); }}
+                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${
+                  activeTab === item.id
+                    ? "bg-[var(--gold)]/10 text-[var(--gold)] font-semibold"
+                    : "text-[var(--text-secondary)]"
+                }`}
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <LlmSettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );

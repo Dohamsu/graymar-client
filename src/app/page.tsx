@@ -190,7 +190,9 @@ export default function GamePage() {
 
       {/* ===== Mobile & Tablet Layout (<lg) ===== */}
       <div className="flex h-full flex-col lg:hidden" key={`mobile-${phaseKey}`}>
-        <MobileHeader location={location} visible={mobileHeaderVisible} />
+        <MobileHeader location={location} visible={mobileHeaderVisible} activeTab={mobileTab} onTabChange={setMobileTab} />
+        {/* 이야기 탭 외에서는 헤더 고정 → 콘텐츠 시작 위치 확보 */}
+        {mobileTab !== "story" && <div className="h-12 shrink-0" />}
 
         <div className="animate-phase-fade flex flex-1 flex-col overflow-hidden">
           {mobileTab === "story" && (
@@ -237,7 +239,7 @@ export default function GamePage() {
           />
         )}
 
-        <MobileBottomNav activeTab={mobileTab} onTabChange={setMobileTab} />
+        {/* 하단 네비 제거 → 햄버거 메뉴로 이동 */}
       </div>
 
       {/* LOCATION Toast Layer (floating, both desktop & mobile) */}
