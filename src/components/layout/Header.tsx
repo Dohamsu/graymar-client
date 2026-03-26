@@ -135,12 +135,12 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange 
   return (
     <>
       <header
-        className="fixed top-0 left-0 z-40 flex h-12 w-full items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 transition-transform duration-300 ease-in-out lg:hidden"
+        className="fixed top-[env(safe-area-inset-top)] left-0 z-40 flex h-12 w-full items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 transition-transform duration-300 ease-in-out lg:hidden"
         style={{ transform: visible ? "translateY(0)" : "translateY(-100%)" }}
       >
         <button
           onClick={() => setSettingsOpen(true)}
-          className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--bg-card)]"
+          className="flex h-11 w-11 items-center justify-center rounded-md bg-[var(--bg-card)]"
           title="AI 모델 설정"
         >
           <Settings size={16} className="text-[var(--text-primary)]" />
@@ -150,7 +150,7 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange 
         </span>
         <button
           onClick={() => setMenuOpen((v) => !v)}
-          className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--bg-card)]"
+          className="flex h-11 w-11 items-center justify-center rounded-md bg-[var(--bg-card)]"
         >
           <Menu size={16} className="text-[var(--text-primary)]" />
         </button>

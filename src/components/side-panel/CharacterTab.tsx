@@ -62,11 +62,11 @@ export function CharacterTab({ character }: CharacterTabProps) {
         <span className="text-[10px] font-semibold tracking-[1px] text-[var(--text-secondary)]">
           능력치
         </span>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2 lg:grid-cols-4">
           {character.stats.map((stat) => (
             <StatTooltip key={stat.label} hint={STAT_ACTION_HINTS[stat.label] ?? ""}>
               <div
-                className="flex cursor-help flex-col items-center gap-1 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-3"
+                className="flex cursor-help flex-col items-center gap-1 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-1.5 sm:p-3"
               >
                 <span className="text-[10px] font-semibold" style={{ color: stat.color }}>
                   {stat.label}

@@ -358,12 +358,12 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
               <button
                 key={choice.id}
                 onClick={() => onChoiceSelect?.(choice.id)}
-                className="choice-btn cursor-pointer rounded-md px-3 py-2 text-left font-display leading-[1.6]"
+                className="choice-btn cursor-pointer rounded-md px-3 py-2 text-left font-display leading-[1.6] max-w-full [word-break:keep-all]"
                 style={{
                   color: choice.disabled
                     ? "var(--text-secondary)"
                     : "var(--text-primary)",
-                  fontSize: `${fontSizes.choice}px`,
+                  fontSize: `${Math.max(fontSizes.choice, 16)}px`,
                 }}
               >
                 {i + 1}. {choice.label}
