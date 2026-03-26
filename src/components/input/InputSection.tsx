@@ -81,7 +81,7 @@ export function MobileInputSection({
   if (hideInput) return null;
 
   return (
-    <div className="flex w-full flex-col gap-3 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] p-4">
+    <div className="sticky bottom-0 z-30 flex w-full flex-col gap-3 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
       <div className="flex w-full items-center gap-2">
         <input
           type="text"

@@ -209,7 +209,7 @@ export default function GamePage() {
             </>
           )}
           {mobileTab === "character" && characterInfo && (
-            <div className="flex-1 overflow-y-auto p-3 md:p-6">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
               <CharacterTab character={characterInfo} />
             </div>
           )}
@@ -219,7 +219,7 @@ export default function GamePage() {
             </div>
           )}
           {mobileTab === "inventory" && (
-            <div className="flex-1 overflow-y-auto p-3 md:p-6">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
               <InventoryTab inventory={inventory} gold={hud.gold} changes={inventoryChanges} />
             </div>
           )}

@@ -18,7 +18,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
   // 메시지 변경 시 스크롤
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
@@ -27,7 +27,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     const el = scrollRef.current;
     if (!el) return;
     const observer = new MutationObserver(() => {
-      el.scrollTop = el.scrollHeight;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     });
     observer.observe(el, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
