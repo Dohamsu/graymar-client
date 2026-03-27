@@ -61,7 +61,7 @@ const STAT_LABELS: Record<string, string> = {
 
 export function EquipmentTab() {
   const characterInfo = useGameStore((s) => s.characterInfo);
-  const submitAction = useGameStore((s) => s.submitAction);
+  const unequipItem = useGameStore((s) => s.unequipItem);
   const isSubmitting = useGameStore((s) => s.isSubmitting);
   const [selectedItem, setSelectedItem] = useState<EquipmentItem | null>(null);
 
@@ -77,9 +77,9 @@ export function EquipmentTab() {
     (item: EquipmentItem) => {
       if (isSubmitting) return;
       setSelectedItem(null);
-      submitAction(`${item.name} 해제`);
+      unequipItem(item.slot);
     },
-    [submitAction, isSubmitting],
+    [unequipItem, isSubmitting],
   );
 
   const handleSlotClick = useCallback((item: EquipmentItem | undefined) => {
