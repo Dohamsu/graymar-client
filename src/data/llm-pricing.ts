@@ -7,28 +7,39 @@ interface ModelPricing {
 }
 
 const MODEL_PRICING: Record<string, ModelPricing> = {
-  // OpenAI
-  'gpt-4o': { input: 2.5, cached: 1.25, output: 10.0 },
-  'gpt-4o-mini': { input: 0.15, cached: 0.075, output: 0.6 },
+  // OpenAI — GPT-5.4 계열
+  'gpt-5.4': { input: 2.5, cached: 0.625, output: 15.0 },
+  'gpt-5.4-mini': { input: 0.75, cached: 0.1875, output: 4.5 },
+  'gpt-5.4-nano': { input: 0.20, cached: 0.02, output: 1.25 },
+  // OpenAI — GPT-4.1 계열
   'gpt-4.1': { input: 2.0, cached: 0.5, output: 8.0 },
   'gpt-4.1-mini': { input: 0.4, cached: 0.1, output: 1.6 },
   'gpt-4.1-nano': { input: 0.1, cached: 0.025, output: 0.4 },
+  // OpenAI — GPT-4o 계열
+  'gpt-4o': { input: 2.5, cached: 1.25, output: 10.0 },
+  'gpt-4o-mini': { input: 0.15, cached: 0.075, output: 0.6 },
+  // OpenAI — o-series
   'o3': { input: 2.0, cached: 0.5, output: 8.0 },
   'o3-mini': { input: 1.1, cached: 0.55, output: 4.4 },
   'o4-mini': { input: 1.1, cached: 0.275, output: 4.4 },
   // Claude
+  'claude-sonnet-4-6': { input: 3.0, cached: 0.3, output: 15.0 },
   'claude-sonnet-4-5': { input: 3.0, cached: 0.3, output: 15.0 },
   'claude-opus-4': { input: 15.0, cached: 1.5, output: 75.0 },
+  'claude-haiku-4-5': { input: 0.25, cached: 0.025, output: 1.25 },
   'claude-haiku-3-5': { input: 0.8, cached: 0.08, output: 4.0 },
   // Gemini
+  'gemini-3.1-pro': { input: 2.0, cached: 0.5, output: 12.0 },
   'gemini-2.5-pro': { input: 1.25, cached: 0.315, output: 10.0 },
   'gemini-2.5-flash': { input: 0.15, cached: 0.0375, output: 0.6 },
   'gemini-2.0-flash': { input: 0.1, cached: 0.025, output: 0.4 },
+  // DeepSeek
+  'deepseek-v3': { input: 0.28, cached: 0.14, output: 0.42 },
 };
 
 const DEFAULT_PRICING: ModelPricing = { input: 2.5, cached: 1.25, output: 10.0 };
 
-export const USD_TO_KRW = 1400;
+export const USD_TO_KRW = 1500;
 
 export function findPricing(model: string | null): ModelPricing {
   if (!model) return DEFAULT_PRICING;
