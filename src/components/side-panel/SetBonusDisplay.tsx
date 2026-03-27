@@ -1,43 +1,7 @@
 "use client";
 
 import type { EquipmentItem } from "@/types/game";
-
-/** 세트 정의 (정적 데이터 — content/graymar_v1/sets.json 대응) */
-interface SetDef {
-  setId: string;
-  name: string;
-  type: string;
-  pieces: string[];
-  bonus2: { description: string };
-  bonus3: { description: string };
-}
-
-const SET_DEFINITIONS: SetDef[] = [
-  {
-    setId: "SET_HARBOR_WARRIOR",
-    name: "항만 전사의 장비",
-    type: "COMBAT",
-    pieces: ["EQ_DOCK_CUTLASS", "EQ_DOCK_VEST", "EQ_DOCK_BOOTS"],
-    bonus2: { description: "ATK +2, DEF +2" },
-    bonus3: { description: "ENGAGED 적 추가 피해 15%" },
-  },
-  {
-    setId: "SET_GUILD_DIPLOMAT",
-    name: "상인 길드 외교관 세트",
-    type: "POLITICAL",
-    pieces: ["EQ_MERCHANT_LEDGER", "EQ_MERCHANT_RING", "EQ_MERCHANT_CLOAK"],
-    bonus2: { description: "ACC +2, RESIST +2" },
-    bonus3: { description: "설득/뇌물 판정 보너스 +1" },
-  },
-  {
-    setId: "SET_HARBOR_SHADOW",
-    name: "항만의 그림자 세트",
-    type: "COMBAT",
-    pieces: ["EQ_SMUGGLER_DAGGER", "EQ_SHADOW_CLOAK", "EQ_SILENT_BOOTS"],
-    bonus2: { description: "ATK +5" },
-    bonus3: { description: "ATK +10, CRIT +5%" },
-  },
-];
+import { useGameStore } from "@/store/game-store";
 
 const TYPE_COLORS: Record<string, string> = {
   COMBAT: "var(--hp-red)",
@@ -49,13 +13,15 @@ interface SetBonusDisplayProps {
 }
 
 export function SetBonusDisplay({ equipment }: SetBonusDisplayProps) {
+  const setDefinitions = useGameStore((s) => s.setDefinitions);
+
   // 장착된 아이템의 baseItemId 수집
   const equippedBaseIds = new Set(
     equipment.map((e) => e.baseItemId).filter(Boolean) as string[],
   );
 
   // 세트별 보유 피스 수 계산
-  const activeSets = SET_DEFINITIONS.map((def) => {
+  const activeSets = setDefinitions.map((def) => {
     const ownedCount = def.pieces.filter((p) => equippedBaseIds.has(p)).length;
     return { ...def, ownedCount };
   }).filter((s) => s.ownedCount > 0);

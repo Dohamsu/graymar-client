@@ -41,7 +41,8 @@ interface InventoryTabProps {
 
 export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
   const equipmentBag = useGameStore((s) => s.equipmentBag);
-  const submitAction = useGameStore((s) => s.submitAction);
+  const equipItem = useGameStore((s) => s.equipItem);
+  const useItem = useGameStore((s) => s.useItem);
   const isSubmitting = useGameStore((s) => s.isSubmitting);
 
   // 변경된 아이템 ID 추적
@@ -70,8 +71,20 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
 
   const handleEquip = (bagItem: EquipmentBagItem) => {
     if (isSubmitting) return;
-    submitAction(`${bagItem.displayName} 장착`);
+    equipItem(bagItem.instanceId);
   };
+
+  const handleUseItem = (itemId: string) => {
+    if (isSubmitting) return;
+    useItem(itemId);
+  };
+
+  // 소모품 중 사용 가능한 아이템 (치료/기력 회복)
+  const USABLE_ITEMS = new Set([
+    'ITEM_MINOR_HEALING',
+    'ITEM_SUPERIOR_HEALING',
+    'ITEM_STAMINA_TONIC',
+  ]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -262,6 +275,18 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
                           </span>
                         )}
                       </div>
+
+                      {/* 소모품 사용 버튼 */}
+                      {meta.type === 'CONSUMABLE' && USABLE_ITEMS.has(itemId) && (
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() => handleUseItem(itemId)}
+                          className="shrink-0 rounded border border-[var(--success-green)]/30 bg-[var(--success-green)]/8 px-2.5 py-1.5 text-[10px] font-medium text-[var(--success-green)] transition-colors hover:bg-[var(--success-green)]/15 disabled:opacity-50"
+                        >
+                          사용
+                        </button>
+                      )}
                     </div>
                   );
                 })}

@@ -277,6 +277,52 @@ export function listSceneImages(runId: string) {
   return request<Array<{ turnNo: number; imageUrl: string }>>(`/v1/runs/${runId}/scene-images`);
 }
 
+// --- Equipment / Item Actions ---
+
+export interface EquipItemResponse {
+  equipped: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }>;
+  equipmentBag: Array<{ instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }>;
+  unequippedInstance?: { instanceId: string; baseItemId: string; displayName: string };
+  message: string;
+}
+
+export interface UnequipItemResponse {
+  equipped: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }>;
+  equipmentBag: Array<{ instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }>;
+  message: string;
+}
+
+export interface UseItemResponse {
+  hp: number;
+  stamina: number;
+  inventory: Array<{ itemId: string; qty: number }>;
+  message: string;
+}
+
+/** POST /v1/runs/:runId/equip — equip an item from equipment bag. */
+export function equipItem(runId: string, instanceId: string) {
+  return request<EquipItemResponse>(`/v1/runs/${runId}/equip`, {
+    method: 'POST',
+    body: JSON.stringify({ instanceId }),
+  });
+}
+
+/** POST /v1/runs/:runId/unequip — unequip an item from a slot. */
+export function unequipItem(runId: string, slot: string) {
+  return request<UnequipItemResponse>(`/v1/runs/${runId}/unequip`, {
+    method: 'POST',
+    body: JSON.stringify({ slot }),
+  });
+}
+
+/** POST /v1/runs/:runId/use-item — use a consumable item. */
+export function useItem(runId: string, itemId: string) {
+  return request<UseItemResponse>(`/v1/runs/${runId}/use-item`, {
+    method: 'POST',
+    body: JSON.stringify({ itemId }),
+  });
+}
+
 // --- Bug Report ---
 
 /** POST /v1/runs/:runId/bug-report — submit an in-game bug report. */

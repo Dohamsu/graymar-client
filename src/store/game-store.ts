@@ -26,7 +26,7 @@ import type {
   LocationDynamicStateUI,
   EquipmentBagItem,
 } from '@/types/game';
-import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, type LlmTokenStats } from '@/lib/api-client';
+import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, equipItem as apiEquipItem, unequipItem as apiUnequipItem, useItem as apiUseItem, type LlmTokenStats } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { PRESETS } from '@/data/presets';
 import { ITEM_CATALOG } from '@/data/items';
@@ -92,6 +92,15 @@ export interface GameState {
   locationDynamicStates: Record<string, LocationDynamicStateUI>;
   // Equipment Bag (미장착 장비)
   equipmentBag: EquipmentBagItem[];
+  // Set Definitions (서버에서 수신)
+  setDefinitions: Array<{
+    setId: string;
+    name: string;
+    type: string;
+    pieces: string[];
+    bonus2: { description: string };
+    bonus3: { description: string };
+  }>;
   // Scene Image
   sceneImages: Record<number, string>;
   sceneImageRemaining: number;
@@ -113,6 +122,9 @@ export interface GameState {
   retryLlmNarrative: () => Promise<void>;
   skipLlmNarrative: () => void;
   clearInventoryChanges: () => void;
+  equipItem: (instanceId: string) => Promise<void>;
+  unequipItem: (slot: string) => Promise<void>;
+  useItem: (itemId: string) => Promise<void>;
   requestSceneImage: (turnNo: number) => Promise<void>;
   fetchSceneImageStatus: () => Promise<void>;
   reset: () => void;
@@ -679,6 +691,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   locationDynamicStates: {},
   // Equipment Bag
   equipmentBag: [],
+  // Set Definitions
+  setDefinitions: [],
   // Scene Image
   sceneImages: {},
   sceneImageRemaining: 100,
@@ -806,6 +820,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
         equipmentBag: mapEquipmentBag(runState?.equipmentBag),
+        setDefinitions: (data.setDefinitions as GameState['setDefinitions']) ?? [],
         worldState: resumeWs ?? null,
         resolveOutcome: null,
         locationName: null,
@@ -929,6 +944,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
         equipmentBag: mapEquipmentBag(runState?.equipmentBag),
+        setDefinitions: (data.setDefinitions as GameState['setDefinitions']) ?? [],
         worldState: wsUI ?? null,
         resolveOutcome: null,
         locationName: null,
@@ -1046,6 +1062,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
         equipmentBag: mapEquipmentBag(runState?.equipmentBag),
+        setDefinitions: (data.setDefinitions as GameState['setDefinitions']) ?? [],
         worldState: wsUI ?? null,
         resolveOutcome: null,
         locationName: null,
@@ -1271,6 +1288,89 @@ export const useGameStore = create<GameState>((set, get) => ({
     flushNarrator('...', turnNo, get, set);
   },
 
+  // -----------------------------------------------------------------------
+  // equipItem — 장비 가방에서 아이템 장착
+  // -----------------------------------------------------------------------
+  equipItem: async (instanceId: string) => {
+    const { runId, isSubmitting } = get();
+    if (!runId || isSubmitting) return;
+
+    set({ isSubmitting: true, error: null });
+
+    try {
+      const res = await apiEquipItem(runId, instanceId);
+      const currentCharInfo = get().characterInfo;
+      if (currentCharInfo) {
+        set({
+          characterInfo: {
+            ...currentCharInfo,
+            equipment: mapEquippedToDisplay(res.equipped),
+          },
+          equipmentBag: mapEquipmentBag(res.equipmentBag),
+          isSubmitting: false,
+        });
+      } else {
+        set({ isSubmitting: false });
+      }
+    } catch (err) {
+      set({ isSubmitting: false, error: extractErrorMessage(err) });
+    }
+  },
+
+  // -----------------------------------------------------------------------
+  // unequipItem — 장착된 장비 해제
+  // -----------------------------------------------------------------------
+  unequipItem: async (slot: string) => {
+    const { runId, isSubmitting } = get();
+    if (!runId || isSubmitting) return;
+
+    set({ isSubmitting: true, error: null });
+
+    try {
+      const res = await apiUnequipItem(runId, slot);
+      const currentCharInfo = get().characterInfo;
+      if (currentCharInfo) {
+        set({
+          characterInfo: {
+            ...currentCharInfo,
+            equipment: mapEquippedToDisplay(res.equipped),
+          },
+          equipmentBag: mapEquipmentBag(res.equipmentBag),
+          isSubmitting: false,
+        });
+      } else {
+        set({ isSubmitting: false });
+      }
+    } catch (err) {
+      set({ isSubmitting: false, error: extractErrorMessage(err) });
+    }
+  },
+
+  // -----------------------------------------------------------------------
+  // useItem — 소모품 사용
+  // -----------------------------------------------------------------------
+  useItem: async (itemId: string) => {
+    const { runId, isSubmitting } = get();
+    if (!runId || isSubmitting) return;
+
+    set({ isSubmitting: true, error: null });
+
+    try {
+      const res = await apiUseItem(runId, itemId);
+      set({
+        hud: {
+          ...get().hud,
+          hp: res.hp,
+          stamina: res.stamina,
+        },
+        inventory: res.inventory,
+        isSubmitting: false,
+      });
+    } catch (err) {
+      set({ isSubmitting: false, error: extractErrorMessage(err) });
+    }
+  },
+
   requestSceneImage: async (turnNo: number) => {
     const { runId, sceneImages, sceneImageRemaining, sceneImageLoading } = get();
     if (!runId) return;
@@ -1357,6 +1457,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerGoals: [],
       locationDynamicStates: {},
       equipmentBag: [],
+      setDefinitions: [],
       sceneImages: {},
       sceneImageRemaining: 100,
       sceneImageLoading: {},
