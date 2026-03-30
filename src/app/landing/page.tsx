@@ -74,7 +74,7 @@ function JsonLd() {
         "@type": "WebSite",
         name: "GRAYMAR",
         alternateName: "그레이마르",
-        url: "https://graymar.app",
+        url: "https://www.dimtale.com",
         description:
           "AI 기반 정치 음모 텍스트 RPG. 42명의 NPC와 5개의 권력 투쟁이 얽힌 살아있는 세계.",
         inLanguage: "ko",
