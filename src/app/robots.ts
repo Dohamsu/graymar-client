@@ -7,8 +7,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/landing", "/"],
-        disallow: ["/v1/", "/scene-images/"],
+        allow: ["/"],
+        disallow: ["/v1/", "/scene-images/", "/play"],
       },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,
