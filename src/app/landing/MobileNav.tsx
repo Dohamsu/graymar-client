@@ -57,7 +57,7 @@ export function MobileNav() {
             </a>
           ))}
           <Link
-            href="/"
+            href="/play"
             className="mt-2 px-6 py-3 font-bold text-center"
             style={{
               backgroundColor: "#e9c176",
