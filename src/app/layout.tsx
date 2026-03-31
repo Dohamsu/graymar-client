@@ -59,6 +59,12 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700;900&display=swap"
           rel="stylesheet"
         />
+        {/* iOS Safari 핀치줌 차단 — gesturestart/touchmove 이벤트 방지 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.addEventListener('gesturestart',function(e){e.preventDefault()},{passive:false});document.addEventListener('gesturechange',function(e){e.preventDefault()},{passive:false});document.addEventListener('touchmove',function(e){if(e.touches.length>1){e.preventDefault()}},{passive:false});`,
+          }}
+        />
       </head>
       <body
         className="font-ui h-full bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased"

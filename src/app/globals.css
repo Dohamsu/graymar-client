@@ -52,6 +52,13 @@
 @layer base {
   html, body {
     height: 100%;
+    touch-action: manipulation;
+  }
+
+  /* iOS Safari 핀치줌 차단 (standalone PWA 모드 포함) */
+  html {
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
   }
 
   /* Safe area padding for notched devices */
