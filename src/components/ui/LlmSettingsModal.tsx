@@ -54,6 +54,10 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
   const runId = useGameStore((s) => s.runId);
   const [usageData, setUsageData] = useState<LlmUsageResponse | null>(null);
 
+  // Server version
+  const [serverVersion, setServerVersion] = useState<string | null>(null);
+  const clientVersion = process.env.NEXT_PUBLIC_CLIENT_VERSION ?? 'unknown';
+
   useEffect(() => {
     if (!open) return;
     setLoading(true);
@@ -67,6 +71,10 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
           setSettings(data);
           setMaxTokens(data.maxTokens);
         }),
+      fetch('/v1/version')
+        .then((r) => r.json())
+        .then((d) => setServerVersion(d.server))
+        .catch(() => {}),
     ];
 
     if (runId) {
@@ -317,6 +325,16 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
             </>
           )}
         </div>
+
+        {/* Version info */}
+        {!loading && (
+          <div className="flex items-center justify-between border-t border-[var(--border-primary)] px-5 py-2">
+            <div className="flex gap-3 font-mono text-[10px] text-[var(--text-muted)]">
+              <span>Client: {clientVersion}</span>
+              <span>Server: {serverVersion ?? '?'}</span>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         {!loading && (
