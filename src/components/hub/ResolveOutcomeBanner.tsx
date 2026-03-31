@@ -111,7 +111,12 @@ function BreakdownFormula({ breakdown }: { breakdown: ResolveBreakdown }) {
       {baseMod !== 0 && (
         <>
           <span>{baseMod > 0 ? "+" : ""}</span>
-          <span className="text-[var(--text-secondary)]">보정 {baseMod > 0 ? `+${baseMod}` : baseMod}</span>
+          <span
+            className="font-semibold"
+            style={{ color: baseMod > 0 ? "var(--success-green)" : "var(--hp-red)" }}
+          >
+            보정 {baseMod > 0 ? `+${baseMod}` : baseMod}
+          </span>
         </>
       )}
       <span>=</span>
