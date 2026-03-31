@@ -24,6 +24,8 @@ export interface Choice {
   disabled?: boolean;
   /** 판정에 사용되는 행동 유형 (INVESTIGATE, PERSUADE 등) */
   affordance?: string;
+  /** 예상 판정 보정치 (matchPolicy + friction + preset bonus + riskLevel) */
+  modifier?: number;
 }
 
 export interface PlayerHud {
@@ -196,6 +198,7 @@ export interface ServerResultV1 {
     id: string;
     label: string;
     hint?: string;
+    modifier?: number;
     action: { type: string; payload: Record<string, unknown> };
   }>;
   flags: {

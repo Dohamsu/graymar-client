@@ -200,6 +200,7 @@ export function mapResultToMessages(
       id: c.id,
       label: c.label,
       affordance: c.action?.payload?.affordance as string | undefined,
+      modifier: c.modifier,
     }));
 
     messages.push({
