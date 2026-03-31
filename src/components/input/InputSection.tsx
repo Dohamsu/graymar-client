@@ -42,7 +42,7 @@ export function InputSection({ onSubmit, nodeType, disabled }: InputSectionProps
               : "행동을 입력하세요..."
           }
           disabled={disabled}
-          className="h-12 flex-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] disabled:opacity-50"
+          className="h-12 flex-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] disabled:opacity-50"
         />
         <button
           onClick={handleSubmit}
@@ -90,7 +90,7 @@ export function MobileInputSection({
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           placeholder={disabled ? "처리 중..." : "행동을 입력하세요..."}
           disabled={disabled}
-          className="h-11 flex-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-50"
+          className="h-11 flex-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-50"
         />
         <button
           onClick={handleSubmit}
