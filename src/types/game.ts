@@ -9,6 +9,13 @@ export interface StoryMessage {
   resolveBreakdown?: ResolveBreakdown;
   /** 장소 진입 시 표시할 이미지 경로 */
   locationImage?: string;
+  /** NPC 초상화 정보 (서버 ui.npcPortrait) */
+  npcPortrait?: {
+    npcId: string;
+    npcName: string;
+    imageUrl: string;
+    isNewlyIntroduced: boolean;
+  };
 }
 
 export interface Choice {
@@ -178,6 +185,12 @@ export interface ServerResultV1 {
     notifications?: GameNotification[];
     pinnedAlerts?: GameNotification[];
     worldDeltaSummary?: WorldDeltaSummaryUI;
+    npcPortrait?: {
+      npcId: string;
+      npcName: string;
+      imageUrl: string;
+      isNewlyIntroduced: boolean;
+    };
   };
   choices: Array<{
     id: string;

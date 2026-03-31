@@ -190,6 +190,7 @@ export function mapResultToMessages(
       type: 'NARRATOR',
       text: isLlmTarget ? '' : (result.summary.display ?? result.summary.short),
       loading: isLlmTarget,
+      ...(result.ui?.npcPortrait ? { npcPortrait: result.ui.npcPortrait } : {}),
     });
   }
 

@@ -279,6 +279,59 @@ function SceneImageButton({ messageId }: { messageId: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// NpcPortraitCard — NPC 초상화 카드 (NARRATOR 메시지 상단)
+// ---------------------------------------------------------------------------
+
+function NpcPortraitCard({ npcPortrait }: { npcPortrait: NonNullable<StoryMessage['npcPortrait']> }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
+      className="mb-3 flex items-center gap-3 rounded-lg p-3 transition-opacity duration-500"
+      style={{
+        opacity: visible ? 1 : 0,
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border-primary)',
+      }}
+    >
+      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
+        <Image
+          src={npcPortrait.imageUrl}
+          alt={npcPortrait.npcName}
+          fill
+          sizes="80px"
+          className="object-cover"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <span
+          className="text-sm font-semibold font-display"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          {npcPortrait.npcName}
+        </span>
+        {npcPortrait.isNewlyIntroduced && (
+          <span
+            className="inline-block w-fit rounded px-1.5 py-0.5 text-[10px] font-semibold"
+            style={{
+              color: 'var(--gold)',
+              border: '1px solid var(--gold)',
+            }}
+          >
+            첫 만남
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // StoryBlock
 // ---------------------------------------------------------------------------
 
@@ -391,6 +444,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
           className="font-narrative leading-[1.75]"
           style={{ color: "var(--text-primary)", fontSize: `${fontSizes.narrative}px` }}
         >
+          {message.npcPortrait && <NpcPortraitCard npcPortrait={message.npcPortrait} />}
           {isNarratorTypewriting ? (
             <TypewriterText
               text={message.text}
