@@ -434,6 +434,19 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
                     </span>
                   );
                 })()}
+                {choice.modifier != null && choice.modifier !== 0 && (
+                  <span
+                    className="ml-1 inline-block rounded px-1 py-0.5 text-[10px] font-semibold leading-none"
+                    style={{
+                      color: choice.modifier > 0 ? 'var(--success-green)' : 'var(--hp-red)',
+                      borderWidth: 1,
+                      borderStyle: 'solid',
+                      borderColor: choice.modifier > 0 ? 'var(--success-green)' : 'var(--hp-red)',
+                    }}
+                  >
+                    {choice.modifier > 0 ? `+${choice.modifier}` : choice.modifier}
+                  </span>
+                )}
               </button>
             ))
           )}
