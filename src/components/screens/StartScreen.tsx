@@ -108,6 +108,7 @@ function PresetCard({
     .join(", ");
 
   const portraitSrc = preset.portraits?.[gender];
+  const altPortraitSrc = preset.portraits?.[gender === "male" ? "female" : "male"];
   const statSummary = buildStatSummary(preset.stats);
 
   return (
@@ -125,6 +126,17 @@ function PresetCard({
       {/* Portrait */}
       {portraitSrc ? (
         <div className="relative aspect-[4/3] w-full overflow-hidden">
+          {/* 반대 성별 이미지 프리로드 (숨김) */}
+          {altPortraitSrc && (
+            <Image
+              src={altPortraitSrc}
+              alt=""
+              fill
+              sizes="1px"
+              className="pointer-events-none opacity-0"
+              aria-hidden
+            />
+          )}
           <Image
             src={portraitSrc}
             alt={`${preset.name} ${gender === "male" ? "남" : "여"}`}
@@ -682,7 +694,7 @@ export function StartScreen() {
         <div className="flex flex-col items-center gap-3">
           <div className="flex h-16 w-16 items-center justify-center border-2 border-[var(--gold)]">
             <span className="font-display text-2xl font-bold text-[var(--gold)]">
-              R
+              왕
             </span>
           </div>
           <h1 className="font-display text-2xl tracking-[4px] text-[var(--text-primary)]">
@@ -714,14 +726,16 @@ export function StartScreen() {
         <div className="flex flex-col items-center gap-4">
           <div className="flex h-20 w-20 items-center justify-center border-2 border-[var(--gold)]">
             <span className="font-display text-3xl font-bold text-[var(--gold)]">
-              R
+              왕
             </span>
           </div>
           <h1 className="font-display text-4xl tracking-[6px] text-[var(--text-primary)]">
             그림자의 왕국
           </h1>
-          <p className="text-base text-[var(--text-muted)]">
-            그레이마르 항만 — 버티컬 슬라이스
+          <p className="max-w-sm text-center text-sm leading-relaxed text-[var(--text-muted)]">
+            권력과 음모가 뒤엉킨 항만 도시 그레이마르.
+            <br />
+            이름 없는 용병의 선택이 도시의 운명을 결정한다.
           </p>
         </div>
 

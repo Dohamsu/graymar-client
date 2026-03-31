@@ -50,7 +50,7 @@ export default function RootLayout({
           content="width=device-width, initial-scale=1.0, viewport-fit=cover"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700;900&family=Noto+Sans+KR:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700;900&display=swap"
           rel="stylesheet"
         />
       </head>

@@ -22,15 +22,22 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     }
   }, [messages]);
 
-  // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지
+  // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (rAF debounce)
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    let rafId: number | null = null;
     const observer = new MutationObserver(() => {
-      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      });
     });
     observer.observe(el, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   return (

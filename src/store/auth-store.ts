@@ -41,6 +41,21 @@ function isTokenExpired(token: string): boolean {
   }
 }
 
+/** 서버 에러 응답에서 사용자 친화적 메시지 추출 */
+function extractErrorMessage(json: Record<string, unknown>, fallback: string): string {
+  // details.issues 배열이 있으면 구체적 필드 에러를 표시
+  const details = json.details as { issues?: { message?: string }[] } | null;
+  if (details?.issues?.length) {
+    const messages = details.issues
+      .map((i) => i.message)
+      .filter(Boolean);
+    if (messages.length) return messages.join('\n');
+  }
+  // 상위 message 사용
+  if (typeof json.message === 'string' && json.message) return json.message;
+  return fallback;
+}
+
 function getBaseUrl(): string {
   if (typeof window === 'undefined') {
     return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -72,7 +87,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
       const json = await res.json();
       if (!res.ok) {
-        set({ isLoading: false, error: json.message ?? '회원가입에 실패했습니다.' });
+        set({ isLoading: false, error: extractErrorMessage(json, '회원가입에 실패했습니다.') });
         return;
       }
       const { token, user } = json as { token: string; user: AuthUser };
@@ -94,7 +109,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
       const json = await res.json();
       if (!res.ok) {
-        set({ isLoading: false, error: json.message ?? '로그인에 실패했습니다.' });
+        set({ isLoading: false, error: extractErrorMessage(json, '로그인에 실패했습니다.') });
         return;
       }
       const { token, user } = json as { token: string; user: AuthUser };

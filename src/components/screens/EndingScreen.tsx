@@ -11,9 +11,9 @@ const POSTURE_LABELS: Record<string, string> = {
 };
 
 const STABILITY_LABELS: Record<string, { text: string; color: string }> = {
-  STABLE: { text: "안정", color: "text-green-400" },
-  UNSTABLE: { text: "불안정", color: "text-yellow-400" },
-  COLLAPSED: { text: "붕괴", color: "text-red-400" },
+  STABLE: { text: "안정", color: "text-[var(--success-green)]" },
+  UNSTABLE: { text: "불안정", color: "text-[var(--gold)]" },
+  COLLAPSED: { text: "붕괴", color: "text-[var(--hp-red)]" },
 };
 
 function StatRow({ label, value }: { label: string; value: number }) {
@@ -52,7 +52,7 @@ export function EndingScreen() {
 
   const stabilityInfo = STABILITY_LABELS[endingResult.cityStatus.stability] ?? {
     text: "???",
-    color: "text-zinc-400",
+    color: "text-[var(--text-secondary)]",
   };
 
   return (
@@ -126,12 +126,12 @@ export function EndingScreen() {
               {endingResult.narrativeMarks.map((mark, idx) => (
                 <div
                   key={idx}
-                  className="border border-amber-700/50 rounded-md px-3 py-1.5 bg-amber-900/20"
+                  className="border border-[var(--gold)]/50 rounded-md px-3 py-1.5 bg-[var(--gold)]/10"
                 >
-                  <span className="text-xs font-semibold text-amber-300">
+                  <span className="text-xs font-semibold text-[var(--gold)]">
                     {mark.type}
                   </span>
-                  <p className="text-[10px] text-amber-200/70 mt-0.5">
+                  <p className="text-[10px] text-[var(--gold)]/70 mt-0.5">
                     {mark.context}
                   </p>
                 </div>

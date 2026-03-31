@@ -180,7 +180,7 @@ export function EquipmentTab() {
                 {/* Rarity badge */}
                 {item?.rarity && (
                   <span
-                    className="shrink-0 rounded px-1.5 py-0.5 text-[8px] font-semibold"
+                    className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold"
                     style={{
                       backgroundColor: `color-mix(in srgb, ${rarityColor} 15%, transparent)`,
                       color: rarityColor,

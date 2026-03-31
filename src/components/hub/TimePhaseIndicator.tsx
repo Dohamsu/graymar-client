@@ -5,9 +5,9 @@ import { Sun, Moon, Sunrise, Sunset } from "lucide-react";
 type TimePhaseV2 = "DAWN" | "DAY" | "DUSK" | "NIGHT";
 
 const PHASE_CONFIG: Record<TimePhaseV2, { icon: typeof Sun; label: string; color: string }> = {
-  DAWN: { icon: Sunrise, label: "새벽", color: "text-orange-300" },
+  DAWN: { icon: Sunrise, label: "새벽", color: "text-[var(--orange)]" },
   DAY: { icon: Sun, label: "낮", color: "text-[var(--gold)]" },
-  DUSK: { icon: Sunset, label: "황혼", color: "text-purple-400" },
+  DUSK: { icon: Sunset, label: "황혼", color: "text-[var(--purple)]" },
   NIGHT: { icon: Moon, label: "밤", color: "text-[var(--info-blue)]" },
 };
 
