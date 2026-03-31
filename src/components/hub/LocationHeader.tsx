@@ -26,7 +26,7 @@ export function LocationHeader({ locationName, toneHint }: LocationHeaderProps) 
           </span>
         )}
         {operationProgress && operationProgress.active && (
-          <span className="ml-2 rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-300">
+          <span className="ml-2 rounded-full bg-[var(--bg-card)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-primary)]">
             스텝 {operationProgress.currentStep}/{operationProgress.maxSteps}
           </span>
         )}

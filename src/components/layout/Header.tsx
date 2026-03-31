@@ -54,6 +54,7 @@ function StaminaBar({ current, max }: { current: number; max: number }) {
 
 export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const reset = useGameStore((s) => s.reset);
 
   return (
@@ -61,11 +62,12 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
       <header className="flex h-16 w-full items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-8">
         {/* Logo — 클릭 시 타이틀 화면으로 */}
         <button
-          onClick={() => { if (confirm('타이틀 화면으로 돌아갑니다. 진행 중인 게임은 자동 저장됩니다.')) reset(); }}
+          onClick={() => setConfirmOpen(true)}
           className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
+          aria-label="타이틀 화면으로 돌아가기"
         >
           <div className="flex h-9 w-9 items-center justify-center border border-[var(--gold)]">
-            <span className="font-display text-sm font-bold text-[var(--gold)]">R</span>
+            <span className="font-display text-sm font-bold text-[var(--gold)]">왕</span>
           </div>
           <span className="font-display text-lg tracking-[2px] text-[var(--text-primary)]">
             그림자의 왕국
@@ -110,12 +112,25 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
             onClick={() => setSettingsOpen(true)}
             className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-[var(--text-primary)]"
             title="AI 모델 설정"
+            aria-label="AI 모델 설정"
           >
             <Settings size={16} />
           </button>
         </div>
       </header>
       <LlmSettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {confirmOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" onKeyDown={(e) => e.key === 'Escape' && setConfirmOpen(false)}>
+          <div className="mx-4 w-full max-w-xs rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-2xl">
+            <h3 id="confirm-title" className="mb-2 text-base font-bold text-[var(--text-primary)]">타이틀로 돌아가기</h3>
+            <p className="mb-5 text-sm text-[var(--text-secondary)]">진행 중인 게임은 자동 저장됩니다.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmOpen(false)} className="flex-1 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]">취소</button>
+              <button onClick={() => { setConfirmOpen(false); reset(); }} className="flex-1 rounded bg-[var(--gold)] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110">확인</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -130,6 +145,7 @@ interface MobileHeaderProps {
 export function MobileHeader({ location, visible = true, activeTab, onTabChange }: MobileHeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const reset = useGameStore((s) => s.reset);
 
   return (
@@ -142,6 +158,7 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange 
           onClick={() => setSettingsOpen(true)}
           className="flex h-11 w-11 items-center justify-center rounded-md bg-[var(--bg-card)]"
           title="AI 모델 설정"
+          aria-label="AI 모델 설정"
         >
           <Settings size={16} className="text-[var(--text-primary)]" />
         </button>
@@ -151,6 +168,7 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange 
         <button
           onClick={() => setMenuOpen((v) => !v)}
           className="flex h-11 w-11 items-center justify-center rounded-md bg-[var(--bg-card)]"
+          aria-label="메뉴 열기"
         >
           <Menu size={16} className="text-[var(--text-primary)]" />
         </button>
@@ -181,8 +199,9 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange 
             ))}
             <div className="mx-2 my-1 border-t border-[var(--border-primary)]" />
             <button
-              onClick={() => { setMenuOpen(false); if (confirm('타이틀 화면으로 돌아갑니다.')) reset(); }}
+              onClick={() => { setMenuOpen(false); setConfirmOpen(true); }}
               className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+              aria-label="타이틀로 돌아가기"
             >
               <Home size={14} />
               <span>타이틀로 돌아가기</span>
@@ -192,6 +211,18 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange 
       )}
 
       <LlmSettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {confirmOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80" role="alertdialog" aria-modal="true" aria-labelledby="mobile-confirm-title" onKeyDown={(e) => e.key === 'Escape' && setConfirmOpen(false)}>
+          <div className="mx-4 w-full max-w-xs rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-2xl">
+            <h3 id="mobile-confirm-title" className="mb-2 text-base font-bold text-[var(--text-primary)]">타이틀로 돌아가기</h3>
+            <p className="mb-5 text-sm text-[var(--text-secondary)]">진행 중인 게임은 자동 저장됩니다.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmOpen(false)} className="flex-1 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]">취소</button>
+              <button onClick={() => { setConfirmOpen(false); reset(); }} className="flex-1 rounded bg-[var(--gold)] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110">확인</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

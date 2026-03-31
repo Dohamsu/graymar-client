@@ -4,24 +4,6 @@
 
 @font-face {
   font-family: "A2G";
-  src: url("/fonts/에이투지체-1Thin.otf") format("opentype");
-  font-weight: 100;
-  font-display: swap;
-}
-@font-face {
-  font-family: "A2G";
-  src: url("/fonts/에이투지체-2ExtraLight.otf") format("opentype");
-  font-weight: 200;
-  font-display: swap;
-}
-@font-face {
-  font-family: "A2G";
-  src: url("/fonts/에이투지체-3Light.otf") format("opentype");
-  font-weight: 300;
-  font-display: swap;
-}
-@font-face {
-  font-family: "A2G";
   src: url("/fonts/에이투지체-4Regular.otf") format("opentype");
   font-weight: 400;
   font-display: swap;
@@ -42,18 +24,6 @@
   font-family: "A2G";
   src: url("/fonts/에이투지체-7Bold.otf") format("opentype");
   font-weight: 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: "A2G";
-  src: url("/fonts/에이투지체-8ExtraBold.otf") format("opentype");
-  font-weight: 800;
-  font-display: swap;
-}
-@font-face {
-  font-family: "A2G";
-  src: url("/fonts/에이투지체-9Black.otf") format("opentype");
-  font-weight: 900;
   font-display: swap;
 }
 
@@ -117,6 +87,21 @@
     background-color: rgba(201, 169, 98, 0.1);
     border-color: rgba(201, 169, 98, 0.4);
     color: var(--gold);
+  }
+
+  .choice-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold);
+  }
+}
+
+/* ── Reduced Motion ── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

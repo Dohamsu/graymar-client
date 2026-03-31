@@ -144,7 +144,7 @@ export function QuestTab() {
                 {ARC_ROUTE_LABELS[arcState.currentRoute].name}
               </span>
               {arcState.commitment >= 3 && (
-                <span className="rounded bg-[var(--gold)]/20 px-1.5 py-0.5 text-[8px] font-bold tracking-wider text-[var(--gold)]">
+                <span className="rounded bg-[var(--gold)]/20 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[var(--gold)]">
                   확정
                 </span>
               )}
@@ -268,7 +268,7 @@ export function QuestTab() {
                       {inc.title}
                     </span>
                     <span
-                      className="rounded px-1.5 py-0.5 text-[8px] font-semibold"
+                      className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                       style={{
                         backgroundColor: kindInfo.color + "20",
                         color: kindInfo.color,

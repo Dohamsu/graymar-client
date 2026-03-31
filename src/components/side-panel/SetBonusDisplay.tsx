@@ -48,7 +48,7 @@ export function SetBonusDisplay({ equipment }: SetBonusDisplayProps) {
                 {s.name}
               </span>
               <span
-                className="rounded px-1.5 py-0.5 text-[8px] font-semibold"
+                className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                 style={{
                   backgroundColor: `color-mix(in srgb, ${typeColor} 15%, transparent)`,
                   color: typeColor,

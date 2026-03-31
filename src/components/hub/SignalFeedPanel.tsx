@@ -15,19 +15,19 @@ const CHANNEL_LABELS: Record<string, string> = {
 };
 
 const SEVERITY_COLORS: Record<number, string> = {
-  1: "text-zinc-400",
-  2: "text-blue-400",
-  3: "text-yellow-400",
-  4: "text-orange-400",
-  5: "text-red-400",
+  1: "text-[var(--text-secondary)]",
+  2: "text-[var(--info-blue)]",
+  3: "text-[var(--gold)]",
+  4: "text-[var(--orange)]",
+  5: "text-[var(--hp-red)]",
 };
 
 const SEVERITY_BG: Record<number, string> = {
-  1: "border-zinc-700",
-  2: "border-blue-800",
-  3: "border-yellow-800",
-  4: "border-orange-800",
-  5: "border-red-800 bg-red-950/30",
+  1: "border-[var(--border-primary)]",
+  2: "border-[var(--info-blue)]/40",
+  3: "border-[var(--gold)]/40",
+  4: "border-[var(--orange)]/40",
+  5: "border-[var(--hp-red)]/40 bg-[var(--hp-red)]/5",
 };
 
 export function SignalFeedPanel({ signals }: Props) {
@@ -37,21 +37,18 @@ export function SignalFeedPanel({ signals }: Props) {
   const sorted = [...signals].sort((a, b) => b.severity - a.severity);
 
   return (
-    <div className="flex flex-col gap-1.5 mt-3">
-      <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-        시그널 피드
-      </h3>
+    <div className="flex flex-col gap-1.5">
       {sorted.map((signal) => (
         <div
           key={signal.id}
-          className={`border-l-2 pl-2 py-1 text-xs ${SEVERITY_BG[signal.severity] ?? "border-zinc-700"}`}
+          className={`border-l-2 pl-2 py-1 text-xs ${SEVERITY_BG[signal.severity] ?? "border-[var(--border-primary)]"}`}
         >
           <span
-            className={`font-mono text-[10px] ${SEVERITY_COLORS[signal.severity] ?? "text-zinc-400"}`}
+            className={`font-mono text-[10px] ${SEVERITY_COLORS[signal.severity] ?? "text-[var(--text-secondary)]"}`}
           >
             [{CHANNEL_LABELS[signal.channel] ?? signal.channel}]
           </span>{" "}
-          <span className="text-zinc-300">{signal.text}</span>
+          <span className="text-[var(--text-primary)]">{signal.text}</span>
         </div>
       ))}
     </div>

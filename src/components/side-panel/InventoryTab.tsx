@@ -156,7 +156,7 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
                       </span>
                       {bagItem.rarity && (
                         <span
-                          className="shrink-0 rounded px-1 py-0.5 text-[8px] font-semibold"
+                          className="shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold"
                           style={{
                             backgroundColor: `color-mix(in srgb, ${rarityColor} 15%, transparent)`,
                             color: rarityColor,
@@ -264,7 +264,7 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
                             </span>
                           )}
                           {isNew && (
-                            <span className="animate-fade-in rounded bg-[var(--success-green)]/20 px-1.5 py-0.5 text-[8px] font-bold tracking-wider text-[var(--success-green)]">
+                            <span className="animate-fade-in rounded bg-[var(--success-green)]/20 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[var(--success-green)]">
                               NEW
                             </span>
                           )}

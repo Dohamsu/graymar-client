@@ -50,6 +50,7 @@ export default function GameClient() {
   const inventoryChanges = useGameStore((s) => s.inventoryChanges);
   const clearInventoryChanges = useGameStore((s) => s.clearInventoryChanges);
   const notifications = useGameStore((s) => s.notifications);
+  const endingResult = useGameStore((s) => s.endingResult);
 
   const [mobileTab, setMobileTab] = useState("story");
 
@@ -102,7 +103,6 @@ export default function GameClient() {
     return <StartScreen />;
   }
   if (phase === "RUN_ENDED") {
-    const endingResult = useGameStore.getState().endingResult;
     return endingResult ? <EndingScreen /> : <RunEndScreen />;
   }
 

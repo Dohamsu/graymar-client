@@ -7,11 +7,11 @@ interface Props {
 }
 
 const POSTURE_LABELS: Record<string, { text: string; color: string }> = {
-  FRIENDLY: { text: "우호적", color: "text-green-400" },
-  CAUTIOUS: { text: "경계", color: "text-yellow-400" },
-  HOSTILE: { text: "적대적", color: "text-red-400" },
-  FEARFUL: { text: "두려움", color: "text-purple-400" },
-  CALCULATING: { text: "계산적", color: "text-blue-400" },
+  FRIENDLY: { text: "우호적", color: "text-[var(--success-green)]" },
+  CAUTIOUS: { text: "경계", color: "text-[var(--gold)]" },
+  HOSTILE: { text: "적대적", color: "text-[var(--hp-red)]" },
+  FEARFUL: { text: "두려움", color: "text-[var(--purple)]" },
+  CALCULATING: { text: "계산적", color: "text-[var(--info-blue)]" },
 };
 
 function EmotionAxis({
@@ -31,13 +31,13 @@ function EmotionAxis({
 
   return (
     <div className="flex items-center gap-1 text-[10px]">
-      <span className="w-10 text-zinc-500">{label}</span>
-      <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden relative">
+      <span className="w-10 text-[var(--text-muted)]">{label}</span>
+      <div className="flex-1 h-1 bg-[var(--border-primary)] rounded-full overflow-hidden relative">
         {min < 0 && (
-          <div className="absolute left-1/2 w-px h-full bg-zinc-600" />
+          <div className="absolute left-1/2 w-px h-full bg-[var(--text-muted)]" />
         )}
         <div
-          className={`absolute h-full rounded-full ${isNegative ? "bg-red-500" : "bg-blue-500"}`}
+          className={`absolute h-full rounded-full ${isNegative ? "bg-[var(--hp-red)]" : "bg-[var(--info-blue)]"}`}
           style={
             min < 0
               ? {
@@ -49,7 +49,7 @@ function EmotionAxis({
         />
       </div>
       <span
-        className={`w-6 text-right ${isNegative ? "text-red-400" : "text-zinc-400"}`}
+        className={`w-6 text-right ${isNegative ? "text-[var(--hp-red)]" : "text-[var(--text-secondary)]"}`}
       >
         {value}
       </span>
@@ -62,22 +62,22 @@ export function NpcRelationshipCard({ npcs }: Props) {
 
   return (
     <div className="flex flex-col gap-2 mt-3">
-      <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+      <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
         인물 관계
       </h3>
 
       {npcs.map((npc) => {
         const posture = POSTURE_LABELS[npc.posture] ?? {
           text: npc.posture,
-          color: "text-zinc-400",
+          color: "text-[var(--text-secondary)]",
         };
         return (
           <div
             key={npc.npcId}
-            className="border border-zinc-700 rounded-md p-2 bg-zinc-900/50"
+            className="border border-[var(--border-primary)] rounded-md p-2 bg-[var(--bg-card)]"
           >
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-medium text-zinc-200">
+              <span className="text-xs font-medium text-[var(--text-primary)]">
                 {npc.npcName}
               </span>
               <span className={`text-[10px] ${posture.color}`}>
@@ -123,7 +123,7 @@ export function NpcRelationshipCard({ npcs }: Props) {
                 {npc.marks.map((mark) => (
                   <span
                     key={mark}
-                    className="text-[9px] px-1 py-0.5 bg-amber-900/40 text-amber-300 rounded"
+                    className="text-[9px] px-1 py-0.5 bg-[var(--gold)]/20 text-[var(--gold)] rounded"
                   >
                     {mark}
                   </span>

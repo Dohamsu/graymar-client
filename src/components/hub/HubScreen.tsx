@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { MapPin, Shield, AlertTriangle, Skull, Handshake, Coins } from "lucide-react";
 import { useGameStore } from "@/store/game-store";
@@ -12,6 +13,28 @@ import { PinnedAlertStack } from "./PinnedAlertStack";
 import { WorldDeltaSummaryCard } from "./WorldDeltaSummaryCard";
 import { HubNotificationList } from "./HubNotificationList";
 import type { Choice, LocationDynamicStateUI } from "@/types/game";
+
+function CollapsibleSection({ title, badge, defaultOpen = false, children }: {
+  title: string;
+  badge?: number;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="mt-3">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider cursor-pointer"
+        aria-expanded={open}
+      >
+        <span>{title}{badge != null && badge > 0 ? ` (${badge})` : ''}</span>
+        <span className="text-[10px] text-[var(--text-muted)]">{open ? '\u25BC' : '\u25B6'}</span>
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </div>
+  );
+}
 
 // choiceId → locationId 매핑
 const CHOICE_TO_LOCATION_ID: Record<string, string> = {
@@ -78,14 +101,14 @@ function SecurityBar({ value }: { value: number }) {
     value >= 70 ? "var(--success-green)" : value >= 40 ? "var(--gold)" : "var(--hp-red)";
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[8px] text-[var(--text-muted)]">치안</span>
+      <span className="text-[10px] text-[var(--text-muted)]">치안</span>
       <div className="h-1 w-12 overflow-hidden rounded-full bg-[var(--border-primary)]">
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${Math.min(100, value)}%`, backgroundColor: color }}
         />
       </div>
-      <span className="text-[8px] text-[var(--text-muted)]">{value}</span>
+      <span className="text-[10px] text-[var(--text-muted)]">{value}</span>
     </div>
   );
 }
@@ -140,7 +163,7 @@ function LocationCard({
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <SecurityBar value={locState.security} />
             {locState.unrest > 0 && (
-              <span className="text-[8px] text-[var(--hp-red)]">
+              <span className="text-[10px] text-[var(--hp-red)]">
                 불안 {locState.unrest}
               </span>
             )}
@@ -149,14 +172,14 @@ function LocationCard({
               return (
                 <span
                   key={cond.id}
-                  className="rounded bg-[var(--bg-secondary)] px-1.5 py-0.5 text-[8px] font-semibold text-[var(--text-secondary)]"
+                  className="rounded bg-[var(--bg-secondary)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)]"
                 >
                   {label.emoji} {label.label}
                 </span>
               );
             })}
             {locState.presentNpcs.length > 0 && (
-              <span className="text-[8px] text-[var(--info-blue)]">
+              <span className="text-[10px] text-[var(--info-blue)]">
                 {locState.presentNpcs.join(", ")}
               </span>
             )}
@@ -303,11 +326,27 @@ export function HubScreen() {
           </div>
         )}
 
-        {/* Narrative Engine v1 Panels */}
-        <IncidentTracker incidents={activeIncidents} />
-        <HubNotificationList notifications={notifications} />
-        <SignalFeedPanel signals={signalFeed} />
-        <NpcRelationshipCard npcs={npcEmotional} />
+        {/* Narrative Engine v1 Panels — Collapsible */}
+        {activeIncidents.length > 0 && (
+          <CollapsibleSection title="진행 중인 사건" badge={activeIncidents.length} defaultOpen={activeIncidents.some(i => !i.resolved)}>
+            <IncidentTracker incidents={activeIncidents} />
+          </CollapsibleSection>
+        )}
+        {notifications.length > 0 && (
+          <CollapsibleSection title="알림" badge={notifications.length} defaultOpen={notifications.length <= 3}>
+            <HubNotificationList notifications={notifications} />
+          </CollapsibleSection>
+        )}
+        {signalFeed.length > 0 && (
+          <CollapsibleSection title="시그널" badge={signalFeed.length} defaultOpen={false}>
+            <SignalFeedPanel signals={signalFeed} />
+          </CollapsibleSection>
+        )}
+        {npcEmotional.length > 0 && (
+          <CollapsibleSection title="인물 관계" badge={npcEmotional.length} defaultOpen={false}>
+            <NpcRelationshipCard npcs={npcEmotional} />
+          </CollapsibleSection>
+        )}
       </div>
     </div>
   );
