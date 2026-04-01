@@ -789,10 +789,8 @@ export function StartScreen() {
     setPortraitError(null);
     try {
       const result = await generatePortrait(selectedPresetId, effectiveGender, portraitDescription);
-      // AI 생성 초상화는 서버(api.dimtale.com)에 저장되므로 전체 URL 조합
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
-      const fullUrl = result.imageUrl.startsWith('http') ? result.imageUrl : `${apiBase}${result.imageUrl}`;
-      setPortraitUrl(fullUrl);
+      // Next.js rewrites로 /portraits/generated/* 프록시 설정됨 → 상대 경로 사용
+      setPortraitUrl(result.imageUrl);
       setPortraitGenCount((c) => c + 1);
       setShowPortraitInput(false);
     } catch (err) {
