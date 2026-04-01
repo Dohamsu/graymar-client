@@ -1128,24 +1128,32 @@ export function StartScreen() {
         </div>
 
         {/* Gender selection bar for campaign */}
-        <div className="border-t border-[var(--border-primary)] px-4 py-3 sm:px-6">
+        <div className="border-t-2 border-[var(--gold)]/30 bg-[var(--bg-card)] px-4 py-3 sm:px-6">
           <div className="mx-auto flex max-w-3xl items-center gap-3">
-            <span className="shrink-0 text-sm text-[var(--text-muted)]">성별</span>
+            <span className="shrink-0 text-sm font-bold text-[var(--text-secondary)]">성별 <span className="text-[var(--hp-red)] text-xs">*필수</span></span>
             <div className="flex flex-1 gap-2">
-              {(["male", "female"] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setSelectedGenderState(g)}
-                  className={`flex-1 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-colors ${
-                    selectedGender === g
-                      ? "border-[var(--gold)] bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
-                      : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[rgba(201,169,98,0.4)] hover:text-[var(--text-secondary)]"
-                  }`}
-                >
-                  {g === "male" ? "남성" : "여성"}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => setSelectedGenderState("male")}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-all ${
+                  selectedGender === "male"
+                    ? "border-[#60A5FA] bg-[rgba(96,165,250,0.15)] text-[#60A5FA] shadow-[0_0_10px_rgba(96,165,250,0.2)]"
+                    : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[#60A5FA]/50 hover:text-[#60A5FA]/70"
+                }`}
+              >
+                <span className="text-lg">♂</span> 남성
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedGenderState("female")}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-all ${
+                  selectedGender === "female"
+                    ? "border-[#F472B6] bg-[rgba(244,114,182,0.15)] text-[#F472B6] shadow-[0_0_10px_rgba(244,114,182,0.2)]"
+                    : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[#F472B6]/50 hover:text-[#F472B6]/70"
+                }`}
+              >
+                <span className="text-lg">♀</span> 여성
+              </button>
             </div>
           </div>
         </div>
@@ -1195,36 +1203,46 @@ export function StartScreen() {
           </div>
         </div>
 
-        <div className="border-t border-[var(--border-primary)] px-4 pt-3 pb-1 sm:px-6">
-          <div className="mx-auto max-w-3xl grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
-            <span><span className="font-semibold" style={{color:'var(--hp-red)'}}>힘</span> 전투/협박</span>
-            <span><span className="font-semibold" style={{color:'var(--gold)'}}>민첩</span> 잠입/절도</span>
-            <span><span className="font-semibold" style={{color:'var(--success-green)'}}>지력</span> 조사/수색</span>
-            <span><span className="font-semibold" style={{color:'var(--info-blue)'}}>체질</span> 체력/저항</span>
-            <span><span className="font-semibold" style={{color:'#c084fc'}}>지각</span> 관찰/탐색</span>
-            <span><span className="font-semibold" style={{color:'#f472b6'}}>매력</span> 설득/거래</span>
-          </div>
-        </div>
+        {/* Bottom panel: 범례 + 성별 — 구분된 박스 */}
+        <div className="border-t-2 border-[var(--gold)]/30 bg-[var(--bg-card)] px-4 py-3 sm:px-6">
+          <div className="mx-auto max-w-3xl flex flex-col gap-3">
+            {/* 스탯 범례 */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
+              <span><span className="font-semibold" style={{color:'var(--hp-red)'}}>힘</span> 전투/협박</span>
+              <span><span className="font-semibold" style={{color:'var(--gold)'}}>민첩</span> 잠입/절도</span>
+              <span><span className="font-semibold" style={{color:'var(--success-green)'}}>지력</span> 조사/수색</span>
+              <span><span className="font-semibold" style={{color:'var(--info-blue)'}}>체질</span> 체력/저항</span>
+              <span><span className="font-semibold" style={{color:'#c084fc'}}>지각</span> 관찰/탐색</span>
+              <span><span className="font-semibold" style={{color:'#f472b6'}}>매력</span> 설득/거래</span>
+            </div>
 
-        {/* Gender selection bar -- fixed at bottom */}
-        <div className="border-t border-[var(--border-primary)] px-4 py-3 sm:px-6">
-          <div className="mx-auto flex max-w-3xl items-center gap-3">
-            <span className="shrink-0 text-sm text-[var(--text-muted)]">성별</span>
-            <div className="flex flex-1 gap-2">
-              {(["male", "female"] as const).map((g) => (
+            {/* 성별 선택 */}
+            <div className="flex items-center gap-3">
+              <span className="shrink-0 text-sm font-bold text-[var(--text-secondary)]">성별 <span className="text-[var(--hp-red)] text-xs">*필수</span></span>
+              <div className="flex flex-1 gap-2">
                 <button
-                  key={g}
                   type="button"
-                  onClick={() => setSelectedGenderState(g)}
-                  className={`flex-1 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-colors ${
-                    selectedGender === g
-                      ? "border-[var(--gold)] bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
-                      : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[rgba(201,169,98,0.4)] hover:text-[var(--text-secondary)]"
+                  onClick={() => setSelectedGenderState("male")}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-all ${
+                    selectedGender === "male"
+                      ? "border-[#60A5FA] bg-[rgba(96,165,250,0.15)] text-[#60A5FA] shadow-[0_0_10px_rgba(96,165,250,0.2)]"
+                      : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[#60A5FA]/50 hover:text-[#60A5FA]/70"
                   }`}
                 >
-                  {g === "male" ? "남성" : "여성"}
+                  <span className="text-lg">♂</span> 남성
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setSelectedGenderState("female")}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-all ${
+                    selectedGender === "female"
+                      ? "border-[#F472B6] bg-[rgba(244,114,182,0.15)] text-[#F472B6] shadow-[0_0_10px_rgba(244,114,182,0.2)]"
+                      : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[#F472B6]/50 hover:text-[#F472B6]/70"
+                  }`}
+                >
+                  <span className="text-lg">♀</span> 여성
+                </button>
+              </div>
             </div>
           </div>
         </div>
