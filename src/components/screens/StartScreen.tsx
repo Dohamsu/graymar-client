@@ -156,15 +156,11 @@ const STAT_KEYS = ["str", "dex", "wit", "con", "per", "cha"] as const;
 function PresetCard({
   preset,
   selected,
-  gender,
   onSelect,
-  onGenderChange,
 }: {
   preset: CharacterPreset;
   selected: boolean;
-  gender: Gender | null;
   onSelect: () => void;
-  onGenderChange: (g: Gender) => void;
 }) {
   const itemsText = preset.startingItems
     .map((i) => (i.qty > 1 ? `${i.name} x${i.qty}` : i.name))
@@ -188,26 +184,6 @@ function PresetCard({
           <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">{preset.name}</h3>
           <p className="text-sm text-[var(--gold)]">{preset.subtitle}</p>
         </div>
-
-        {/* Gender toggle */}
-        {preset.portraits && (
-          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-            {(["male", "female"] as const).map((g) => (
-              <button
-                key={g}
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onGenderChange(g); onSelect(); }}
-                className={`flex-1 rounded-md border-2 py-2 text-sm font-bold tracking-wider transition-colors ${
-                  gender === g
-                    ? "border-[var(--gold)] bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
-                    : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[rgba(201,169,98,0.4)] hover:text-[var(--text-secondary)]"
-                }`}
-              >
-                {g === "male" ? "남성" : "여성"}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Description */}
         <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{preset.description}</p>
@@ -1145,11 +1121,32 @@ export function StartScreen() {
                 key={preset.presetId}
                 preset={preset}
                 selected={selectedPresetId === preset.presetId}
-                gender={selectedPresetId === preset.presetId ? selectedGender : null}
                 onSelect={() => { setSelectedPresetId(preset.presetId); setSelectedGenderState(null); }}
-                onGenderChange={(g) => { setSelectedPresetId(preset.presetId); setSelectedGenderState(g); }}
               />
             ))}
+          </div>
+        </div>
+
+        {/* Gender selection bar for campaign */}
+        <div className="border-t border-[var(--border-primary)] px-4 py-3 sm:px-6">
+          <div className="mx-auto flex max-w-3xl items-center gap-3">
+            <span className="shrink-0 text-sm text-[var(--text-muted)]">성별</span>
+            <div className="flex flex-1 gap-2">
+              {(["male", "female"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setSelectedGenderState(g)}
+                  className={`flex-1 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-colors ${
+                    selectedGender === g
+                      ? "border-[var(--gold)] bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
+                      : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[rgba(201,169,98,0.4)] hover:text-[var(--text-secondary)]"
+                  }`}
+                >
+                  {g === "male" ? "남성" : "여성"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -1192,9 +1189,7 @@ export function StartScreen() {
                 key={preset.presetId}
                 preset={preset}
                 selected={selectedPresetId === preset.presetId}
-                gender={selectedPresetId === preset.presetId ? selectedGender : null}
                 onSelect={() => { setSelectedPresetId(preset.presetId); setSelectedGenderState(null); }}
-                onGenderChange={(g) => { setSelectedPresetId(preset.presetId); setSelectedGenderState(g); }}
               />
             ))}
           </div>
@@ -1208,6 +1203,29 @@ export function StartScreen() {
             <span><span className="font-semibold" style={{color:'var(--info-blue)'}}>체질</span> 체력/저항</span>
             <span><span className="font-semibold" style={{color:'#c084fc'}}>지각</span> 관찰/탐색</span>
             <span><span className="font-semibold" style={{color:'#f472b6'}}>매력</span> 설득/거래</span>
+          </div>
+        </div>
+
+        {/* Gender selection bar -- fixed at bottom */}
+        <div className="border-t border-[var(--border-primary)] px-4 py-3 sm:px-6">
+          <div className="mx-auto flex max-w-3xl items-center gap-3">
+            <span className="shrink-0 text-sm text-[var(--text-muted)]">성별</span>
+            <div className="flex flex-1 gap-2">
+              {(["male", "female"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setSelectedGenderState(g)}
+                  className={`flex-1 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-colors ${
+                    selectedGender === g
+                      ? "border-[var(--gold)] bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
+                      : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[rgba(201,169,98,0.4)] hover:text-[var(--text-secondary)]"
+                  }`}
+                >
+                  {g === "male" ? "남성" : "여성"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
