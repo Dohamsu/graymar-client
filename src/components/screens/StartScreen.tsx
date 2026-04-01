@@ -1351,13 +1351,13 @@ export function StartScreen() {
             당신의 모습입니다. 원한다면 새로운 모습을 만들 수 있습니다.
           </p>
 
-          {/* Portrait display -- larger */}
-          <div className="relative h-80 w-80 max-w-full overflow-hidden rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+          {/* Portrait display -- 4:5 비율, 상단 정렬 */}
+          <div className="relative aspect-[4/5] w-72 max-w-full overflow-hidden rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)]">
             {displayPortrait ? (
               portraitUrl ? (
-                <img src={displayPortrait} alt="캐릭터 초상화" className="h-full w-full object-cover" />
+                <img src={displayPortrait} alt="캐릭터 초상화" className="h-full w-full object-cover object-top" />
               ) : (
-                <Image src={displayPortrait} alt="캐릭터 초상화" fill className="object-cover" />
+                <Image src={displayPortrait} alt="캐릭터 초상화" fill className="object-cover object-top" />
               )
             ) : (
               <div className="flex h-full w-full items-center justify-center">
@@ -1721,12 +1721,12 @@ export function StartScreen() {
           {/* Top: portrait + name + preset info */}
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
             {/* Portrait */}
-            <div className="relative h-40 w-40 shrink-0 overflow-hidden rounded-lg border-2 border-[var(--gold)] bg-[var(--bg-secondary)]">
+            <div className="relative aspect-[4/5] w-36 shrink-0 overflow-hidden rounded-lg border-2 border-[var(--gold)] bg-[var(--bg-secondary)]">
               {displayPortrait ? (
                 portraitUrl ? (
-                  <img src={displayPortrait} alt={displayName} className="h-full w-full object-cover" />
+                  <img src={displayPortrait} alt={displayName} className="h-full w-full object-cover object-top" />
                 ) : (
-                  <Image src={displayPortrait} alt={displayName} fill className="object-cover" />
+                  <Image src={displayPortrait} alt={displayName} fill className="object-cover object-top" />
                 )
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
