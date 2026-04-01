@@ -436,7 +436,7 @@ function EmailInput({
         onKeyDown={handleKeyDown}
         onFocus={() => updateSuggestions(value)}
         placeholder="email@example.com"
-        className="h-11 w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+        className="h-11 w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
       />
       {showDomains && (
         <ul
@@ -554,7 +554,7 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={tab === "register" ? "8자 이상" : "비밀번호"}
-            className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+            className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
           />
         </div>
 
@@ -572,7 +572,7 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               placeholder="게임에서 사용할 이름"
-              className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+              className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
             />
           </div>
         )}
@@ -1016,7 +1016,7 @@ export function StartScreen() {
                   onChange={(e) => setCampaignName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleCreateCampaign(); }}
                   placeholder="나의 첫 번째 캠페인"
-                  className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+                  className="h-11 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
                 />
               </div>
               <button
@@ -1408,7 +1408,7 @@ export function StartScreen() {
                   placeholder="예: 짧은 흑발, 왼쪽 눈 위에 긴 흉터, 강인한 인상"
                   rows={3}
                   maxLength={200}
-                  className="w-full resize-none rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+                  className="w-full resize-none rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
                   autoFocus
                 />
                 <div className="mt-3 flex gap-2">
