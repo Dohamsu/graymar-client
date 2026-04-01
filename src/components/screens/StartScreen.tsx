@@ -1624,8 +1624,17 @@ export function StartScreen() {
                     </div>
                     {isSelected && <Check size={18} className="text-[var(--gold)]" />}
                   </div>
-                  <div className={`rounded-md px-3 py-1.5 text-xs ${isSelected ? "bg-[rgba(201,169,98,0.1)] text-[var(--gold)]" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)]"}`}>
-                    {trait.effectSummary}
+                  <div className={`rounded-md px-3 py-2 text-xs ${isSelected ? "bg-[rgba(201,169,98,0.1)]" : "bg-[var(--bg-secondary)]"}`}>
+                    <div className={`mb-1 font-bold ${isSelected ? "text-[var(--gold)]" : "text-[var(--text-secondary)]"}`}>
+                      {trait.effectSummary}
+                    </div>
+                    {isSelected && trait.effectDetails && (
+                      <ul className="flex flex-col gap-0.5 text-[var(--text-secondary)]">
+                        {trait.effectDetails.map((d, i) => (
+                          <li key={i}>{d}</li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </button>
               );
