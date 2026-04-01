@@ -809,7 +809,10 @@ export function StartScreen() {
     setPortraitError(null);
     try {
       const result = await generatePortrait(selectedPresetId, selectedGender, portraitDescription);
-      setPortraitUrl(result.imageUrl);
+      // AI 생성 초상화는 서버(api.dimtale.com)에 저장되므로 전체 URL 조합
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+      const fullUrl = result.imageUrl.startsWith('http') ? result.imageUrl : `${apiBase}${result.imageUrl}`;
+      setPortraitUrl(fullUrl);
       setPortraitGenCount((c) => c + 1);
       setShowPortraitInput(false);
     } catch (err) {
@@ -1313,7 +1316,11 @@ export function StartScreen() {
           {/* Portrait display -- larger */}
           <div className="relative h-80 w-80 max-w-full overflow-hidden rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)]">
             {displayPortrait ? (
-              <Image src={displayPortrait} alt="캐릭터 초상화" fill className="object-cover" />
+              portraitUrl ? (
+                <img src={displayPortrait} alt="캐릭터 초상화" className="h-full w-full object-cover" />
+              ) : (
+                <Image src={displayPortrait} alt="캐릭터 초상화" fill className="object-cover" />
+              )
             ) : (
               <div className="flex h-full w-full items-center justify-center">
                 <ImageIcon size={48} className="text-[var(--text-muted)]" />
@@ -1637,7 +1644,11 @@ export function StartScreen() {
             {/* Portrait */}
             <div className="relative h-40 w-40 shrink-0 overflow-hidden rounded-lg border-2 border-[var(--gold)] bg-[var(--bg-secondary)]">
               {displayPortrait ? (
-                <Image src={displayPortrait} alt={displayName} fill className="object-cover" />
+                portraitUrl ? (
+                  <img src={displayPortrait} alt={displayName} className="h-full w-full object-cover" />
+                ) : (
+                  <Image src={displayPortrait} alt={displayName} fill className="object-cover" />
+                )
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
                   <span className="font-display text-4xl text-[var(--text-muted)]">{displayName[0]}</span>
