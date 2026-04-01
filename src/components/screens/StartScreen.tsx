@@ -1,30 +1,72 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useGameStore } from "@/store/game-store";
 import { useAuthStore } from "@/store/auth-store";
 import { PRESETS } from "@/data/presets";
+import { TRAITS, type TraitDefinition } from "@/data/traits";
 import { STAT_ACTION_HINTS } from "@/data/stat-descriptions";
 import { StatTooltip } from "@/components/ui/StatTooltip";
 import {
   getActiveCampaign,
   createCampaign,
   getAvailableScenarios,
+  generatePortrait,
   type CampaignResponse,
   type ScenarioInfo,
 } from "@/lib/api-client";
 import type { CharacterPreset } from "@/types/game";
+import {
+  Sword,
+  Eye,
+  MessageCircle,
+  Dice5,
+  Droplets,
+  Moon,
+  Plus,
+  Minus,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  RotateCcw,
+  Check,
+  ImageIcon,
+  Loader2,
+  Info,
+} from "lucide-react";
 
-type ScreenPhase = "TITLE" | "AUTH" | "SELECT_PRESET" | "CAMPAIGN" | "CAMPAIGN_SCENARIO" | "CAMPAIGN_PRESET";
+type ScreenPhase =
+  | "TITLE"
+  | "AUTH"
+  | "SELECT_PRESET"
+  | "CHARACTER_NAME"
+  | "CHARACTER_PORTRAIT"
+  | "CHARACTER_STATS"
+  | "CHARACTER_TRAIT"
+  | "CHARACTER_CONFIRM"
+  | "CAMPAIGN"
+  | "CAMPAIGN_SCENARIO"
+  | "CAMPAIGN_PRESET";
 type AuthTab = "login" | "register";
 type Gender = "male" | "female";
 
 // ---------------------------------------------------------------------------
-// 스탯 → 간략 요약 ("체력 높음 · 회피 낮음" 형태)
+// Trait icon mapping
+// ---------------------------------------------------------------------------
+const TRAIT_ICON_MAP: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
+  sword: Sword,
+  eye: Eye,
+  "message-circle": MessageCircle,
+  "dice-5": Dice5,
+  droplets: Droplets,
+  moon: Moon,
+};
+
+// ---------------------------------------------------------------------------
+// Stat config
 // ---------------------------------------------------------------------------
 
-// 6개 기본 스탯 기준 (Living World v2)
 const STAT_LABELS: Record<string, string> = {
   MaxHP: "체력",
   str: "힘",
@@ -36,12 +78,12 @@ const STAT_LABELS: Record<string, string> = {
 };
 
 const STAT_HINTS: Record<string, string> = {
-  str: "전투 · 협박",
-  dex: "잠입 · 절도 · 회피",
-  wit: "조사 · 수색",
-  con: "방어 · 저항 · 도움",
-  per: "관찰 · 발견",
-  cha: "설득 · 뇌물 · 거래",
+  str: "전투 . 협박",
+  dex: "잠입 . 절도 . 회피",
+  wit: "조사 . 수색",
+  con: "방어 . 저항 . 도움",
+  per: "관찰 . 발견",
+  cha: "설득 . 뇌물 . 거래",
 };
 
 const STAT_THRESHOLDS: Record<string, [number, number, number]> = {
@@ -67,7 +109,6 @@ function getStatGrade(key: string, value: number): StatGrade {
 
 const SUMMARY_STATS = ["MaxHP", "str", "dex", "wit", "con", "per", "cha"] as const;
 
-/** 눈에 띄는 스탯만 뽑아서 한 줄 요약 ("힘 높음 · 민첩 낮음") */
 function buildStatSummary(stats: CharacterPreset["stats"]): Array<{ key: string; label: string; grade: StatGrade; hint?: string }> {
   const items: Array<{ key: string; label: string; grade: StatGrade; hint?: string }> = [];
   for (const key of SUMMARY_STATS) {
@@ -85,6 +126,28 @@ const GRADE_COLOR: Record<StatGrade, string> = {
   "보통": "text-[var(--text-secondary)]",
   "낮음": "text-[var(--text-muted)]",
 };
+
+// Stat descriptions for Step 4
+const STAT_DESCRIPTIONS: Record<string, string> = {
+  str: "전투와 위압 -- FIGHT/THREATEN 판정, 전투 공격력",
+  dex: "은밀과 손재주 -- SNEAK/STEAL 판정, 전투 회피/명중",
+  wit: "조사와 분석 -- INVESTIGATE/SEARCH 판정, 단서 발견",
+  con: "인내와 봉사 -- HELP 판정, 전투 방어력",
+  per: "관찰과 직감 -- OBSERVE 판정, 숨겨진 상황 감지",
+  cha: "설득과 거래 -- PERSUADE/BRIBE/TALK 판정, NPC 정보",
+};
+
+const STAT_COLORS_MAP: Record<string, string> = {
+  str: "var(--hp-red)",
+  dex: "var(--gold)",
+  wit: "var(--success-green)",
+  con: "var(--info-blue)",
+  per: "#c084fc",
+  cha: "#f472b6",
+};
+
+const BONUS_POINTS_TOTAL = 6;
+const STAT_KEYS = ["str", "dex", "wit", "con", "per", "cha"] as const;
 
 // ---------------------------------------------------------------------------
 // PresetCard
@@ -109,7 +172,6 @@ function PresetCard({
 
   const portraitSrc = preset.portraits?.[gender];
   const altPortraitSrc = preset.portraits?.[gender === "male" ? "female" : "male"];
-  const statSummary = buildStatSummary(preset.stats);
 
   return (
     <div
@@ -123,19 +185,10 @@ function PresetCard({
           : "border-[var(--border-primary)] bg-[var(--bg-card)] hover:border-[rgba(201,169,98,0.4)] hover:bg-[rgba(201,169,98,0.04)]"
       }`}
     >
-      {/* Portrait */}
       {portraitSrc ? (
         <div className="relative aspect-[4/3] w-full overflow-hidden">
-          {/* 반대 성별 이미지 프리로드 (숨김) */}
           {altPortraitSrc && (
-            <Image
-              src={altPortraitSrc}
-              alt=""
-              fill
-              sizes="1px"
-              className="pointer-events-none opacity-0"
-              aria-hidden
-            />
+            <Image src={altPortraitSrc} alt="" fill sizes="1px" className="pointer-events-none opacity-0" aria-hidden />
           )}
           <Image
             src={portraitSrc}
@@ -145,9 +198,7 @@ function PresetCard({
             className="object-cover"
             priority
           />
-          {/* 하단 그라데이션 오버레이 */}
           <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[var(--bg-card)] to-transparent" />
-          {/* 이름 오버레이 */}
           <div className="absolute inset-x-0 bottom-0 px-4 pb-3">
             <h3 className="font-display text-xl font-bold text-[var(--text-primary)] drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
               {preset.name}
@@ -160,34 +211,21 @@ function PresetCard({
       ) : (
         <div className="flex aspect-[5/3] w-full items-center justify-center bg-[var(--bg-secondary)]">
           <div className="flex flex-col items-center gap-1">
-            <span className="font-display text-5xl text-[var(--text-muted)]">
-              {preset.name[0]}
-            </span>
-            <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">
-              {preset.name}
-            </h3>
+            <span className="font-display text-5xl text-[var(--text-muted)]">{preset.name[0]}</span>
+            <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">{preset.name}</h3>
             <p className="text-sm text-[var(--gold)]">{preset.subtitle}</p>
           </div>
         </div>
       )}
 
-      {/* 카드 하단 정보 */}
       <div className="flex flex-col gap-3 px-4 py-4">
-        {/* 성별 선택 — border-2 고정으로 레이아웃 shift 방지 */}
         {preset.portraits && (
-          <div
-            className="flex gap-2"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             {(["male", "female"] as const).map((g) => (
               <button
                 key={g}
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onGenderChange(g);
-                  onSelect();
-                }}
+                onClick={(e) => { e.stopPropagation(); onGenderChange(g); onSelect(); }}
                 className={`flex-1 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-colors ${
                   gender === g
                     ? "border-[var(--gold)] bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
@@ -200,20 +238,16 @@ function PresetCard({
           </div>
         )}
 
-        {/* 설명 */}
-        <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-          {preset.description}
-        </p>
+        <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{preset.description}</p>
 
-        {/* 스탯 바 그래프 */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
           {(["str", "dex", "wit", "con", "per", "cha"] as const).map((key) => {
             const value = preset.stats[key] ?? 0;
             const max = 18;
             const pct = Math.min(100, Math.round((value / max) * 100));
             const colors: Record<string, string> = {
-              str: 'var(--hp-red)', dex: 'var(--gold)', wit: 'var(--success-green)',
-              con: 'var(--info-blue)', per: '#c084fc', cha: '#f472b6',
+              str: "var(--hp-red)", dex: "var(--gold)", wit: "var(--success-green)",
+              con: "var(--info-blue)", per: "#c084fc", cha: "#f472b6",
             };
             return (
               <div key={key} className="flex items-center gap-1.5" title={STAT_HINTS[key]}>
@@ -227,7 +261,6 @@ function PresetCard({
           })}
         </div>
 
-        {/* 골드 & 아이템 */}
         <div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-primary)] pt-3 text-sm text-[var(--text-muted)]">
           <span className="text-[var(--gold)]">{preset.startingGold}G</span>
           {itemsText && (
@@ -239,6 +272,94 @@ function PresetCard({
         </div>
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RadarChart (SVG)
+// ---------------------------------------------------------------------------
+
+function RadarChart({
+  baseStats,
+  bonusStats,
+  size = 200,
+}: {
+  baseStats: Record<string, number>;
+  bonusStats: Record<string, number>;
+  size?: number;
+}) {
+  const labels = ["STR", "DEX", "WIT", "CON", "PER", "CHA"];
+  const keys = ["str", "dex", "wit", "con", "per", "cha"];
+  const maxVal = 22; // max possible with bonus
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size * 0.38;
+
+  const getPoint = (index: number, value: number) => {
+    const angle = (Math.PI * 2 * index) / 6 - Math.PI / 2;
+    const ratio = Math.min(value / maxVal, 1);
+    return {
+      x: cx + r * ratio * Math.cos(angle),
+      y: cy + r * ratio * Math.sin(angle),
+    };
+  };
+
+  const basePoints = keys.map((k, i) => getPoint(i, baseStats[k] ?? 0));
+  const totalPoints = keys.map((k, i) => getPoint(i, (baseStats[k] ?? 0) + (bonusStats[k] ?? 0)));
+
+  const toPath = (pts: { x: number; y: number }[]) =>
+    pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + " Z";
+
+  // Grid lines
+  const gridLevels = [0.25, 0.5, 0.75, 1];
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
+      {/* Grid */}
+      {gridLevels.map((level) => {
+        const pts = Array.from({ length: 6 }, (_, i) => getPoint(i, maxVal * level));
+        return (
+          <polygon
+            key={level}
+            points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
+            fill="none"
+            stroke="var(--border-primary)"
+            strokeWidth={0.5}
+          />
+        );
+      })}
+      {/* Axis lines */}
+      {Array.from({ length: 6 }, (_, i) => {
+        const p = getPoint(i, maxVal);
+        return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="var(--border-primary)" strokeWidth={0.5} />;
+      })}
+      {/* Base fill */}
+      <polygon points={basePoints.map((p) => `${p.x},${p.y}`).join(" ")} fill="rgba(136,136,136,0.15)" stroke="rgba(136,136,136,0.4)" strokeWidth={1} />
+      {/* Total fill (with bonus) */}
+      <path d={toPath(totalPoints)} fill="rgba(201,169,98,0.2)" stroke="var(--gold)" strokeWidth={1.5} />
+      {/* Dots */}
+      {totalPoints.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={3} fill="var(--gold)" />
+      ))}
+      {/* Labels */}
+      {labels.map((label, i) => {
+        const p = getPoint(i, maxVal * 1.22);
+        return (
+          <text
+            key={label}
+            x={p.x}
+            y={p.y}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="var(--text-secondary)"
+            fontSize={11}
+            fontWeight={600}
+          >
+            {label}
+          </text>
+        );
+      })}
+    </svg>
   );
 }
 
@@ -260,10 +381,6 @@ const EMAIL_DOMAINS = [
   "icloud.com",
 ];
 
-// ---------------------------------------------------------------------------
-// EmailInput — @ 입력 시 도메인 자동완성 드롭다운
-// ---------------------------------------------------------------------------
-
 function EmailInput({
   value,
   onChange,
@@ -277,7 +394,6 @@ function EmailInput({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  // @ 이후 입력에 따라 필터링
   const updateSuggestions = useCallback((email: string) => {
     const atIdx = email.indexOf("@");
     if (atIdx === -1 || atIdx === 0) {
@@ -285,7 +401,6 @@ function EmailInput({
       return;
     }
     const typed = email.slice(atIdx + 1);
-    // @ 뒤에 완전한 도메인이 이미 있으면 닫기
     if (EMAIL_DOMAINS.includes(typed)) {
       setShowDomains(false);
       return;
@@ -333,14 +448,12 @@ function EmailInput({
     }
   };
 
-  // 활성 항목 스크롤
   useEffect(() => {
     if (!showDomains || !listRef.current) return;
     const active = listRef.current.children[activeIdx] as HTMLElement | undefined;
     active?.scrollIntoView({ block: "nearest" });
   }, [activeIdx, showDomains]);
 
-  // 외부 클릭 시 닫기
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -383,10 +496,7 @@ function EmailInput({
                 key={domain}
                 role="option"
                 aria-selected={idx === activeIdx}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  selectDomain(domain);
-                }}
+                onMouseDown={(e) => { e.preventDefault(); selectDomain(domain); }}
                 onMouseEnter={() => setActiveIdx(idx)}
                 className={`flex cursor-pointer items-center px-3 py-2 text-sm transition-colors ${
                   idx === activeIdx
@@ -433,7 +543,6 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 이메일 저장 처리
     if (rememberEmail) {
       localStorage.setItem(SAVED_EMAIL_KEY, email);
       localStorage.setItem(REMEMBER_EMAIL_KEY, "true");
@@ -447,7 +556,6 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
     } else {
       await authRegister(email, password, nickname || undefined);
     }
-    // 성공 여부는 store의 token으로 판단
     const { token } = useAuthStore.getState();
     if (token) {
       onSuccess();
@@ -456,7 +564,6 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <div className="w-full max-w-sm">
-      {/* Tabs */}
       <div className="mb-6 flex border-b border-[var(--border-primary)]">
         {(["login", "register"] as const).map((t) => (
           <button
@@ -474,19 +581,14 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
         ))}
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} autoComplete="on" className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="auth-email" className="text-xs text-[var(--text-muted)]">
-            이메일
-          </label>
+          <label htmlFor="auth-email" className="text-xs text-[var(--text-muted)]">이메일</label>
           <EmailInput value={email} onChange={setEmail} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="auth-password" className="text-xs text-[var(--text-muted)]">
-            비밀번호
-          </label>
+          <label htmlFor="auth-password" className="text-xs text-[var(--text-muted)]">비밀번호</label>
           <input
             id="auth-password"
             name="password"
@@ -520,7 +622,6 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
           </div>
         )}
 
-        {/* 이메일 저장 체크박스 (로그인 탭에서만) */}
         {tab === "login" && (
           <label className="flex cursor-pointer items-center gap-2 select-none">
             <input
@@ -533,24 +634,82 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
           </label>
         )}
 
-        {/* Error */}
-        {authError && (
-          <p className="text-sm text-[var(--hp-red)]">{authError}</p>
-        )}
+        {authError && <p className="text-sm text-[var(--hp-red)]">{authError}</p>}
 
-        {/* Submit */}
         <button
           type="submit"
           disabled={authLoading}
           className="mt-2 flex h-12 items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
         >
-          {authLoading
-            ? "처리 중..."
-            : tab === "login"
-              ? "로그인"
-              : "가입하기"}
+          {authLoading ? "처리 중..." : tab === "login" ? "로그인" : "가입하기"}
         </button>
       </form>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Step indicator
+// ---------------------------------------------------------------------------
+
+function StepIndicator({ current, total }: { current: number; total: number }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {Array.from({ length: total }, (_, i) => (
+        <div
+          key={i}
+          className={`h-1.5 rounded-full transition-all ${
+            i < current
+              ? "w-6 bg-[var(--gold)]"
+              : i === current
+                ? "w-6 bg-[var(--gold)] opacity-60"
+                : "w-1.5 bg-[var(--border-primary)]"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Creation step layout wrapper
+// ---------------------------------------------------------------------------
+
+function CreationLayout({
+  title,
+  step,
+  totalSteps,
+  onBack,
+  children,
+  footer,
+}: {
+  title: string;
+  step: number;
+  totalSteps: number;
+  onBack: () => void;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
+  return (
+    <div className="flex h-full flex-col bg-[var(--bg-primary)]">
+      <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
+        <button
+          onClick={onBack}
+          className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+        >
+          <ChevronLeft size={18} className="inline" /> 뒤로
+        </button>
+        <h2 className="flex-1 font-display text-base text-[var(--text-primary)]">{title}</h2>
+        <StepIndicator current={step} total={totalSteps} />
+      </div>
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+        <div className="mx-auto max-w-3xl">{children}</div>
+      </div>
+      {footer && (
+        <div className="border-t border-[var(--border-primary)] px-4 py-4 sm:px-6">
+          <div className="mx-auto max-w-3xl">{footer}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -559,7 +718,6 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
 // StartScreen
 // ---------------------------------------------------------------------------
 
-/** presetId → 프리셋 이름 */
 function getPresetName(presetId: string): string {
   return PRESETS.find((p) => p.presetId === presetId)?.name ?? presetId;
 }
@@ -586,6 +744,18 @@ export function StartScreen() {
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [genderMap, setGenderMap] = useState<Record<string, Gender>>({});
 
+  // Character creation state
+  const [characterName, setCharacterName] = useState("");
+  const [bonusStats, setBonusStats] = useState<Record<string, number>>({});
+  const [selectedTraitId, setSelectedTraitId] = useState<string | null>(null);
+  const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
+  const [portraitLoading, setPortraitLoading] = useState(false);
+  const [portraitGenCount, setPortraitGenCount] = useState(0);
+  const [portraitDescription, setPortraitDescription] = useState("");
+  const [showPortraitInput, setShowPortraitInput] = useState(false);
+  const [portraitError, setPortraitError] = useState<string | null>(null);
+  const [focusedStat, setFocusedStat] = useState<string | null>(null);
+
   // Campaign state
   const [activeCampaign, setActiveCampaign] = useState<CampaignResponse | null>(null);
   const [campaignName, setCampaignName] = useState("");
@@ -594,9 +764,44 @@ export function StartScreen() {
   const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
 
+  const selectedPreset = useMemo(
+    () => PRESETS.find((p) => p.presetId === selectedPresetId) ?? null,
+    [selectedPresetId],
+  );
+  const selectedGender = selectedPresetId ? (genderMap[selectedPresetId] ?? "male") : "male";
+
+  const bonusPointsUsed = useMemo(
+    () => Object.values(bonusStats).reduce((sum, v) => sum + v, 0),
+    [bonusStats],
+  );
+  const bonusPointsRemaining = BONUS_POINTS_TOTAL - bonusPointsUsed;
+
+  // Reset creation state when going back to preset selection
+  const resetCreationState = () => {
+    setCharacterName("");
+    setBonusStats({});
+    setSelectedTraitId(null);
+    setPortraitUrl(null);
+    setPortraitGenCount(0);
+    setPortraitDescription("");
+    setShowPortraitInput(false);
+    setPortraitError(null);
+    setFocusedStat(null);
+  };
+
   const handleStartGame = () => {
     if (!selectedPresetId) return;
-    startNewGame(selectedPresetId, genderMap[selectedPresetId] ?? "male");
+    const opts: {
+      characterName?: string;
+      bonusStats?: Record<string, number>;
+      traitId?: string;
+      portraitUrl?: string;
+    } = {};
+    if (characterName.trim()) opts.characterName = characterName.trim();
+    if (bonusPointsUsed > 0) opts.bonusStats = bonusStats;
+    if (selectedTraitId) opts.traitId = selectedTraitId;
+    if (portraitUrl) opts.portraitUrl = portraitUrl;
+    startNewGame(selectedPresetId, genderMap[selectedPresetId] ?? "male", Object.keys(opts).length > 0 ? opts : undefined);
   };
 
   const handleLogout = () => {
@@ -607,9 +812,27 @@ export function StartScreen() {
     setScenarios([]);
     setSelectedScenarioId(null);
     setScreenPhase("TITLE");
+    resetCreationState();
   };
 
-  // Campaign: enter campaign mode
+  // Portrait generation
+  const handleGeneratePortrait = async () => {
+    if (!selectedPresetId || portraitGenCount >= 3) return;
+    setPortraitLoading(true);
+    setPortraitError(null);
+    try {
+      const result = await generatePortrait(selectedPresetId, selectedGender, portraitDescription);
+      setPortraitUrl(result.imageUrl);
+      setPortraitGenCount((c) => c + 1);
+      setShowPortraitInput(false);
+    } catch (err) {
+      setPortraitError(err instanceof Error ? err.message : "초상화 생성에 실패했습니다.");
+    } finally {
+      setPortraitLoading(false);
+    }
+  };
+
+  // Campaign handlers
   const handleEnterCampaign = async () => {
     setCampaignLoading(true);
     setCampaignError(null);
@@ -624,7 +847,6 @@ export function StartScreen() {
     }
   };
 
-  // Campaign: create new
   const handleCreateCampaign = async () => {
     if (!campaignName.trim()) return;
     setCampaignLoading(true);
@@ -633,7 +855,6 @@ export function StartScreen() {
       const campaign = await createCampaign(campaignName.trim());
       setActiveCampaign(campaign);
       setCampaignName("");
-      // Load scenarios for the new campaign
       const scenarioList = await getAvailableScenarios(campaign.id);
       setScenarios(scenarioList);
       setScreenPhase("CAMPAIGN_SCENARIO");
@@ -644,7 +865,6 @@ export function StartScreen() {
     }
   };
 
-  // Campaign: load scenarios for existing campaign
   const handleContinueCampaign = async () => {
     if (!activeCampaign) return;
     setCampaignLoading(true);
@@ -660,22 +880,18 @@ export function StartScreen() {
     }
   };
 
-  // Campaign: select scenario -> go to preset selection (first scenario) or start directly
   const handleSelectScenario = (scenarioId: string) => {
     setSelectedScenarioId(scenarioId);
-    // First scenario needs preset selection
     const scenario = scenarios.find((s) => s.scenarioId === scenarioId);
     if (scenario && scenario.order === 1) {
       setScreenPhase("CAMPAIGN_PRESET");
     } else {
-      // Subsequent scenarios: start directly with existing character
       if (activeCampaign) {
         startCampaignRun(activeCampaign.id, scenarioId, "DOCKWORKER", "male");
       }
     }
   };
 
-  // Campaign: start with preset
   const handleStartCampaignWithPreset = () => {
     if (!selectedPresetId || !activeCampaign || !selectedScenarioId) return;
     startCampaignRun(
@@ -686,25 +902,19 @@ export function StartScreen() {
     );
   };
 
-  // Phase: AUTH (로그인/회원가입)
+  // =========================================================================
+  // AUTH
+  // =========================================================================
   if (screenPhase === "AUTH") {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
-        {/* Logo (compact) */}
         <div className="flex flex-col items-center gap-3">
           <div className="flex h-16 w-16 items-center justify-center border-2 border-[var(--gold)]">
-            <span className="font-display text-2xl font-bold text-[var(--gold)]">
-              왕
-            </span>
+            <span className="font-display text-2xl font-bold text-[var(--gold)]">왕</span>
           </div>
-          <h1 className="font-display text-2xl tracking-[4px] text-[var(--text-primary)]">
-            그림자의 왕국
-          </h1>
+          <h1 className="font-display text-2xl tracking-[4px] text-[var(--text-primary)]">그림자의 왕국</h1>
         </div>
-
         <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
-
-        {/* 뒤로 */}
         <button
           onClick={() => setScreenPhase("TITLE")}
           className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
@@ -715,23 +925,20 @@ export function StartScreen() {
     );
   }
 
-  // Phase: TITLE
+  // =========================================================================
+  // TITLE
+  // =========================================================================
   if (screenPhase === "TITLE") {
     const isLoggedIn = !!authToken;
     const displayName = authUser?.nickname ?? authUser?.email ?? "";
 
     return (
       <div className="flex h-full flex-col items-center justify-center gap-12 bg-[var(--bg-primary)]">
-        {/* Logo */}
         <div className="flex flex-col items-center gap-4">
           <div className="flex h-20 w-20 items-center justify-center border-2 border-[var(--gold)]">
-            <span className="font-display text-3xl font-bold text-[var(--gold)]">
-              왕
-            </span>
+            <span className="font-display text-3xl font-bold text-[var(--gold)]">왕</span>
           </div>
-          <h1 className="font-display text-4xl tracking-[6px] text-[var(--text-primary)]">
-            그림자의 왕국
-          </h1>
+          <h1 className="font-display text-4xl tracking-[6px] text-[var(--text-primary)]">그림자의 왕국</h1>
           <p className="max-w-sm text-center text-sm leading-relaxed text-[var(--text-muted)]">
             권력과 음모가 뒤엉킨 항만 도시 그레이마르.
             <br />
@@ -739,11 +946,9 @@ export function StartScreen() {
           </p>
         </div>
 
-        {/* Actions */}
         <div className="flex w-full flex-col items-center gap-4 px-6">
           {isLoggedIn ? (
             <>
-              {/* 로그인 상태: 닉네임 표시 */}
               <p className="mb-2 text-sm text-[var(--text-secondary)]">
                 <span className="text-[var(--gold)]">{displayName}</span> 님, 환영합니다
               </p>
@@ -782,7 +987,6 @@ export function StartScreen() {
               </button>
             </>
           ) : (
-            /* 미로그인 상태 */
             <button
               onClick={() => setScreenPhase("AUTH")}
               className="flex h-14 w-full max-w-64 items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-lg tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
@@ -795,7 +999,9 @@ export function StartScreen() {
     );
   }
 
-  // Phase: CAMPAIGN — campaign hub (create or continue)
+  // =========================================================================
+  // CAMPAIGN
+  // =========================================================================
   if (screenPhase === "CAMPAIGN") {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
@@ -803,9 +1009,7 @@ export function StartScreen() {
           <div className="flex h-16 w-16 items-center justify-center border-2 border-[var(--gold)]">
             <span className="font-display text-2xl font-bold text-[var(--gold)]">C</span>
           </div>
-          <h1 className="font-display text-2xl tracking-[4px] text-[var(--text-primary)]">
-            캠페인
-          </h1>
+          <h1 className="font-display text-2xl tracking-[4px] text-[var(--text-primary)]">캠페인</h1>
         </div>
 
         <div className="flex w-full max-w-sm flex-col gap-4">
@@ -813,9 +1017,7 @@ export function StartScreen() {
             <>
               <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
                 <p className="text-xs text-[var(--text-muted)]">진행 중인 캠페인</p>
-                <p className="mt-1 font-display text-lg text-[var(--text-primary)]">
-                  {activeCampaign.name}
-                </p>
+                <p className="mt-1 font-display text-lg text-[var(--text-primary)]">{activeCampaign.name}</p>
                 <p className="mt-1 text-sm text-[var(--text-secondary)]">
                   시나리오 {activeCampaign.currentScenarioOrder}단계
                   <span className="ml-2 text-xs text-[var(--text-muted)]">
@@ -833,13 +1035,9 @@ export function StartScreen() {
             </>
           ) : (
             <>
-              <p className="text-center text-sm text-[var(--text-secondary)]">
-                진행 중인 캠페인이 없습니다. 새 캠페인을 시작하세요.
-              </p>
+              <p className="text-center text-sm text-[var(--text-secondary)]">진행 중인 캠페인이 없습니다. 새 캠페인을 시작하세요.</p>
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="campaign-name" className="text-xs text-[var(--text-muted)]">
-                  캠페인 이름
-                </label>
+                <label htmlFor="campaign-name" className="text-xs text-[var(--text-muted)]">캠페인 이름</label>
                 <input
                   id="campaign-name"
                   type="text"
@@ -861,9 +1059,7 @@ export function StartScreen() {
             </>
           )}
 
-          {campaignError && (
-            <p className="text-sm text-[var(--hp-red)]">{campaignError}</p>
-          )}
+          {campaignError && <p className="text-sm text-[var(--hp-red)]">{campaignError}</p>}
         </div>
 
         <button
@@ -876,7 +1072,9 @@ export function StartScreen() {
     );
   }
 
-  // Phase: CAMPAIGN_SCENARIO — select scenario
+  // =========================================================================
+  // CAMPAIGN_SCENARIO
+  // =========================================================================
   if (screenPhase === "CAMPAIGN_SCENARIO") {
     return (
       <div className="flex h-full flex-col bg-[var(--bg-primary)]">
@@ -888,16 +1086,14 @@ export function StartScreen() {
             &larr; 뒤로
           </button>
           <h2 className="font-display text-base text-[var(--text-primary)]">
-            시나리오 선택 — {activeCampaign?.name}
+            시나리오 선택 -- {activeCampaign?.name}
           </h2>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
           <div className="mx-auto flex max-w-2xl flex-col gap-4">
             {scenarios.length === 0 ? (
-              <p className="text-center text-sm text-[var(--text-muted)]">
-                사용 가능한 시나리오가 없습니다.
-              </p>
+              <p className="text-center text-sm text-[var(--text-muted)]">사용 가능한 시나리오가 없습니다.</p>
             ) : (
               scenarios.map((scenario) => {
                 const isAvailable = scenario.prerequisites.length === 0;
@@ -916,17 +1112,11 @@ export function StartScreen() {
                       <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--gold)] font-display text-sm text-[var(--gold)]">
                         {scenario.order}
                       </span>
-                      <h3 className="font-display text-lg text-[var(--text-primary)]">
-                        {scenario.name}
-                      </h3>
+                      <h3 className="font-display text-lg text-[var(--text-primary)]">{scenario.name}</h3>
                     </div>
-                    <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-                      {scenario.description}
-                    </p>
+                    <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{scenario.description}</p>
                     {!isAvailable && (
-                      <p className="text-xs text-[var(--text-muted)]">
-                        선행 시나리오를 먼저 완료해야 합니다.
-                      </p>
+                      <p className="text-xs text-[var(--text-muted)]">선행 시나리오를 먼저 완료해야 합니다.</p>
                     )}
                   </button>
                 );
@@ -938,24 +1128,20 @@ export function StartScreen() {
     );
   }
 
-  // Phase: CAMPAIGN_PRESET — preset selection for campaign first scenario
+  // =========================================================================
+  // CAMPAIGN_PRESET
+  // =========================================================================
   if (screenPhase === "CAMPAIGN_PRESET") {
     return (
       <div className="flex h-full flex-col bg-[var(--bg-primary)]">
         <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
           <button
-            onClick={() => {
-              setScreenPhase("CAMPAIGN_SCENARIO");
-              setSelectedPresetId(null);
-              setGenderMap({});
-            }}
+            onClick={() => { setScreenPhase("CAMPAIGN_SCENARIO"); setSelectedPresetId(null); setGenderMap({}); }}
             className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
           >
             &larr; 뒤로
           </button>
-          <h2 className="font-display text-base text-[var(--text-primary)]">
-            용병의 과거를 선택하세요
-          </h2>
+          <h2 className="font-display text-base text-[var(--text-primary)]">용병의 과거를 선택하세요</h2>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
@@ -967,9 +1153,7 @@ export function StartScreen() {
                 selected={selectedPresetId === preset.presetId}
                 gender={genderMap[preset.presetId] ?? "male"}
                 onSelect={() => setSelectedPresetId(preset.presetId)}
-                onGenderChange={(g) =>
-                  setGenderMap((prev) => ({ ...prev, [preset.presetId]: g }))
-                }
+                onGenderChange={(g) => setGenderMap((prev) => ({ ...prev, [preset.presetId]: g }))}
               />
             ))}
           </div>
@@ -990,68 +1174,593 @@ export function StartScreen() {
     );
   }
 
-  // Phase: SELECT_PRESET
-  return (
-    <div className="flex h-full flex-col bg-[var(--bg-primary)]">
-      {/* Header */}
-      <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
-        <button
-          onClick={() => {
-            setScreenPhase("TITLE");
-            setSelectedPresetId(null);
-            setGenderMap({});
-          }}
-          className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
-        >
-          &larr; 뒤로
-        </button>
-        <h2 className="font-display text-base text-[var(--text-primary)]">
-          용병의 과거를 선택하세요
-        </h2>
-      </div>
-
-      {/* Preset Grid */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-        <div className="mx-auto grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-          {PRESETS.map((preset) => (
-            <PresetCard
-              key={preset.presetId}
-              preset={preset}
-              selected={selectedPresetId === preset.presetId}
-              gender={genderMap[preset.presetId] ?? "male"}
-              onSelect={() => setSelectedPresetId(preset.presetId)}
-              onGenderChange={(g) =>
-                setGenderMap((prev) => ({ ...prev, [preset.presetId]: g }))
-              }
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* 능력치 영향 안내 */}
-      <div className="border-t border-[var(--border-primary)] px-4 pt-3 pb-1 sm:px-6">
-        <div className="mx-auto max-w-3xl grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
-          <span><span className="font-semibold" style={{color:'var(--hp-red)'}}>힘</span> 전투·협박</span>
-          <span><span className="font-semibold" style={{color:'var(--gold)'}}>민첩</span> 잠입·절도</span>
-          <span><span className="font-semibold" style={{color:'var(--success-green)'}}>지력</span> 조사·수색</span>
-          <span><span className="font-semibold" style={{color:'var(--info-blue)'}}>체질</span> 체력·저항</span>
-          <span><span className="font-semibold" style={{color:'#c084fc'}}>지각</span> 관찰·탐색</span>
-          <span><span className="font-semibold" style={{color:'#f472b6'}}>매력</span> 설득·거래</span>
-        </div>
-      </div>
-
-      {/* Start Button */}
-      <div className="border-t border-[var(--border-primary)] px-4 py-4 sm:px-6">
-        <div className="mx-auto max-w-3xl">
+  // =========================================================================
+  // Step 1: SELECT_PRESET (출신 + 성별)
+  // =========================================================================
+  if (screenPhase === "SELECT_PRESET") {
+    return (
+      <div className="flex h-full flex-col bg-[var(--bg-primary)]">
+        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
           <button
-            onClick={handleStartGame}
-            disabled={!selectedPresetId || isLoading}
-            className="flex h-12 w-full items-center justify-center border border-[var(--gold)] font-display text-lg tracking-[4px] transition-all disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-[var(--gold)] enabled:text-[var(--bg-primary)] enabled:hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
+            onClick={() => { setScreenPhase("TITLE"); setSelectedPresetId(null); setGenderMap({}); resetCreationState(); }}
+            className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
           >
-            {isLoading ? "불러오는 중..." : "시 작 하 기"}
+            <ChevronLeft size={18} className="inline" /> 뒤로
           </button>
+          <h2 className="flex-1 font-display text-base text-[var(--text-primary)]">용병의 과거를 선택하세요</h2>
+          <StepIndicator current={0} total={6} />
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+          <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-5">
+            {PRESETS.map((preset) => (
+              <PresetCard
+                key={preset.presetId}
+                preset={preset}
+                selected={selectedPresetId === preset.presetId}
+                gender={genderMap[preset.presetId] ?? "male"}
+                onSelect={() => setSelectedPresetId(preset.presetId)}
+                onGenderChange={(g) => setGenderMap((prev) => ({ ...prev, [preset.presetId]: g }))}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="border-t border-[var(--border-primary)] px-4 pt-3 pb-1 sm:px-6">
+          <div className="mx-auto max-w-3xl grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
+            <span><span className="font-semibold" style={{color:'var(--hp-red)'}}>힘</span> 전투/협박</span>
+            <span><span className="font-semibold" style={{color:'var(--gold)'}}>민첩</span> 잠입/절도</span>
+            <span><span className="font-semibold" style={{color:'var(--success-green)'}}>지력</span> 조사/수색</span>
+            <span><span className="font-semibold" style={{color:'var(--info-blue)'}}>체질</span> 체력/저항</span>
+            <span><span className="font-semibold" style={{color:'#c084fc'}}>지각</span> 관찰/탐색</span>
+            <span><span className="font-semibold" style={{color:'#f472b6'}}>매력</span> 설득/거래</span>
+          </div>
+        </div>
+
+        <div className="border-t border-[var(--border-primary)] px-4 py-4 sm:px-6">
+          <div className="mx-auto max-w-3xl">
+            <button
+              onClick={() => {
+                if (!selectedPresetId) return;
+                resetCreationState();
+                setScreenPhase("CHARACTER_NAME");
+              }}
+              disabled={!selectedPresetId || isLoading}
+              className="flex h-12 w-full items-center justify-center border border-[var(--gold)] font-display text-lg tracking-[4px] transition-all disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-[var(--gold)] enabled:text-[var(--bg-primary)] enabled:hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
+            >
+              다 음 <ChevronRight size={20} className="ml-2" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // =========================================================================
+  // Step 2: CHARACTER_NAME
+  // =========================================================================
+  if (screenPhase === "CHARACTER_NAME") {
+    return (
+      <CreationLayout
+        title="캐릭터 이름"
+        step={1}
+        totalSteps={6}
+        onBack={() => setScreenPhase("SELECT_PRESET")}
+        footer={
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setCharacterName(""); setScreenPhase("CHARACTER_PORTRAIT"); }}
+              className="flex h-12 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] font-display text-sm tracking-wider text-[var(--text-muted)] transition-all hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+            >
+              건너뛰기
+            </button>
+            <button
+              onClick={() => setScreenPhase("CHARACTER_PORTRAIT")}
+              className="flex h-12 flex-[2] items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
+            >
+              다 음 <ChevronRight size={18} className="ml-1" />
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center gap-8 py-8">
+          {/* Preview portrait small */}
+          {selectedPreset?.portraits?.[selectedGender] && (
+            <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-[var(--gold)]">
+              <Image
+                src={selectedPreset.portraits[selectedGender]}
+                alt={selectedPreset.name}
+                fill
+                className="object-cover"
+              />
+            </div>
+          )}
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-sm text-[var(--text-muted)]">{selectedPreset?.name} ({selectedGender === "male" ? "남" : "여"})</p>
+          </div>
+
+          <div className="w-full max-w-sm">
+            <label htmlFor="char-name" className="mb-2 block text-xs text-[var(--text-muted)]">
+              캐릭터 이름 (선택사항)
+            </label>
+            <input
+              id="char-name"
+              type="text"
+              maxLength={8}
+              value={characterName}
+              onChange={(e) => setCharacterName(e.target.value)}
+              placeholder="이름을 입력하세요"
+              className="h-14 w-full rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 text-center font-display text-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none transition-colors"
+              autoFocus
+            />
+            <p className="mt-2 text-right text-xs text-[var(--text-muted)]">
+              {characterName.length}/8
+            </p>
+          </div>
+
+          <p className="max-w-sm text-center text-xs leading-relaxed text-[var(--text-muted)]">
+            이름을 정하지 않으면 &quot;이름 없는 용병&quot;으로 불립니다.
+          </p>
+        </div>
+      </CreationLayout>
+    );
+  }
+
+  // =========================================================================
+  // Step 3: CHARACTER_PORTRAIT
+  // =========================================================================
+  if (screenPhase === "CHARACTER_PORTRAIT") {
+    const defaultPortrait = selectedPreset?.portraits?.[selectedGender];
+    const displayPortrait = portraitUrl || defaultPortrait;
+
+    return (
+      <CreationLayout
+        title="초상화"
+        step={2}
+        totalSteps={6}
+        onBack={() => setScreenPhase("CHARACTER_NAME")}
+        footer={
+          <button
+            onClick={() => setScreenPhase("CHARACTER_STATS")}
+            className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
+          >
+            다 음 <ChevronRight size={18} className="ml-1" />
+          </button>
+        }
+      >
+        <div className="flex flex-col items-center gap-6 py-4">
+          {/* Portrait display */}
+          <div className="relative h-64 w-64 overflow-hidden rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+            {displayPortrait ? (
+              <Image src={displayPortrait} alt="캐릭터 초상화" fill className="object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <ImageIcon size={48} className="text-[var(--text-muted)]" />
+              </div>
+            )}
+            {portraitLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 size={32} className="animate-spin text-[var(--gold)]" />
+                  <span className="text-sm text-[var(--text-secondary)]">생성 중...</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col items-center gap-3 w-full max-w-sm">
+            {!showPortraitInput ? (
+              <>
+                <button
+                  onClick={() => setShowPortraitInput(true)}
+                  disabled={portraitLoading || portraitGenCount >= 3}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-[var(--gold)] bg-transparent font-display text-sm tracking-wider text-[var(--gold)] transition-all hover:bg-[rgba(201,169,98,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Sparkles size={16} />
+                  AI로 생성하기
+                  {portraitGenCount > 0 && (
+                    <span className="text-xs text-[var(--text-muted)]">({3 - portraitGenCount}회 남음)</span>
+                  )}
+                </button>
+                {portraitUrl && (
+                  <div className="flex w-full gap-2">
+                    <button
+                      onClick={() => setShowPortraitInput(true)}
+                      disabled={portraitLoading || portraitGenCount >= 3}
+                      className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border border-[var(--border-primary)] text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)] disabled:opacity-40"
+                    >
+                      <RotateCcw size={14} /> 다시 생성
+                    </button>
+                    <button
+                      onClick={() => { setPortraitUrl(null); }}
+                      className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border border-[var(--border-primary)] text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                    >
+                      기본 초상화 사용
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
+                <label className="mb-2 block text-xs text-[var(--text-muted)]">외모를 설명해주세요</label>
+                <textarea
+                  value={portraitDescription}
+                  onChange={(e) => setPortraitDescription(e.target.value)}
+                  placeholder="예: 짧은 흑발, 왼쪽 눈 위에 긴 흉터, 강인한 인상"
+                  rows={3}
+                  maxLength={200}
+                  className="w-full resize-none rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+                  autoFocus
+                />
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => setShowPortraitInput(false)}
+                    className="flex h-9 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleGeneratePortrait}
+                    disabled={portraitLoading || !portraitDescription.trim()}
+                    className="flex h-9 flex-[2] items-center justify-center gap-1.5 rounded-md border border-[var(--gold)] bg-[var(--gold)] text-sm font-bold text-[var(--bg-primary)] transition-all hover:shadow-[0_0_12px_rgba(201,169,98,0.3)] disabled:opacity-40"
+                  >
+                    <Sparkles size={14} /> 생성하기
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {portraitError && (
+            <p className="text-sm text-[var(--hp-red)]">{portraitError}</p>
+          )}
+
+          <p className="text-xs text-[var(--text-muted)]">
+            {portraitUrl ? "AI 생성 초상화가 적용됩니다." : "기본 프리셋 초상화가 사용됩니다."}
+          </p>
+        </div>
+      </CreationLayout>
+    );
+  }
+
+  // =========================================================================
+  // Step 4: CHARACTER_STATS
+  // =========================================================================
+  if (screenPhase === "CHARACTER_STATS") {
+    const allInOneStat = STAT_KEYS.find((k) => (bonusStats[k] ?? 0) === BONUS_POINTS_TOTAL);
+    const allInHint: Record<string, string> = {
+      str: "전투의 화신 -- 적은 주먹으로 해결한다.",
+      dex: "그림자 걷기 -- 아무도 당신을 잡을 수 없다.",
+      wit: "천재 분석가 -- 모든 단서를 꿰뚫는다.",
+      con: "철벽 방어 -- 어떤 고통도 버텨낸다.",
+      per: "만물의 관찰자 -- 숨겨진 것은 없다.",
+      cha: "타고난 지도자 -- 모두가 당신을 따른다.",
+    };
+
+    return (
+      <CreationLayout
+        title="보너스 스탯 배분"
+        step={3}
+        totalSteps={6}
+        onBack={() => setScreenPhase("CHARACTER_PORTRAIT")}
+        footer={
+          <button
+            onClick={() => setScreenPhase("CHARACTER_TRAIT")}
+            className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
+          >
+            다 음 <ChevronRight size={18} className="ml-1" />
+          </button>
+        }
+      >
+        <div className="flex flex-col gap-6">
+          {/* Remaining points */}
+          <div className="flex items-center justify-between rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3">
+            <span className="text-sm text-[var(--text-secondary)]">보너스 포인트</span>
+            <div className="flex items-center gap-2">
+              <span className={`font-display text-2xl font-bold ${bonusPointsRemaining > 0 ? "text-[var(--gold)]" : "text-[var(--text-muted)]"}`}>
+                {bonusPointsRemaining}
+              </span>
+              <span className="text-sm text-[var(--text-muted)]">/ {BONUS_POINTS_TOTAL}</span>
+            </div>
+          </div>
+
+          {/* All-in hint */}
+          {allInOneStat && (
+            <div className="rounded-md border border-[rgba(201,169,98,0.3)] bg-[rgba(201,169,98,0.06)] px-4 py-2 text-center text-sm text-[var(--gold)]">
+              {allInHint[allInOneStat]}
+            </div>
+          )}
+
+          {/* Stat rows */}
+          <div className="flex flex-col gap-3">
+            {STAT_KEYS.map((key) => {
+              const baseVal = selectedPreset?.stats[key] ?? 0;
+              const bonus = bonusStats[key] ?? 0;
+              const total = baseVal + bonus;
+              const canIncrease = bonusPointsRemaining > 0;
+              const canDecrease = bonus > 0;
+
+              return (
+                <div
+                  key={key}
+                  className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
+                    focusedStat === key
+                      ? "border-[var(--gold)] bg-[rgba(201,169,98,0.06)]"
+                      : "border-[var(--border-primary)] bg-[var(--bg-card)]"
+                  }`}
+                  onClick={() => setFocusedStat(key)}
+                >
+                  {/* Color dot + label */}
+                  <div className="flex items-center gap-2 w-20 sm:w-24">
+                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: STAT_COLORS_MAP[key] }} />
+                    <span className="font-display text-sm font-bold text-[var(--text-primary)]">
+                      {STAT_LABELS[key]}
+                    </span>
+                  </div>
+
+                  {/* Base value */}
+                  <span className="w-6 text-center text-sm text-[var(--text-muted)]">{baseVal}</span>
+
+                  {/* Bonus */}
+                  {bonus > 0 && (
+                    <span className="w-8 text-center text-sm font-bold text-[var(--gold)]">+{bonus}</span>
+                  )}
+                  {bonus === 0 && <span className="w-8" />}
+
+                  {/* Total */}
+                  <span className="w-8 text-center font-display text-lg font-bold text-[var(--text-primary)]">{total}</span>
+
+                  {/* +/- buttons */}
+                  <div className="ml-auto flex items-center gap-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); if (canDecrease) setBonusStats((prev) => ({ ...prev, [key]: bonus - 1 })); }}
+                      disabled={!canDecrease}
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-primary)] text-[var(--text-muted)] transition-colors hover:border-[var(--text-secondary)] hover:text-[var(--text-secondary)] disabled:opacity-20 disabled:cursor-not-allowed"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); if (canIncrease) setBonusStats((prev) => ({ ...prev, [key]: bonus + 1 })); }}
+                      disabled={!canIncrease}
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--gold)] text-[var(--gold)] transition-colors hover:bg-[rgba(201,169,98,0.1)] disabled:opacity-20 disabled:cursor-not-allowed"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Focused stat description */}
+          <div className="min-h-[48px] rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-3">
+            {focusedStat ? (
+              <div className="flex items-start gap-2">
+                <Info size={14} className="mt-0.5 shrink-0 text-[var(--text-muted)]" />
+                <div>
+                  <span className="text-sm font-bold" style={{ color: STAT_COLORS_MAP[focusedStat] }}>
+                    {STAT_LABELS[focusedStat]}
+                  </span>
+                  <span className="ml-2 text-sm text-[var(--text-secondary)]">
+                    {STAT_DESCRIPTIONS[focusedStat]}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--text-muted)]">스탯을 클릭하면 설명을 볼 수 있습니다.</p>
+            )}
+          </div>
+        </div>
+      </CreationLayout>
+    );
+  }
+
+  // =========================================================================
+  // Step 5: CHARACTER_TRAIT
+  // =========================================================================
+  if (screenPhase === "CHARACTER_TRAIT") {
+    return (
+      <CreationLayout
+        title="특성 선택"
+        step={4}
+        totalSteps={6}
+        onBack={() => setScreenPhase("CHARACTER_STATS")}
+        footer={
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setSelectedTraitId(null); setScreenPhase("CHARACTER_CONFIRM"); }}
+              className="flex h-12 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] font-display text-sm tracking-wider text-[var(--text-muted)] transition-all hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+            >
+              건너뛰기
+            </button>
+            <button
+              onClick={() => setScreenPhase("CHARACTER_CONFIRM")}
+              disabled={!selectedTraitId}
+              className="flex h-12 flex-[2] items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              다 음 <ChevronRight size={18} className="ml-1" />
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-[var(--text-secondary)]">
+            캐릭터에게 부여할 특성을 하나 선택하세요. 특성은 판정과 게임플레이에 영향을 줍니다.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {TRAITS.map((trait) => {
+              const isSelected = selectedTraitId === trait.traitId;
+              const IconComp = TRAIT_ICON_MAP[trait.icon];
+              return (
+                <button
+                  key={trait.traitId}
+                  onClick={() => setSelectedTraitId(isSelected ? null : trait.traitId)}
+                  className={`flex flex-col gap-2 rounded-lg border p-4 text-left transition-all ${
+                    isSelected
+                      ? "border-[var(--gold)] bg-[rgba(201,169,98,0.08)] shadow-[0_0_16px_rgba(201,169,98,0.15)]"
+                      : "border-[var(--border-primary)] bg-[var(--bg-card)] hover:border-[rgba(201,169,98,0.4)] hover:bg-[rgba(201,169,98,0.04)]"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isSelected ? "bg-[rgba(201,169,98,0.2)]" : "bg-[var(--bg-secondary)]"}`}>
+                      {IconComp ? (
+                        <IconComp size={20} className={isSelected ? "text-[var(--gold)]" : "text-[var(--text-muted)]"} />
+                      ) : (
+                        <span className="text-lg">{trait.icon}</span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className={`font-display text-sm font-bold ${isSelected ? "text-[var(--gold)]" : "text-[var(--text-primary)]"}`}>
+                        {trait.name}
+                      </h3>
+                      <p className="text-xs text-[var(--text-muted)]">{trait.description}</p>
+                    </div>
+                    {isSelected && <Check size={18} className="text-[var(--gold)]" />}
+                  </div>
+                  <div className={`rounded-md px-3 py-1.5 text-xs ${isSelected ? "bg-[rgba(201,169,98,0.1)] text-[var(--gold)]" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)]"}`}>
+                    {trait.effectSummary}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </CreationLayout>
+    );
+  }
+
+  // =========================================================================
+  // Step 6: CHARACTER_CONFIRM
+  // =========================================================================
+  if (screenPhase === "CHARACTER_CONFIRM") {
+    const preset = selectedPreset;
+    const trait = TRAITS.find((t) => t.traitId === selectedTraitId);
+    const displayName = characterName.trim() || "이름 없는 용병";
+    const displayPortrait = portraitUrl || preset?.portraits?.[selectedGender];
+    const itemsText = preset?.startingItems.map((i) => (i.qty > 1 ? `${i.name} x${i.qty}` : i.name)).join(", ") ?? "";
+
+    return (
+      <CreationLayout
+        title="캐릭터 확인"
+        step={5}
+        totalSteps={6}
+        onBack={() => setScreenPhase("CHARACTER_TRAIT")}
+        footer={
+          <div className="flex gap-3">
+            <button
+              onClick={() => setScreenPhase("SELECT_PRESET")}
+              className="flex h-12 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] font-display text-sm tracking-wider text-[var(--text-muted)] transition-all hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+            >
+              수정하기
+            </button>
+            <button
+              onClick={handleStartGame}
+              disabled={isLoading}
+              className="flex h-12 flex-[2] items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-lg tracking-[4px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
+            >
+              {isLoading ? "불러오는 중..." : "모험 시작"}
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-6">
+          {/* Top: portrait + name + preset info */}
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
+            {/* Portrait */}
+            <div className="relative h-40 w-40 shrink-0 overflow-hidden rounded-lg border-2 border-[var(--gold)] bg-[var(--bg-secondary)]">
+              {displayPortrait ? (
+                <Image src={displayPortrait} alt={displayName} fill className="object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <span className="font-display text-4xl text-[var(--text-muted)]">{displayName[0]}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Name + tags */}
+            <div className="flex flex-col items-center gap-2 sm:items-start">
+              <h3 className="font-display text-2xl font-bold text-[var(--text-primary)]">{displayName}</h3>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-md border border-[var(--gold)] bg-[rgba(201,169,98,0.1)] px-2.5 py-1 text-xs font-bold text-[var(--gold)]">
+                  {preset?.name}
+                </span>
+                <span className="rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2.5 py-1 text-xs text-[var(--text-muted)]">
+                  {selectedGender === "male" ? "남성" : "여성"}
+                </span>
+                {trait && (
+                  <span className="rounded-md border border-[rgba(201,169,98,0.4)] bg-[rgba(201,169,98,0.06)] px-2.5 py-1 text-xs text-[var(--gold)]">
+                    {trait.name}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-[var(--text-secondary)]">{preset?.description}</p>
+            </div>
+          </div>
+
+          {/* Radar chart */}
+          <div className="flex flex-col items-center gap-4 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-6">
+            <h4 className="font-display text-sm font-bold text-[var(--text-secondary)]">능력치</h4>
+            <RadarChart
+              baseStats={preset?.stats ?? {}}
+              bonusStats={bonusStats}
+              size={220}
+            />
+            {/* Stat summary row */}
+            <div className="grid w-full grid-cols-3 gap-2 sm:grid-cols-6">
+              {STAT_KEYS.map((key) => {
+                const base = preset?.stats[key] ?? 0;
+                const bonus = bonusStats[key] ?? 0;
+                return (
+                  <div key={key} className="flex flex-col items-center gap-0.5 rounded-md bg-[var(--bg-secondary)] px-2 py-2">
+                    <span className="text-[10px] font-bold" style={{ color: STAT_COLORS_MAP[key] }}>
+                      {STAT_LABELS[key]}
+                    </span>
+                    <div className="flex items-baseline gap-0.5">
+                      <span className="font-display text-lg font-bold text-[var(--text-primary)]">{base + bonus}</span>
+                      {bonus > 0 && (
+                        <span className="text-xs font-bold text-[var(--gold)]">+{bonus}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Trait + items + gold */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Trait */}
+            {trait && (
+              <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
+                <h4 className="mb-2 text-xs font-bold text-[var(--text-muted)]">특성</h4>
+                <div className="flex items-center gap-3">
+                  {(() => {
+                    const IC = TRAIT_ICON_MAP[trait.icon];
+                    return IC ? <IC size={20} className="text-[var(--gold)]" /> : <span>{trait.icon}</span>;
+                  })()}
+                  <div>
+                    <p className="font-display text-sm font-bold text-[var(--gold)]">{trait.name}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{trait.effectSummary}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Starting items & gold */}
+            <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
+              <h4 className="mb-2 text-xs font-bold text-[var(--text-muted)]">시작 장비</h4>
+              <div className="flex flex-col gap-1">
+                <p className="text-sm text-[var(--gold)]">{preset?.startingGold ?? 0}G</p>
+                {itemsText && <p className="text-sm text-[var(--text-secondary)]">{itemsText}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </CreationLayout>
+    );
+  }
+
+  // Fallback (should not reach here)
+  return null;
 }

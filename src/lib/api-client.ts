@@ -50,11 +50,26 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export function createRun(
   presetId: string,
   gender: 'male' | 'female' = 'male',
-  options?: { campaignId?: string; scenarioId?: string },
+  options?: {
+    campaignId?: string;
+    scenarioId?: string;
+    characterName?: string;
+    bonusStats?: Record<string, number>;
+    traitId?: string;
+    portraitUrl?: string;
+  },
 ) {
   return request<Record<string, unknown>>('/v1/runs', {
     method: 'POST',
     body: JSON.stringify({ presetId, gender, ...options }),
+  });
+}
+
+/** POST /v1/portrait/generate — generate a character portrait via AI. */
+export function generatePortrait(presetId: string, gender: string, appearanceDescription: string) {
+  return request<{ imageUrl: string; promptUsed: string }>('/v1/portrait/generate', {
+    method: 'POST',
+    body: JSON.stringify({ presetId, gender, appearanceDescription }),
   });
 }
 
