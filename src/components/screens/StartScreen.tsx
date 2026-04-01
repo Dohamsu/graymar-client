@@ -170,9 +170,6 @@ function PresetCard({
     .map((i) => (i.qty > 1 ? `${i.name} x${i.qty}` : i.name))
     .join(", ");
 
-  const portraitSrc = preset.portraits?.[gender];
-  const altPortraitSrc = preset.portraits?.[gender === "male" ? "female" : "male"];
-
   return (
     <div
       role="button"
@@ -185,40 +182,14 @@ function PresetCard({
           : "border-[var(--border-primary)] bg-[var(--bg-card)] hover:border-[rgba(201,169,98,0.4)] hover:bg-[rgba(201,169,98,0.04)]"
       }`}
     >
-      {portraitSrc ? (
-        <div className="relative aspect-[4/3] w-full overflow-hidden">
-          {altPortraitSrc && (
-            <Image src={altPortraitSrc} alt="" fill sizes="1px" className="pointer-events-none opacity-0" aria-hidden />
-          )}
-          <Image
-            src={portraitSrc}
-            alt={`${preset.name} ${gender === "male" ? "남" : "여"}`}
-            fill
-            sizes="(max-width: 640px) 100vw, 50vw"
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[var(--bg-card)] to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 px-4 pb-3">
-            <h3 className="font-display text-xl font-bold text-[var(--text-primary)] drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-              {preset.name}
-            </h3>
-            <p className="text-sm text-[var(--gold)] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-              {preset.subtitle}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="flex aspect-[5/3] w-full items-center justify-center bg-[var(--bg-secondary)]">
-          <div className="flex flex-col items-center gap-1">
-            <span className="font-display text-5xl text-[var(--text-muted)]">{preset.name[0]}</span>
-            <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">{preset.name}</h3>
-            <p className="text-sm text-[var(--gold)]">{preset.subtitle}</p>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col gap-3 px-4 py-4">
+        {/* Title */}
+        <div>
+          <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">{preset.name}</h3>
+          <p className="text-sm text-[var(--gold)]">{preset.subtitle}</p>
+        </div>
+
+        {/* Gender toggle */}
         {preset.portraits && (
           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             {(["male", "female"] as const).map((g) => (
@@ -226,7 +197,7 @@ function PresetCard({
                 key={g}
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onGenderChange(g); onSelect(); }}
-                className={`flex-1 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-colors ${
+                className={`flex-1 rounded-md border-2 py-2 text-sm font-bold tracking-wider transition-colors ${
                   gender === g
                     ? "border-[var(--gold)] bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
                     : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[rgba(201,169,98,0.4)] hover:text-[var(--text-secondary)]"
@@ -238,8 +209,15 @@ function PresetCard({
           </div>
         )}
 
+        {/* Description */}
         <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{preset.description}</p>
 
+        {/* Playstyle hint */}
+        <p className="rounded-md bg-[var(--bg-secondary)] px-3 py-2 text-xs leading-relaxed text-[var(--text-muted)]">
+          {preset.playstyleHint}
+        </p>
+
+        {/* Stat bars */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
           {(["str", "dex", "wit", "con", "per", "cha"] as const).map((key) => {
             const value = preset.stats[key] ?? 0;
@@ -261,6 +239,7 @@ function PresetCard({
           })}
         </div>
 
+        {/* Starting gold & items */}
         <div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-primary)] pt-3 text-sm text-[var(--text-muted)]">
           <span className="text-[var(--gold)]">{preset.startingGold}G</span>
           {itemsText && (
@@ -652,20 +631,28 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
 // Step indicator
 // ---------------------------------------------------------------------------
 
+const STEP_LABELS = ["출신", "초상화", "이름", "스탯", "특성", "확인"];
+
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1">
       {Array.from({ length: total }, (_, i) => (
-        <div
-          key={i}
-          className={`h-1.5 rounded-full transition-all ${
-            i < current
-              ? "w-6 bg-[var(--gold)]"
-              : i === current
-                ? "w-6 bg-[var(--gold)] opacity-60"
-                : "w-1.5 bg-[var(--border-primary)]"
-          }`}
-        />
+        <div key={i} className="flex flex-col items-center gap-0.5">
+          <div
+            className={`h-1.5 rounded-full transition-all ${
+              i < current
+                ? "w-6 bg-[var(--gold)]"
+                : i === current
+                  ? "w-6 bg-[var(--gold)] opacity-60"
+                  : "w-4 bg-[var(--border-primary)]"
+            }`}
+          />
+          <span className={`text-[9px] leading-none ${
+            i <= current ? "text-[var(--gold)]" : "text-[var(--text-muted)]"
+          }`}>
+            {STEP_LABELS[i] ?? ""}
+          </span>
+        </div>
       ))}
     </div>
   );
@@ -1223,7 +1210,7 @@ export function StartScreen() {
               onClick={() => {
                 if (!selectedPresetId) return;
                 resetCreationState();
-                setScreenPhase("CHARACTER_NAME");
+                setScreenPhase("CHARACTER_PORTRAIT");
               }}
               disabled={!selectedPresetId || isLoading}
               className="flex h-12 w-full items-center justify-center border border-[var(--gold)] font-display text-lg tracking-[4px] transition-all disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-[var(--gold)] enabled:text-[var(--bg-primary)] enabled:hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
@@ -1237,25 +1224,25 @@ export function StartScreen() {
   }
 
   // =========================================================================
-  // Step 2: CHARACTER_NAME
+  // Step 3: CHARACTER_NAME
   // =========================================================================
   if (screenPhase === "CHARACTER_NAME") {
     return (
       <CreationLayout
         title="캐릭터 이름"
-        step={1}
+        step={2}
         totalSteps={6}
-        onBack={() => setScreenPhase("SELECT_PRESET")}
+        onBack={() => setScreenPhase("CHARACTER_PORTRAIT")}
         footer={
           <div className="flex gap-3">
             <button
-              onClick={() => { setCharacterName(""); setScreenPhase("CHARACTER_PORTRAIT"); }}
+              onClick={() => { setCharacterName(""); setScreenPhase("CHARACTER_STATS"); }}
               className="flex h-12 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] font-display text-sm tracking-wider text-[var(--text-muted)] transition-all hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             >
               건너뛰기
             </button>
             <button
-              onClick={() => setScreenPhase("CHARACTER_PORTRAIT")}
+              onClick={() => setScreenPhase("CHARACTER_STATS")}
               className="flex h-12 flex-[2] items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
             >
               다 음 <ChevronRight size={18} className="ml-1" />
@@ -1264,17 +1251,6 @@ export function StartScreen() {
         }
       >
         <div className="flex flex-col items-center gap-8 py-8">
-          {/* Preview portrait small */}
-          {selectedPreset?.portraits?.[selectedGender] && (
-            <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-[var(--gold)]">
-              <Image
-                src={selectedPreset.portraits[selectedGender]}
-                alt={selectedPreset.name}
-                fill
-                className="object-cover"
-              />
-            </div>
-          )}
           <div className="flex flex-col items-center gap-1">
             <p className="text-sm text-[var(--text-muted)]">{selectedPreset?.name} ({selectedGender === "male" ? "남" : "여"})</p>
           </div>
@@ -1307,7 +1283,7 @@ export function StartScreen() {
   }
 
   // =========================================================================
-  // Step 3: CHARACTER_PORTRAIT
+  // Step 2: CHARACTER_PORTRAIT
   // =========================================================================
   if (screenPhase === "CHARACTER_PORTRAIT") {
     const defaultPortrait = selectedPreset?.portraits?.[selectedGender];
@@ -1316,21 +1292,26 @@ export function StartScreen() {
     return (
       <CreationLayout
         title="초상화"
-        step={2}
+        step={1}
         totalSteps={6}
-        onBack={() => setScreenPhase("CHARACTER_NAME")}
+        onBack={() => setScreenPhase("SELECT_PRESET")}
         footer={
           <button
-            onClick={() => setScreenPhase("CHARACTER_STATS")}
+            onClick={() => setScreenPhase("CHARACTER_NAME")}
             className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
           >
-            다 음 <ChevronRight size={18} className="ml-1" />
+            {portraitUrl ? "이 초상화로 진행" : "이 초상화로 진행"} <ChevronRight size={18} className="ml-1" />
           </button>
         }
       >
         <div className="flex flex-col items-center gap-6 py-4">
-          {/* Portrait display */}
-          <div className="relative h-64 w-64 overflow-hidden rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+          {/* Description text */}
+          <p className="text-center text-sm text-[var(--text-secondary)]">
+            당신의 모습입니다. 원한다면 새로운 모습을 만들 수 있습니다.
+          </p>
+
+          {/* Portrait display -- larger */}
+          <div className="relative h-80 w-80 max-w-full overflow-hidden rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)]">
             {displayPortrait ? (
               <Image src={displayPortrait} alt="캐릭터 초상화" fill className="object-cover" />
             ) : (
@@ -1355,30 +1336,20 @@ export function StartScreen() {
                 <button
                   onClick={() => setShowPortraitInput(true)}
                   disabled={portraitLoading || portraitGenCount >= 3}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-[var(--gold)] bg-transparent font-display text-sm tracking-wider text-[var(--gold)] transition-all hover:bg-[rgba(201,169,98,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="text-sm text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
                 >
-                  <Sparkles size={16} />
-                  AI로 생성하기
+                  새로 생성하기
                   {portraitGenCount > 0 && (
-                    <span className="text-xs text-[var(--text-muted)]">({3 - portraitGenCount}회 남음)</span>
+                    <span className="ml-1 text-xs">({3 - portraitGenCount}회 남음)</span>
                   )}
                 </button>
                 {portraitUrl && (
-                  <div className="flex w-full gap-2">
-                    <button
-                      onClick={() => setShowPortraitInput(true)}
-                      disabled={portraitLoading || portraitGenCount >= 3}
-                      className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border border-[var(--border-primary)] text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)] disabled:opacity-40"
-                    >
-                      <RotateCcw size={14} /> 다시 생성
-                    </button>
-                    <button
-                      onClick={() => { setPortraitUrl(null); }}
-                      className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border border-[var(--border-primary)] text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-                    >
-                      기본 초상화 사용
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => { setPortraitUrl(null); }}
+                    className="text-xs text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--text-secondary)]"
+                  >
+                    기본 초상화로 되돌리기
+                  </button>
                 )}
               </>
             ) : (
@@ -1415,10 +1386,6 @@ export function StartScreen() {
           {portraitError && (
             <p className="text-sm text-[var(--hp-red)]">{portraitError}</p>
           )}
-
-          <p className="text-xs text-[var(--text-muted)]">
-            {portraitUrl ? "AI 생성 초상화가 적용됩니다." : "기본 프리셋 초상화가 사용됩니다."}
-          </p>
         </div>
       </CreationLayout>
     );
@@ -1443,7 +1410,7 @@ export function StartScreen() {
         title="보너스 스탯 배분"
         step={3}
         totalSteps={6}
-        onBack={() => setScreenPhase("CHARACTER_PORTRAIT")}
+        onBack={() => setScreenPhase("CHARACTER_NAME")}
         footer={
           <button
             onClick={() => setScreenPhase("CHARACTER_TRAIT")}
