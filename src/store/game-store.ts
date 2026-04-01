@@ -112,7 +112,7 @@ export interface GameState {
   // actions
   checkActiveRun: () => Promise<void>;
   resumeRun: () => Promise<void>;
-  startNewGame: (presetId: string, gender?: 'male' | 'female') => Promise<void>;
+  startNewGame: (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string }) => Promise<void>;
   startCampaignRun: (campaignId: string, scenarioId: string, presetId: string, gender?: 'male' | 'female') => Promise<void>;
   submitAction: (text: string) => Promise<void>;
   submitChoice: (choiceId: string) => Promise<void>;
@@ -846,11 +846,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   // -----------------------------------------------------------------------
   // startNewGame
   // -----------------------------------------------------------------------
-  startNewGame: async (presetId: string, gender?: 'male' | 'female') => {
+  startNewGame: async (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string }) => {
     set({ phase: 'LOADING', error: null });
 
     try {
-      const data = (await createRun(presetId, gender)) as Record<string, unknown>;
+      const data = (await createRun(presetId, gender, options)) as Record<string, unknown>;
 
       const run = data.run as Record<string, unknown>;
       const runId = run.id as string;
