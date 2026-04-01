@@ -129,12 +129,12 @@ const GRADE_COLOR: Record<StatGrade, string> = {
 
 // Stat descriptions for Step 4
 const STAT_DESCRIPTIONS: Record<string, string> = {
-  str: "전투와 위압 -- FIGHT/THREATEN 판정, 전투 공격력",
-  dex: "은밀과 손재주 -- SNEAK/STEAL 판정, 전투 회피/명중",
-  wit: "조사와 분석 -- INVESTIGATE/SEARCH 판정, 단서 발견",
-  con: "인내와 봉사 -- HELP 판정, 전투 방어력",
-  per: "관찰과 직감 -- OBSERVE 판정, 숨겨진 상황 감지",
-  cha: "설득과 거래 -- PERSUADE/BRIBE/TALK 판정, NPC 정보",
+  str: "전투와 위압 판정, 전투 공격력에 영향",
+  dex: "은밀과 손재주 판정, 전투 회피/명중에 영향",
+  wit: "조사와 분석 판정, 단서 발견에 직결",
+  con: "인내와 봉사 판정, 전투 방어력에 영향",
+  per: "관찰과 직감 판정, 숨겨진 상황 감지",
+  cha: "설득과 거래 판정, NPC 정보 획득에 핵심",
 };
 
 const STAT_COLORS_MAP: Record<string, string> = {
@@ -1402,15 +1402,42 @@ export function StartScreen() {
   // Step 4: CHARACTER_STATS
   // =========================================================================
   if (screenPhase === "CHARACTER_STATS") {
-    const allInOneStat = STAT_KEYS.find((k) => (bonusStats[k] ?? 0) === BONUS_POINTS_TOTAL);
-    const allInHint: Record<string, string> = {
-      str: "전투의 화신 -- 적은 주먹으로 해결한다.",
-      dex: "그림자 걷기 -- 아무도 당신을 잡을 수 없다.",
-      wit: "천재 분석가 -- 모든 단서를 꿰뚫는다.",
-      con: "철벽 방어 -- 어떤 고통도 버텨낸다.",
-      per: "만물의 관찰자 -- 숨겨진 것은 없다.",
-      cha: "타고난 지도자 -- 모두가 당신을 따른다.",
+    // 칭호: 스탯 합계(기본+보너스)가 임계값 이상이면 활성화
+    const STAT_TITLES: Record<string, Array<{ threshold: number; title: string; desc: string }>> = {
+      str: [
+        { threshold: 14, title: "강력한 팔", desc: "웬만한 싸움은 주먹 한 방이면 된다." },
+        { threshold: 18, title: "전투의 화신", desc: "적은 당신 앞에서 무릎을 꿇는다." },
+      ],
+      dex: [
+        { threshold: 14, title: "날쌘 발", desc: "그림자처럼 빠르게 움직인다." },
+        { threshold: 18, title: "유령 걸음", desc: "아무도 당신을 잡을 수 없다." },
+      ],
+      wit: [
+        { threshold: 14, title: "예리한 눈", desc: "숨겨진 단서를 놓치지 않는다." },
+        { threshold: 18, title: "천재 분석가", desc: "모든 퍼즐의 답이 보인다." },
+      ],
+      con: [
+        { threshold: 14, title: "단단한 몸", desc: "웬만한 타격에도 끄떡없다." },
+        { threshold: 18, title: "철벽", desc: "어떤 고통도 버텨낸다." },
+      ],
+      per: [
+        { threshold: 12, title: "직감", desc: "남들이 놓치는 것을 본다." },
+        { threshold: 16, title: "천리안", desc: "숨겨진 것은 없다." },
+      ],
+      cha: [
+        { threshold: 14, title: "매력적인 화술", desc: "사람들이 자연스레 귀를 기울인다." },
+        { threshold: 18, title: "타고난 지도자", desc: "모두가 당신을 따른다." },
+      ],
     };
+    const activeTitles = STAT_KEYS.map((key) => {
+      const total = (selectedPreset?.stats[key] ?? 0) + (bonusStats[key] ?? 0);
+      const tiers = STAT_TITLES[key] ?? [];
+      // 가장 높은 임계값 달성한 칭호
+      for (let i = tiers.length - 1; i >= 0; i--) {
+        if (total >= tiers[i].threshold) return { key, ...tiers[i] };
+      }
+      return null;
+    }).filter(Boolean) as Array<{ key: string; threshold: number; title: string; desc: string }>;
 
     return (
       <CreationLayout
@@ -1439,10 +1466,15 @@ export function StartScreen() {
             </div>
           </div>
 
-          {/* All-in hint */}
-          {allInOneStat && (
-            <div className="rounded-md border border-[rgba(201,169,98,0.3)] bg-[rgba(201,169,98,0.06)] px-4 py-2 text-center text-sm text-[var(--gold)]">
-              {allInHint[allInOneStat]}
+          {/* Active titles */}
+          {activeTitles.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              {activeTitles.map((t) => (
+                <div key={t.key} className="rounded-md border border-[rgba(201,169,98,0.3)] bg-[rgba(201,169,98,0.06)] px-4 py-2 text-sm">
+                  <span className="font-bold text-[var(--gold)]">{t.title}</span>
+                  <span className="ml-2 text-[var(--text-secondary)]">{t.desc}</span>
+                </div>
+              ))}
             </div>
           )}
 
