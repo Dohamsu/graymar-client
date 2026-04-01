@@ -162,7 +162,7 @@ function PresetCard({
 }: {
   preset: CharacterPreset;
   selected: boolean;
-  gender: Gender;
+  gender: Gender | null;
   onSelect: () => void;
   onGenderChange: (g: Gender) => void;
 }) {
@@ -755,7 +755,9 @@ export function StartScreen() {
     () => PRESETS.find((p) => p.presetId === selectedPresetId) ?? null,
     [selectedPresetId],
   );
-  const selectedGender = selectedPresetId ? (genderMap[selectedPresetId] ?? "male") : "male";
+  const selectedGender = selectedPresetId ? (genderMap[selectedPresetId] ?? null) : null;
+  // 실제 API 호출 시 gender 기본값 (선택 안 했으면 male)
+  const effectiveGender: Gender = selectedGender ?? "male";
 
   const bonusPointsUsed = useMemo(
     () => Object.values(bonusStats).reduce((sum, v) => sum + v, 0),
@@ -788,7 +790,7 @@ export function StartScreen() {
     if (bonusPointsUsed > 0) opts.bonusStats = bonusStats;
     if (selectedTraitId) opts.traitId = selectedTraitId;
     if (portraitUrl) opts.portraitUrl = portraitUrl;
-    startNewGame(selectedPresetId, genderMap[selectedPresetId] ?? "male", Object.keys(opts).length > 0 ? opts : undefined);
+    startNewGame(selectedPresetId, effectiveGender, Object.keys(opts).length > 0 ? opts : undefined);
   };
 
   const handleLogout = () => {
@@ -808,7 +810,7 @@ export function StartScreen() {
     setPortraitLoading(true);
     setPortraitError(null);
     try {
-      const result = await generatePortrait(selectedPresetId, selectedGender, portraitDescription);
+      const result = await generatePortrait(selectedPresetId, effectiveGender, portraitDescription);
       // AI 생성 초상화는 서버(api.dimtale.com)에 저장되므로 전체 URL 조합
       const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
       const fullUrl = result.imageUrl.startsWith('http') ? result.imageUrl : `${apiBase}${result.imageUrl}`;
@@ -888,7 +890,7 @@ export function StartScreen() {
       activeCampaign.id,
       selectedScenarioId,
       selectedPresetId,
-      genderMap[selectedPresetId] ?? "male",
+      effectiveGender,
     );
   };
 
@@ -1141,7 +1143,7 @@ export function StartScreen() {
                 key={preset.presetId}
                 preset={preset}
                 selected={selectedPresetId === preset.presetId}
-                gender={genderMap[preset.presetId] ?? "male"}
+                gender={genderMap[preset.presetId] ?? null}
                 onSelect={() => setSelectedPresetId(preset.presetId)}
                 onGenderChange={(g) => setGenderMap((prev) => ({ ...prev, [preset.presetId]: g }))}
               />
@@ -1188,7 +1190,7 @@ export function StartScreen() {
                 key={preset.presetId}
                 preset={preset}
                 selected={selectedPresetId === preset.presetId}
-                gender={genderMap[preset.presetId] ?? "male"}
+                gender={genderMap[preset.presetId] ?? null}
                 onSelect={() => setSelectedPresetId(preset.presetId)}
                 onGenderChange={(g) => setGenderMap((prev) => ({ ...prev, [preset.presetId]: g }))}
               />
@@ -1255,7 +1257,7 @@ export function StartScreen() {
       >
         <div className="flex flex-col items-center gap-8 py-8">
           <div className="flex flex-col items-center gap-1">
-            <p className="text-sm text-[var(--text-muted)]">{selectedPreset?.name} ({selectedGender === "male" ? "남" : "여"})</p>
+            <p className="text-sm text-[var(--text-muted)]">{selectedPreset?.name} ({selectedGender === "male" ? "남" : selectedGender === "female" ? "여" : "미선택"})</p>
           </div>
 
           <div className="w-full max-w-sm">
@@ -1289,7 +1291,7 @@ export function StartScreen() {
   // Step 2: CHARACTER_PORTRAIT
   // =========================================================================
   if (screenPhase === "CHARACTER_PORTRAIT") {
-    const defaultPortrait = selectedPreset?.portraits?.[selectedGender];
+    const defaultPortrait = selectedPreset?.portraits?.[effectiveGender];
     const displayPortrait = portraitUrl || defaultPortrait;
 
     return (
@@ -1652,7 +1654,7 @@ export function StartScreen() {
     const preset = selectedPreset;
     const trait = TRAITS.find((t) => t.traitId === selectedTraitId);
     const displayName = characterName.trim() || "이름 없는 용병";
-    const displayPortrait = portraitUrl || preset?.portraits?.[selectedGender];
+    const displayPortrait = portraitUrl || preset?.portraits?.[effectiveGender];
     const itemsText = preset?.startingItems.map((i) => (i.qty > 1 ? `${i.name} x${i.qty}` : i.name)).join(", ") ?? "";
 
     return (
@@ -1705,7 +1707,7 @@ export function StartScreen() {
                   {preset?.name}
                 </span>
                 <span className="rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2.5 py-1 text-xs text-[var(--text-muted)]">
-                  {selectedGender === "male" ? "남성" : "여성"}
+                  {effectiveGender === "male" ? "남성" : "여성"}
                 </span>
                 {trait && (
                   <span className="rounded-md border border-[rgba(201,169,98,0.4)] bg-[rgba(201,169,98,0.06)] px-2.5 py-1 text-xs text-[var(--gold)]">
