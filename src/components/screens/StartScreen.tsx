@@ -729,7 +729,7 @@ export function StartScreen() {
 
   const [screenPhase, setScreenPhase] = useState<ScreenPhase>("TITLE");
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
-  const [genderMap, setGenderMap] = useState<Record<string, Gender>>({});
+  const [selectedGenderState, setSelectedGenderState] = useState<Gender | null>(null);
 
   // Character creation state
   const [characterName, setCharacterName] = useState("");
@@ -755,9 +755,11 @@ export function StartScreen() {
     () => PRESETS.find((p) => p.presetId === selectedPresetId) ?? null,
     [selectedPresetId],
   );
-  const selectedGender = selectedPresetId ? (genderMap[selectedPresetId] ?? null) : null;
+  const selectedGender = selectedGenderState;
   // 실제 API 호출 시 gender 기본값 (선택 안 했으면 male)
   const effectiveGender: Gender = selectedGender ?? "male";
+  // 프리셋 + 성별 모두 선택됐는지
+  const presetStepComplete = selectedPresetId !== null && selectedGender !== null;
 
   const bonusPointsUsed = useMemo(
     () => Object.values(bonusStats).reduce((sum, v) => sum + v, 0),
@@ -1128,7 +1130,7 @@ export function StartScreen() {
       <div className="flex h-full flex-col bg-[var(--bg-primary)]">
         <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
           <button
-            onClick={() => { setScreenPhase("CAMPAIGN_SCENARIO"); setSelectedPresetId(null); setGenderMap({}); }}
+            onClick={() => { setScreenPhase("CAMPAIGN_SCENARIO"); setSelectedPresetId(null); setSelectedGenderState(null); }}
             className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
           >
             &larr; 뒤로
@@ -1143,9 +1145,9 @@ export function StartScreen() {
                 key={preset.presetId}
                 preset={preset}
                 selected={selectedPresetId === preset.presetId}
-                gender={genderMap[preset.presetId] ?? null}
-                onSelect={() => setSelectedPresetId(preset.presetId)}
-                onGenderChange={(g) => setGenderMap((prev) => ({ ...prev, [preset.presetId]: g }))}
+                gender={selectedPresetId === preset.presetId ? selectedGender : null}
+                onSelect={() => { setSelectedPresetId(preset.presetId); setSelectedGenderState(null); }}
+                onGenderChange={(g) => { setSelectedPresetId(preset.presetId); setSelectedGenderState(g); }}
               />
             ))}
           </div>
@@ -1155,7 +1157,7 @@ export function StartScreen() {
           <div className="mx-auto max-w-3xl">
             <button
               onClick={handleStartCampaignWithPreset}
-              disabled={!selectedPresetId || isLoading}
+              disabled={!presetStepComplete || isLoading}
               className="flex h-12 w-full items-center justify-center border border-[var(--gold)] font-display text-lg tracking-[4px] transition-all disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-[var(--gold)] enabled:text-[var(--bg-primary)] enabled:hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
             >
               {isLoading ? "불러오는 중..." : "캠페인 시작"}
@@ -1174,7 +1176,7 @@ export function StartScreen() {
       <div className="flex h-full flex-col bg-[var(--bg-primary)]">
         <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
           <button
-            onClick={() => { setScreenPhase("TITLE"); setSelectedPresetId(null); setGenderMap({}); resetCreationState(); }}
+            onClick={() => { setScreenPhase("TITLE"); setSelectedPresetId(null); setSelectedGenderState(null); resetCreationState(); }}
             className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
           >
             <ChevronLeft size={18} className="inline" /> 뒤로
@@ -1190,9 +1192,9 @@ export function StartScreen() {
                 key={preset.presetId}
                 preset={preset}
                 selected={selectedPresetId === preset.presetId}
-                gender={genderMap[preset.presetId] ?? null}
-                onSelect={() => setSelectedPresetId(preset.presetId)}
-                onGenderChange={(g) => setGenderMap((prev) => ({ ...prev, [preset.presetId]: g }))}
+                gender={selectedPresetId === preset.presetId ? selectedGender : null}
+                onSelect={() => { setSelectedPresetId(preset.presetId); setSelectedGenderState(null); }}
+                onGenderChange={(g) => { setSelectedPresetId(preset.presetId); setSelectedGenderState(g); }}
               />
             ))}
           </div>
@@ -1217,7 +1219,7 @@ export function StartScreen() {
                 resetCreationState();
                 setScreenPhase("CHARACTER_PORTRAIT");
               }}
-              disabled={!selectedPresetId || isLoading}
+              disabled={!presetStepComplete || isLoading}
               className="flex h-12 w-full items-center justify-center border border-[var(--gold)] font-display text-lg tracking-[4px] transition-all disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-[var(--gold)] enabled:text-[var(--bg-primary)] enabled:hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
             >
               다 음 <ChevronRight size={20} className="ml-2" />
