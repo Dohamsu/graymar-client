@@ -772,6 +772,26 @@ export const useGameStore = create<GameState>((set, get) => ({
         const lastTurnMessages = mapResultToMessages(lastResult);
         const lastTurn = chronological.length > 0 ? chronological[chronological.length - 1] : undefined;
 
+        // 마지막 턴의 플레이어 입력도 복원 (mapResultToMessages는 서버 결과만 포함)
+        if (lastTurn) {
+          if (lastTurn.inputType === 'ACTION' && lastTurn.rawInput) {
+            restoredMessages.push({
+              id: `history-player-${lastTurn.turnNo}`,
+              type: 'PLAYER',
+              text: lastTurn.rawInput,
+            });
+          } else if (lastTurn.inputType === 'CHOICE' && lastTurn.rawInput) {
+            const prevTurn = chronological.length > 1 ? chronological[chronological.length - 2] : undefined;
+            const prevChoices = prevTurn?.choices ?? [];
+            const label = prevChoices.find((c: { id: string; label: string }) => c.id === lastTurn.rawInput)?.label ?? lastTurn.rawInput;
+            restoredMessages.push({
+              id: `history-player-${lastTurn.turnNo}`,
+              type: 'PLAYER',
+              text: label,
+            });
+          }
+        }
+
         // LLM 내러티브 교체 (선택지 잔여물 제거)
         const finalLastMessages = lastTurn?.llmOutput && lastTurn.llmStatus === 'DONE'
           ? lastTurnMessages.map((msg) =>
