@@ -172,7 +172,7 @@ export function BugReportModal({ onClose }: BugReportModalProps) {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="구체적으로 어떤 점이 이상한지 알려주세요"
                 rows={3}
-                className="w-full resize-none rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)]/40 focus:outline-none"
+                className="w-full resize-none rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2.5 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)]/40 focus:outline-none"
               />
             </div>
 
