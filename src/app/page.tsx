@@ -503,22 +503,45 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="relative mx-auto max-w-5xl">
-              <div
-                className="absolute inset-0 -m-2 border"
-                style={{ borderColor: "rgba(255, 222, 165, 0.15)" }}
-                aria-hidden="true"
-              />
-              <Image
-                src="/landing/screenshot-desktop.jpg"
-                alt="GRAYMAR 게임 플레이 화면 — NPC 대화, 선택지, 캐릭터 정보 패널이 보이는 데스크톱 화면"
-                width={1200}
-                height={675}
-                className="relative z-10 w-full border"
-                style={{ borderColor: "rgba(78, 70, 57, 0.3)" }}
-                sizes="(max-width: 1280px) 100vw, 1200px"
-                quality={90}
-              />
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
+              {/* Desktop screenshot */}
+              <div className="relative max-w-4xl flex-1">
+                <div
+                  className="absolute inset-0 -m-2 border hidden md:block"
+                  style={{ borderColor: "rgba(255, 222, 165, 0.15)" }}
+                  aria-hidden="true"
+                />
+                <Image
+                  src="/landing/screenshot-desktop.jpg"
+                  alt="GRAYMAR 데스크톱 플레이 화면 — NPC 대화, 선택지, 캐릭터 정보 패널"
+                  width={1200}
+                  height={675}
+                  className="relative z-10 w-full border"
+                  style={{ borderColor: "rgba(78, 70, 57, 0.3)" }}
+                  sizes="(max-width: 1280px) 100vw, 900px"
+                  quality={90}
+                />
+                <p className="text-center mt-3 text-sm" style={{ color: "#9a8f80" }}>데스크톱</p>
+              </div>
+              {/* Mobile screenshot */}
+              <div className="relative w-48 sm:w-56 shrink-0">
+                <div
+                  className="absolute inset-0 -m-1.5 border rounded-2xl"
+                  style={{ borderColor: "rgba(255, 222, 165, 0.15)" }}
+                  aria-hidden="true"
+                />
+                <Image
+                  src="/landing/screenshot-mobile.jpg"
+                  alt="GRAYMAR 모바일 플레이 화면 — 장면 이미지와 NPC 대화가 보이는 스마트폰 화면"
+                  width={390}
+                  height={844}
+                  className="relative z-10 w-full rounded-xl border"
+                  style={{ borderColor: "rgba(78, 70, 57, 0.3)" }}
+                  sizes="224px"
+                  quality={90}
+                />
+                <p className="text-center mt-3 text-sm" style={{ color: "#9a8f80" }}>모바일</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 sm:mt-16 max-w-4xl mx-auto">
