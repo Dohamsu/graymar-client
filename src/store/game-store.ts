@@ -215,11 +215,15 @@ function mapEquipmentBag(
   });
 }
 
-function buildCharacterInfo(presetId: string, gender: 'male' | 'female' = 'male'): CharacterInfo {
+function buildCharacterInfo(
+  presetId: string,
+  gender: 'male' | 'female' = 'male',
+  options?: { characterName?: string; portraitUrl?: string; bonusStats?: Record<string, number> },
+): CharacterInfo {
   const preset = PRESETS.find((p) => p.presetId === presetId);
   if (!preset) {
     return {
-      name: '용병',
+      name: options?.characterName || '용병',
       class: '방랑 검사',
       level: 1,
       exp: 0,
@@ -236,10 +240,12 @@ function buildCharacterInfo(presetId: string, gender: 'male' | 'female' = 'male'
     };
   }
 
+  const bonus = options?.bonusStats ?? {};
+
   return {
-    name: preset.name,
+    name: options?.characterName || preset.name,
     class: preset.subtitle,
-    portrait: preset.portraits?.[gender],
+    portrait: options?.portraitUrl || preset.portraits?.[gender],
     level: 1,
     exp: 0,
     maxExp: 100,
@@ -247,7 +253,7 @@ function buildCharacterInfo(presetId: string, gender: 'male' | 'female' = 'male'
       ['STR', 'DEX', 'WIT', 'CON', 'PER', 'CHA'] as const
     ).map((key) => ({
       label: key,
-      value: preset.stats[key.toLowerCase()] ?? preset.stats[key] ?? 0,
+      value: (preset.stats[key.toLowerCase()] ?? preset.stats[key] ?? 0) + (bonus[key.toLowerCase()] ?? 0),
       color: STAT_COLORS[key] ?? 'var(--text-primary)',
     })),
     equipment: [],
@@ -836,6 +842,10 @@ export const useGameStore = create<GameState>((set, get) => ({
           ...buildCharacterInfo(
             (run.presetId as string) ?? activeRunInfo.presetId,
             ((run.gender as string) ?? activeRunInfo.gender ?? 'male') as 'male' | 'female',
+            {
+              characterName: (runState as Record<string, unknown>)?.characterName as string | undefined,
+              portraitUrl: (runState as Record<string, unknown>)?.portraitUrl as string | undefined,
+            },
           ),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
@@ -960,7 +970,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         pendingChoices: hasNarratorLoading ? initialChoices : [],
         isSubmitting: false,
         characterInfo: {
-          ...buildCharacterInfo(presetId, gender),
+          ...buildCharacterInfo(presetId, gender, options),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
         equipmentBag: mapEquipmentBag(runState?.equipmentBag),
