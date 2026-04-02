@@ -27,6 +27,30 @@ const LOADING_MESSAGES = [
   "분위기를 조성하는 중...",
 ];
 
+const SCENE_LOADING_MSGS = [
+  "장면을 그리는 중...",
+  "배경에 색을 입히는 중...",
+  "빛과 그림자를 조율하는 중...",
+  "분위기를 완성하는 중...",
+];
+
+function SceneImageLoading() {
+  const [msgIdx, setMsgIdx] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMsgIdx((prev) => (prev + 1) % SCENE_LOADING_MSGS.length);
+    }, 2500);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--gold)] border-t-transparent" />
+      <span className="text-xs text-[var(--text-muted)] animate-pulse">{SCENE_LOADING_MSGS[msgIdx]}</span>
+    </div>
+  );
+}
+
 const LABEL_COLORS: Record<string, string> = {
   SYSTEM: "var(--gold)",
   NARRATOR: "var(--success-green)",
@@ -251,14 +275,9 @@ function SceneImageButton({ messageId }: { messageId: string }) {
     );
   }
 
-  // Loading state
+  // Loading state with rotating messages
   if (isLoading) {
-    return (
-      <div className="mt-2 flex items-center gap-2">
-        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--gold)] border-t-transparent" />
-        <span className="text-xs text-[var(--text-muted)]">이미지 생성 중...</span>
-      </div>
-    );
+    return <SceneImageLoading />;
   }
 
   // Button
