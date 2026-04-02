@@ -21,6 +21,7 @@ import { EndingScreen } from "@/components/screens/EndingScreen";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { LlmFailureModal } from "@/components/ui/LlmFailureModal";
 import { BugReportButton } from "@/components/ui/BugReportButton";
+import { QuestTab } from "@/components/side-panel/QuestTab";
 import { LocationHeader } from "@/components/hub/LocationHeader";
 import { TurnResultBanner } from "@/components/location/TurnResultBanner";
 import { LocationToastLayer } from "@/components/location/LocationToastLayer";
@@ -224,8 +225,8 @@ export default function GameClient() {
             </div>
           )}
           {mobileTab === "quests" && (
-            <div className="flex flex-1 items-center justify-center">
-              <p className="text-sm text-[var(--text-muted)]">퀘스트 기록 준비 중...</p>
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+              <QuestTab />
             </div>
           )}
         </div>

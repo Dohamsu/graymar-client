@@ -268,6 +268,8 @@ export interface ResolveBreakdown {
   statBonus: number;
   baseMod: number;
   totalScore: number;
+  traitBonus?: number;
+  gamblerLuckTriggered?: boolean;
 }
 
 // --- Quest / Arc UI Types ---

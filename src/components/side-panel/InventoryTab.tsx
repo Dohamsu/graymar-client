@@ -105,7 +105,7 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
           </span>
           <div className="flex items-center gap-2">
             <span className="font-display text-xl font-medium text-[var(--gold)]">
-              {gold.toLocaleString()} G
+              {(gold ?? 0).toLocaleString()} G
             </span>
             {goldDelta !== 0 && (
               <span

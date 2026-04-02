@@ -90,7 +90,7 @@ export function ResolveOutcomeInline({
 
 /** 주사위 분해 공식 표시 */
 function BreakdownFormula({ breakdown }: { breakdown: ResolveBreakdown }) {
-  const { diceRoll, statKey, statBonus, baseMod, totalScore } = breakdown;
+  const { diceRoll, statKey, statBonus, baseMod, totalScore, traitBonus, gamblerLuckTriggered } = breakdown;
   const statLabel = statKey ? (STAT_KOREAN_NAMES[statKey] ?? STAT_KEY_TO_LABEL[statKey] ?? statKey) : null;
   const statColorKey = statKey ? (STAT_KEY_TO_LABEL[statKey] ?? statKey.toUpperCase()) : null;
   const statColor = statColorKey ? (STAT_COLORS[statColorKey] ?? "var(--text-secondary)") : null;
@@ -108,7 +108,7 @@ function BreakdownFormula({ breakdown }: { breakdown: ResolveBreakdown }) {
           <span className="text-[var(--text-secondary)]">{statBonus}</span>
         </>
       )}
-      {baseMod !== 0 && (
+      {baseMod != null && baseMod !== 0 && (
         <>
           <span>{baseMod > 0 ? "+" : ""}</span>
           <span
@@ -118,6 +118,14 @@ function BreakdownFormula({ breakdown }: { breakdown: ResolveBreakdown }) {
             보정 {baseMod > 0 ? `+${baseMod}` : baseMod}
           </span>
         </>
+      )}
+      {traitBonus != null && traitBonus !== 0 && (
+        <span className="text-xs text-[var(--gold)]">
+          특성 {traitBonus > 0 ? `+${traitBonus}` : traitBonus}
+        </span>
+      )}
+      {gamblerLuckTriggered && (
+        <span className="text-xs text-[var(--gold)]">도박꾼의 운!</span>
       )}
       <span>=</span>
       <span className="font-bold text-[var(--text-primary)]">{totalScore}</span>

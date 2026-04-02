@@ -17,7 +17,7 @@ interface HeaderProps {
 }
 
 function HpBar({ current, max }: { current: number; max: number }) {
-  const pct = Math.round((current / max) * 100);
+  const pct = max > 0 ? Math.round((current / max) * 100) : 0;
   return (
     <div className="flex items-center gap-2">
       <span className="text-[11px] font-semibold text-[var(--hp-red)]">HP</span>
@@ -35,7 +35,7 @@ function HpBar({ current, max }: { current: number; max: number }) {
 }
 
 function StaminaBar({ current, max }: { current: number; max: number }) {
-  const pct = Math.round((current / max) * 100);
+  const pct = max > 0 ? Math.round((current / max) * 100) : 0;
   return (
     <div className="flex items-center gap-2">
       <span className="text-[11px] font-semibold text-[var(--stamina-green)]">STA</span>
@@ -98,7 +98,7 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
           <div className="flex items-center gap-1.5">
             <Coins size={14} className="text-[var(--gold)]" />
             <span className="text-sm font-semibold text-[var(--gold)]">
-              {hud.gold.toLocaleString()}
+              {(hud.gold ?? 0).toLocaleString()}
             </span>
           </div>
           {llmStats && (
@@ -244,7 +244,7 @@ export function MobileHudBar({ hud }: { hud: PlayerHud }) {
         <div className="h-1.5 w-[60px] overflow-hidden rounded-full bg-[var(--border-primary)]">
           <div
             className="h-full rounded-full bg-[var(--hp-red)]"
-            style={{ width: `${Math.round((hud.hp / hud.maxHp) * 100)}%` }}
+            style={{ width: `${hud.maxHp > 0 ? Math.round((hud.hp / hud.maxHp) * 100) : 0}%` }}
           />
         </div>
       </div>
@@ -253,14 +253,14 @@ export function MobileHudBar({ hud }: { hud: PlayerHud }) {
         <div className="h-1.5 w-[60px] overflow-hidden rounded-full bg-[var(--border-primary)]">
           <div
             className="h-full rounded-full bg-[var(--stamina-green)]"
-            style={{ width: `${Math.round((hud.stamina / hud.maxStamina) * 100)}%` }}
+            style={{ width: `${hud.maxStamina > 0 ? Math.round((hud.stamina / hud.maxStamina) * 100) : 0}%` }}
           />
         </div>
       </div>
       <div className="flex items-center gap-1">
         <Coins size={12} className="text-[var(--gold)]" />
         <span className="text-xs font-semibold text-[var(--gold)]">
-          {hud.gold.toLocaleString()}
+          {(hud.gold ?? 0).toLocaleString()}
         </span>
       </div>
     </div>
