@@ -212,8 +212,14 @@ export default function HomePage() {
             <a href="#story" className="hover:opacity-80 transition-colors" style={{ color: "#9a8f80" }}>
               Lore
             </a>
+            <a href="#gameplay" className="hover:opacity-80 transition-colors" style={{ color: "#9a8f80" }}>
+              Gameplay
+            </a>
             <a href="#how-to-play" className="hover:opacity-80 transition-colors" style={{ color: "#9a8f80" }}>
               Guide
+            </a>
+            <a href="#faq" className="hover:opacity-80 transition-colors" style={{ color: "#9a8f80" }}>
+              FAQ
             </a>
           </div>
           <div className="flex items-center gap-2">
@@ -482,6 +488,89 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* ─── Screenshot Section ─── */}
+        <section id="gameplay" className="py-20 sm:py-32" style={{ backgroundColor: "#0e0e0e" }} aria-label="게임 플레이 화면">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="text-center mb-12 sm:mb-16">
+              <h2
+                className="text-3xl sm:text-4xl mb-4"
+                style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
+              >
+                실제 게임 화면
+              </h2>
+              <p className="text-lg" style={{ color: "#d1c5b4" }}>
+                AI가 생성하는 살아있는 서술과 전략적 선택
+              </p>
+            </div>
+
+            <div className="relative mx-auto max-w-5xl">
+              <div
+                className="absolute inset-0 -m-2 border"
+                style={{ borderColor: "rgba(255, 222, 165, 0.15)" }}
+                aria-hidden="true"
+              />
+              <Image
+                src="/landing/screenshot-desktop.jpg"
+                alt="GRAYMAR 게임 플레이 화면 — NPC 대화, 선택지, 캐릭터 정보 패널이 보이는 데스크톱 화면"
+                width={1200}
+                height={675}
+                className="relative z-10 w-full border"
+                style={{ borderColor: "rgba(78, 70, 57, 0.3)" }}
+                sizes="(max-width: 1280px) 100vw, 1200px"
+                quality={90}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 sm:mt-16 max-w-4xl mx-auto">
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>42명</p>
+                <p style={{ color: "#9a8f80" }}>고유한 NPC</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>7곳</p>
+                <p style={{ color: "#9a8f80" }}>탐험 가능 장소</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>3가지</p>
+                <p style={{ color: "#9a8f80" }}>엔딩 루트</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── FAQ Section ─── */}
+        <section id="faq" className="max-w-4xl mx-auto px-4 sm:px-8 py-16 sm:py-24" aria-label="자주 묻는 질문">
+          <h2
+            className="text-3xl sm:text-4xl mb-12 text-center"
+            style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
+          >
+            자주 묻는 질문
+          </h2>
+          <div className="space-y-6">
+            {[
+              { q: "GRAYMAR는 어떤 게임인가요?", a: "AI가 만들어내는 살아있는 세계에서 정치적 음모에 뛰어드는 텍스트 RPG입니다. 42명의 NPC가 각자의 비밀과 목표를 가지고 움직이며, 플레이어의 모든 행동을 기억합니다. 부패를 폭로할지, 혼란을 이용할지, 권력과 손잡을지 — 선택은 당신의 것입니다." },
+              { q: "무료인가요?", a: "네, GRAYMAR는 완전 무료 웹 RPG입니다. 별도 설치 없이 PC와 모바일 브라우저에서 바로 플레이할 수 있습니다. 회원가입은 30초면 충분합니다." },
+              { q: "AI는 어떤 역할을 하나요?", a: "AI는 풍부한 서사 텍스트를 생성합니다. NPC의 대사, 장면 묘사, 분위기를 매 턴마다 새롭게 만들어냅니다. 모든 게임 판정(전투, 탐색, 대화 성공 여부)은 서버에서 주사위와 스탯 기반으로 결정되며, AI는 그 결과를 생동감 있는 이야기로 풀어냅니다." },
+              { q: "플레이 시간은 얼마나 걸리나요?", a: "한 번의 런은 약 20~30턴, 30분~1시간 정도입니다. 중간에 저장되므로 언제든 이어할 수 있습니다. 다양한 출신과 선택에 따라 여러 번 반복 플레이할 수 있습니다." },
+              { q: "모바일에서도 할 수 있나요?", a: "네, 모바일 브라우저에 최적화되어 있습니다. 터치로 선택지를 고르고, 직접 행동을 입력할 수 있습니다." },
+              { q: "캐릭터는 어떻게 만드나요?", a: "6종의 출신(부두 노동자, 탈영병, 밀수업자, 약초사, 몰락 귀족, 떠돌이 검투사) 중 하나를 선택한 뒤, 이름과 외모를 설정하고 보너스 스탯을 배분합니다. AI로 커스텀 초상화도 생성할 수 있습니다." },
+            ].map((item, i) => (
+              <details key={i} className="group border-b" style={{ borderColor: "rgba(78, 70, 57, 0.2)" }}>
+                <summary
+                  className="flex items-center justify-between cursor-pointer py-5 text-lg"
+                  style={{ fontFamily: "'Noto Serif KR', serif", color: "#e5e2e1" }}
+                >
+                  {item.q}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 ml-4 group-open:rotate-180 transition-transform" style={{ color: "#9a8f80" }} aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </summary>
+                <p className="pb-5 leading-relaxed" style={{ color: "#d1c5b4" }}>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
         {/* ─── How to Play Section ─── */}
         <section id="how-to-play" className="py-20 sm:py-32" style={{ backgroundColor: "#0e0e0e" }} aria-label="플레이 가이드">
           <div className="max-w-7xl mx-auto px-4 sm:px-8">
@@ -633,7 +722,7 @@ export default function HomePage() {
             className="text-[10px] tracking-[0.2em] mt-6 sm:mt-8 uppercase opacity-50"
             style={{ fontFamily: "'Inter', sans-serif", color: "#9a8f80" }}
           >
-            &copy; 2025 GRAYMAR. AI-powered text RPG.
+            &copy; 2026 GRAYMAR. AI-powered text RPG.
           </p>
         </div>
       </footer>
