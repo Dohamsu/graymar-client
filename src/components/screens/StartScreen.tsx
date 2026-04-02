@@ -120,6 +120,48 @@ function buildStatSummary(stats: CharacterPreset["stats"]): Array<{ key: string;
   return items;
 }
 
+// --- Portrait loading overlay with rotating messages + progress ---
+const PORTRAIT_LOADING_MSGS = [
+  "초상화를 그리는 중...",
+  "붓에 잉크를 묻히는 중...",
+  "얼굴의 윤곽을 잡는 중...",
+  "눈빛에 깊이를 더하는 중...",
+  "그림자를 입히는 중...",
+  "마지막 세부 묘사 중...",
+];
+
+function PortraitLoadingOverlay() {
+  const [msgIdx, setMsgIdx] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const msgTimer = setInterval(() => {
+      setMsgIdx((prev) => (prev + 1) % PORTRAIT_LOADING_MSGS.length);
+    }, 3000);
+    const progressTimer = setInterval(() => {
+      setProgress((prev) => Math.min(prev + 2, 90));
+    }, 500);
+    return () => { clearInterval(msgTimer); clearInterval(progressTimer); };
+  }, []);
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+      <div className="flex flex-col items-center gap-4 px-6">
+        <Loader2 size={36} className="animate-spin text-[var(--gold)]" />
+        <span className="text-sm text-[var(--text-primary)] animate-pulse">
+          {PORTRAIT_LOADING_MSGS[msgIdx]}
+        </span>
+        <div className="h-1.5 w-48 overflow-hidden rounded-full bg-[var(--border-primary)]">
+          <div
+            className="h-full rounded-full bg-[var(--gold)] transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const GRADE_COLOR: Record<StatGrade, string> = {
   "매우 높음": "text-[var(--gold)]",
   "높음": "text-[var(--text-primary)]",
@@ -1364,14 +1406,7 @@ export function StartScreen() {
                 <ImageIcon size={48} className="text-[var(--text-muted)]" />
               </div>
             )}
-            {portraitLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 size={32} className="animate-spin text-[var(--gold)]" />
-                  <span className="text-sm text-[var(--text-secondary)]">생성 중...</span>
-                </div>
-              </div>
-            )}
+            {portraitLoading && <PortraitLoadingOverlay />}
           </div>
 
           {/* Actions */}
