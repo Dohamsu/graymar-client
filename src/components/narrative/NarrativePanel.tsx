@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { StoryBlock } from "./StoryBlock";
 import type { StoryMessage } from "@/types/game";
 
@@ -15,19 +15,37 @@ interface NarrativePanelProps {
 export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, scrollId }: NarrativePanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 메시지 변경 시 스크롤
+  // 사용자가 위로 스크롤했는지 감지 (하단에서 100px 이상 떨어지면 "위로 스크롤" 판정)
+  const isUserScrolledUp = useRef(false);
+
+  const handleScrollEvent = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isUserScrolledUp.current = distFromBottom > 100;
+  }, []);
+
   useEffect(() => {
-    if (scrollRef.current) {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', handleScrollEvent, { passive: true });
+    return () => el.removeEventListener('scroll', handleScrollEvent);
+  }, [handleScrollEvent]);
+
+  // 메시지 변경 시 스크롤 (사용자가 위로 스크롤한 상태면 스킵)
+  useEffect(() => {
+    if (scrollRef.current && !isUserScrolledUp.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
-  // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (rAF debounce)
+  // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (사용자 스크롤 존중)
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     let rafId: number | null = null;
     const observer = new MutationObserver(() => {
+      if (isUserScrolledUp.current) return; // 사용자가 위로 스크롤한 상태면 자동 스크롤 안 함
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
