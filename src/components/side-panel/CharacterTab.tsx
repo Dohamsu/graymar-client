@@ -50,7 +50,7 @@ export function CharacterTab({ character }: CharacterTabProps) {
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--border-primary)]">
               <div
                 className="h-full rounded-full bg-[var(--gold)]"
-                style={{ width: `${Math.round((character.exp / character.maxExp) * 100)}%` }}
+                style={{ width: `${character.maxExp > 0 ? Math.round((character.exp / character.maxExp) * 100) : 0}%` }}
               />
             </div>
           </div>

@@ -219,7 +219,7 @@ export function QuestTab() {
                 {day}일차 / {mainArcClock.softDeadlineDay}일
               </span>
               {(() => {
-                const remaining = mainArcClock.softDeadlineDay - day;
+                const remaining = mainArcClock.softDeadlineDay - (day ?? 1);
                 const urgent = remaining <= 3;
                 return (
                   <span
@@ -342,7 +342,7 @@ export function QuestTab() {
               .filter((t) => t.status === "ACTIVE" || t.status === "EMERGING")
               .map((thread) => {
                 const successRate = thread.actionCount > 0
-                  ? Math.round(thread.successRate * 100)
+                  ? Math.round((thread.successRate ?? 0) * 100)
                   : 0;
                 return (
                   <div

@@ -88,31 +88,31 @@ export function NpcRelationshipCard({ npcs }: Props) {
             <div className="flex flex-col gap-0.5">
               <EmotionAxis
                 label="신뢰"
-                value={npc.trust}
+                value={npc.trust ?? 0}
                 min={-100}
                 max={100}
               />
               <EmotionAxis
                 label="공포"
-                value={npc.fear}
+                value={npc.fear ?? 0}
                 min={0}
                 max={100}
               />
               <EmotionAxis
                 label="존경"
-                value={npc.respect}
+                value={npc.respect ?? 0}
                 min={-100}
                 max={100}
               />
               <EmotionAxis
                 label="의심"
-                value={npc.suspicion}
+                value={npc.suspicion ?? 0}
                 min={0}
                 max={100}
               />
               <EmotionAxis
                 label="유대"
-                value={npc.attachment}
+                value={npc.attachment ?? 0}
                 min={0}
                 max={100}
               />
