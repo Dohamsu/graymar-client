@@ -247,15 +247,29 @@ export default function HomePage() {
           aria-label="히어로 섹션"
         >
           <div className="absolute inset-0 z-0">
-            <Image
-              src="/landing/hero.jpg"
-              alt="잿빛 항구의 야경 — 안개 낀 중세 부두와 횃불이 비추는 어두운 항만"
-              fill
-              className="object-cover opacity-40 mix-blend-luminosity"
-              priority
-              sizes="100vw"
-              quality={80}
-            />
+            {/* 배경 영상 (자동 재생, 음소거, 반복) */}
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              poster="/landing/hero.jpg"
+              className="absolute inset-0 h-full w-full object-cover opacity-40 mix-blend-luminosity"
+            >
+              <source src="/videos/landing-hero-1.mp4" type="video/mp4" />
+            </video>
+            {/* 영상 미지원 시 fallback 이미지 */}
+            <noscript>
+              <Image
+                src="/landing/hero.jpg"
+                alt="잿빛 항구의 야경"
+                fill
+                className="object-cover opacity-40 mix-blend-luminosity"
+                priority
+                sizes="100vw"
+                quality={80}
+              />
+            </noscript>
             <div
               className="absolute inset-0"
               style={{
@@ -405,6 +419,61 @@ export default function HomePage() {
               title="칼날 위의 선택"
               desc="싸울 것인가, 도망칠 것인가. 거리와 위치를 읽고 전술을 짜는 턴제 전투. 한 수 차이로 목숨이 갈린다."
             />
+          </div>
+        </section>
+
+        {/* ─── Game Intro Video Section ─── */}
+        <section className="py-16 sm:py-24" aria-label="게임 소개 영상">
+          <div className="max-w-5xl mx-auto px-4 sm:px-8">
+            <div className="flex items-center gap-4 sm:gap-8 mb-10 sm:mb-16">
+              <div
+                className="flex-grow"
+                style={{
+                  height: "1px",
+                  background: "linear-gradient(90deg, transparent, #4e4639 50%, transparent)",
+                }}
+                aria-hidden="true"
+              />
+              <h2
+                className="text-2xl sm:text-4xl shrink-0 uppercase tracking-widest"
+                style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
+              >
+                Game Preview
+              </h2>
+              <div
+                className="flex-grow"
+                style={{
+                  height: "1px",
+                  background: "linear-gradient(90deg, transparent, #4e4639 50%, transparent)",
+                }}
+                aria-hidden="true"
+              />
+            </div>
+            <div
+              className="relative overflow-hidden shadow-2xl"
+              style={{
+                border: "1px solid rgba(78, 70, 57, 0.3)",
+                backgroundColor: "#0e0e0e",
+              }}
+            >
+              <video
+                controls
+                playsInline
+                preload="metadata"
+                poster="/landing/hero.jpg"
+                className="w-full aspect-video"
+                style={{ backgroundColor: "#0e0e0e" }}
+              >
+                <source src="/videos/landing-hero-2.mp4" type="video/mp4" />
+                브라우저에서 영상을 재생할 수 없습니다.
+              </video>
+            </div>
+            <p
+              className="text-center mt-6 text-sm tracking-wide"
+              style={{ color: "#9a8f80" }}
+            >
+              AI가 만들어내는 살아있는 서사 — 매 플레이마다 다른 이야기
+            </p>
           </div>
         </section>
 
