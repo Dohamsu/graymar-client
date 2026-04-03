@@ -32,6 +32,10 @@ const nextConfig: NextConfig = {
         source: "/portraits/generated/:path*",
         destination: `${backendUrl}/portraits/generated/:path*`,
       },
+      {
+        source: "/npc-portraits/:path*",
+        destination: `${backendUrl}/npc-portraits/:path*`,
+      },
     ];
   },
 };
