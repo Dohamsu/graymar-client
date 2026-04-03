@@ -5,6 +5,9 @@ import { ResolveOutcomeInline } from "@/components/hub/ResolveOutcomeBanner";
 import { useSettingsStore, TEXT_SPEED_PRESETS, FONT_SIZE_PRESETS } from "@/store/settings-store";
 import { STAT_COLORS, STAT_KOREAN_NAMES } from "@/data/stat-descriptions";
 import { useGameStore } from "@/store/game-store";
+import { DialogueBubble } from "./DialogueBubble";
+
+type SpeakingNpc = NonNullable<StoryMessage['speakingNpc']>;
 
 /** Affordance → 스탯 키 매핑 (서버 resolve.service.ts 와 동기화) */
 const AFFORDANCE_TO_STAT: Record<string, string> = {
@@ -100,47 +103,119 @@ function NarratorLoading() {
 
 // ---------------------------------------------------------------------------
 // 대사 스타일링 — "" / "" 안의 텍스트를 다른 색상·폰트로 렌더
+// speakingNpc가 있으면 큰따옴표 대사를 DialogueBubble로 변환
 // ---------------------------------------------------------------------------
 
-function renderStyledText(text: string): React.ReactNode {
+/** 인라인 스타일링만 (작은따옴표 강조 + 일반 텍스트). 큰따옴표 대사는 포함하지 않음. */
+function renderInlineText(text: string, keyBase: number): { nodes: React.ReactNode[]; nextKey: number } {
   const parts: React.ReactNode[] = [];
-  // 큰따옴표 = 대사(블록), 작은따옴표 = 강조(인라인)
-  const regex = /("[^"]*"?|\u201C[^\u201D]*\u201D?|'[^']*'?|\u2018[^\u2019]*\u2019?)/g;
+  const regex = /('[^']*'?|\u2018[^\u2019]*\u2019?)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
-  let key = 0;
+  let key = keyBase;
 
   while ((match = regex.exec(text)) !== null) {
-    const ch = match[0][0];
-    const isDialogue = ch === '"' || ch === '\u201C';
-
     if (match.index > lastIndex) {
       parts.push(<span key={key++}>{text.slice(lastIndex, match.index)}</span>);
     }
     parts.push(
-      <span
-        key={key++}
-        className={isDialogue ? "block my-6 font-dialogue" : "font-dialogue"}
-        style={{ color: "var(--gold)" }}
-      >
+      <span key={key++} className="font-dialogue" style={{ color: "var(--gold)" }}>
         {match[0]}
       </span>,
     );
     lastIndex = regex.lastIndex;
   }
-
   if (lastIndex < text.length) {
     parts.push(<span key={key++}>{text.slice(lastIndex)}</span>);
   }
+  return { nodes: parts, nextKey: key };
+}
 
-  return <>{parts}</>;
+function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactNode {
+  // speakingNpc가 없으면 기존 동작 (큰따옴표 = 골드색 블록, 작은따옴표 = 인라인)
+  if (!speakingNpc) {
+    const parts: React.ReactNode[] = [];
+    const regex = /("[^"]*"?|\u201C[^\u201D]*\u201D?|'[^']*'?|\u2018[^\u2019]*\u2019?)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let key = 0;
+
+    while ((match = regex.exec(text)) !== null) {
+      const ch = match[0][0];
+      const isDialogue = ch === '"' || ch === '\u201C';
+
+      if (match.index > lastIndex) {
+        parts.push(<span key={key++}>{text.slice(lastIndex, match.index)}</span>);
+      }
+      parts.push(
+        <span
+          key={key++}
+          className={isDialogue ? "block my-6 font-dialogue" : "font-dialogue"}
+          style={{ color: "var(--gold)" }}
+        >
+          {match[0]}
+        </span>,
+      );
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(<span key={key++}>{text.slice(lastIndex)}</span>);
+    }
+
+    return <>{parts}</>;
+  }
+
+  // speakingNpc가 있으면 큰따옴표 대사 → DialogueBubble
+  const segments: React.ReactNode[] = [];
+  const dialogueRegex = /("[^"]*"?|\u201C[^\u201D]*\u201D?)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+  let bubbleIndex = 0;
+
+  while ((match = dialogueRegex.exec(text)) !== null) {
+    // 대사 앞 서술 부분
+    if (match.index > lastIndex) {
+      const narration = text.slice(lastIndex, match.index);
+      const { nodes, nextKey } = renderInlineText(narration, key);
+      key = nextKey;
+      if (nodes.length > 0) {
+        segments.push(<span key={`narr-${key++}`} className="block">{nodes}</span>);
+      }
+    }
+    // 대사 → DialogueBubble
+    segments.push(
+      <DialogueBubble
+        key={`bubble-${key++}`}
+        text={match[0]}
+        npcName={speakingNpc.displayName}
+        npcImageUrl={speakingNpc.imageUrl}
+        compact={bubbleIndex > 0}
+      />,
+    );
+    bubbleIndex++;
+    lastIndex = dialogueRegex.lastIndex;
+  }
+
+  // 대사 뒤 서술 부분
+  if (lastIndex < text.length) {
+    const trailing = text.slice(lastIndex);
+    const { nodes, nextKey } = renderInlineText(trailing, key);
+    key = nextKey;
+    if (nodes.length > 0) {
+      segments.push(<span key={`narr-${key}`} className="block">{nodes}</span>);
+    }
+  }
+
+  return <>{segments}</>;
 }
 
 // ---------------------------------------------------------------------------
 // NarratorContent — 문단 간격 + 대사 스타일링
 // ---------------------------------------------------------------------------
 
-function NarratorContent({ text }: { text: string }) {
+function NarratorContent({ text, speakingNpc }: { text: string; speakingNpc?: SpeakingNpc }) {
   const lines = text.split("\n");
 
   return (
@@ -151,7 +226,7 @@ function NarratorContent({ text }: { text: string }) {
           <span key={i} className="block h-3" aria-hidden="true" />
         ) : (
           <span key={i} className="block">
-            {renderStyledText(line)}
+            {renderStyledText(line, speakingNpc)}
           </span>
         ),
       )}
@@ -173,7 +248,7 @@ function findParagraphBreaks(text: string): Set<number> {
   return breaks;
 }
 
-function TypewriterText({ text, onComplete }: { text: string; onComplete?: () => void }) {
+function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onComplete?: () => void; speakingNpc?: SpeakingNpc }) {
   const textSpeed = useSettingsStore((s) => s.textSpeed);
   const preset = TEXT_SPEED_PRESETS[textSpeed];
 
@@ -210,7 +285,7 @@ function TypewriterText({ text, onComplete }: { text: string; onComplete?: () =>
 
   return (
     <>
-      <NarratorContent text={text.slice(0, displayLen)} />
+      <NarratorContent text={text.slice(0, displayLen)} speakingNpc={speakingNpc} />
       {displayLen < text.length && (
         <span className="ml-0.5 inline-block h-[1em] w-[2px] animate-pulse bg-[var(--success-green)] align-text-bottom" />
       )}
@@ -488,13 +563,14 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
           {isNarratorTypewriting ? (
             <TypewriterText
               text={message.text}
+              speakingNpc={message.speakingNpc}
               onComplete={() => {
                 setShouldAnimate(false);
                 onNarrationComplete?.();
               }}
             />
           ) : (
-            <NarratorContent text={message.text} />
+            <NarratorContent text={message.text} speakingNpc={message.speakingNpc} />
           )}
           {!isNarratorTypewriting && <SceneImageButton messageId={message.id} />}
         </div>

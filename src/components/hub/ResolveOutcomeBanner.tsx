@@ -35,18 +35,21 @@ const BREAKDOWN_DELAY_MS = 200;
 export function ResolveOutcomeInline({
   outcome,
   breakdown,
+  skipAnimation,
 }: {
   outcome: ResolveOutcome;
   breakdown?: ResolveBreakdown;
+  skipAnimation?: boolean;
 }) {
-  const [phase, setPhase] = useState<"rolling" | "revealed">("rolling");
+  const [phase, setPhase] = useState<"rolling" | "revealed">(skipAnimation ? "revealed" : "rolling");
   const [showBreakdown, setShowBreakdown] = useState(false);
   const config = OUTCOME_CONFIG[outcome];
 
   useEffect(() => {
+    if (skipAnimation) return;
     const timer = setTimeout(() => setPhase("revealed"), ROLL_DURATION_MS);
     return () => clearTimeout(timer);
-  }, []);
+  }, [skipAnimation]);
 
   useEffect(() => {
     if (phase === "revealed" && breakdown) {
