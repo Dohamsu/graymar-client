@@ -16,6 +16,12 @@ export interface StoryMessage {
     imageUrl: string;
     isNewlyIntroduced: boolean;
   };
+  /** 대사 주체 NPC 정보 (primaryNpcId 기반, DialogueBubble용) */
+  speakingNpc?: {
+    npcId: string;
+    displayName: string;
+    imageUrl?: string;
+  };
 }
 
 export interface Choice {
@@ -192,6 +198,12 @@ export interface ServerResultV1 {
       npcName: string;
       imageUrl: string;
       isNewlyIntroduced: boolean;
+    };
+    /** 대사 주체 NPC 정보 (primaryNpcId 기반) */
+    speakingNpc?: {
+      npcId: string;
+      displayName: string;
+      imageUrl?: string;
     };
   };
   choices: Array<{

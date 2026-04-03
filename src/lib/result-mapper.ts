@@ -185,12 +185,19 @@ export function mapResultToMessages(
   //    LLM 스킵이면 NARRATOR 생략
   if (result.summary?.short && !isLlmSkipped) {
     const isLlmTarget = idPrefix === 'narrator';
+    // speakingNpc: 서버 ui.speakingNpc → npcPortrait fallback
+    const speakingNpc = result.ui?.speakingNpc
+      ?? (result.ui?.npcPortrait
+        ? { npcId: result.ui.npcPortrait.npcId, displayName: result.ui.npcPortrait.npcName, imageUrl: result.ui.npcPortrait.imageUrl }
+        : undefined);
+
     messages.push({
       id: `${idPrefix}-${result.turnNo}`,
       type: 'NARRATOR',
       text: isLlmTarget ? '' : (result.summary.display ?? result.summary.short),
       loading: isLlmTarget,
       ...(result.ui?.npcPortrait ? { npcPortrait: result.ui.npcPortrait } : {}),
+      ...(speakingNpc ? { speakingNpc } : {}),
     });
   }
 
