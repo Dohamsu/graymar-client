@@ -1,11 +1,43 @@
 "use client";
 
+import { useState } from "react";
 import { Coins, FlaskConical, Key, Search, Shield, TrendingUp, TrendingDown } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { InventoryItem, InventoryChanges, EquipmentBagItem } from "@/types/game";
-import { ITEM_CATALOG, type ItemMeta } from "@/data/items";
+import { ITEM_CATALOG, type ItemMeta, getItemImagePath } from "@/data/items";
 import { useGameStore } from "@/store/game-store";
 import { STAT_COLORS, STAT_KOREAN_NAMES } from "@/data/stat-descriptions";
+
+/** Thumbnail with fallback to Lucide icon */
+function ItemThumbnail({
+  itemId,
+  fallbackIcon: FallbackIcon,
+  fallbackColor,
+  size = 32,
+}: {
+  itemId: string;
+  fallbackIcon: LucideIcon;
+  fallbackColor: string;
+  size?: number;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const src = getItemImagePath(itemId);
+
+  if (imgError || !src) {
+    return <FallbackIcon size={size * 0.55} style={{ color: fallbackColor }} />;
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      className="rounded object-cover"
+      onError={() => setImgError(true)}
+    />
+  );
+}
 
 const TYPE_CONFIG: Record<
   string,
@@ -146,6 +178,22 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
                   className="flex items-center gap-3 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-3"
                   style={{ borderColor: `${rarityColor}30` }}
                 >
+                  {/* Item thumbnail */}
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border"
+                    style={{
+                      borderColor: `${rarityColor}40`,
+                      backgroundColor: `color-mix(in srgb, ${rarityColor} 8%, transparent)`,
+                    }}
+                  >
+                    <ItemThumbnail
+                      itemId={bagItem.baseItemId ?? bagItem.instanceId}
+                      fallbackIcon={Shield}
+                      fallbackColor={rarityColor}
+                      size={32}
+                    />
+                  </div>
+
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <div className="flex items-center gap-2">
                       <span
@@ -237,6 +285,18 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
                             : "border-[var(--border-primary)] bg-[var(--bg-card)]"
                       }`}
                     >
+                      {/* Item thumbnail */}
+                      <div
+                        className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)]"
+                      >
+                        <ItemThumbnail
+                          itemId={itemId}
+                          fallbackIcon={config.icon}
+                          fallbackColor={config.color}
+                          size={32}
+                        />
+                      </div>
+
                       <div className="flex flex-1 flex-col gap-1">
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] font-medium text-[var(--text-primary)]">

@@ -7,8 +7,15 @@ export interface ItemMeta {
   rarity?: string;
   slot?: string;
   icon?: string;
+  image?: string;
   statBonus?: Record<string, number>;
   setId?: string;
+}
+
+/** 아이템 ID → 이미지 경로 매핑 */
+export function getItemImagePath(itemId: string): string | undefined {
+  const id = itemId.toLowerCase();
+  return `/items/${id}.png`;
 }
 
 export const ITEM_CATALOG: Record<string, ItemMeta> = {
