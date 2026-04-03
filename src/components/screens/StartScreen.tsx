@@ -741,8 +741,15 @@ export function StartScreen() {
   const authLogout = useAuthStore((s) => s.logout);
   const gameReset = useGameStore((s) => s.reset);
 
+  const [checkingRun, setCheckingRun] = useState(!!authToken);
+
   useEffect(() => {
-    if (authToken) checkActiveRun();
+    if (authToken) {
+      setCheckingRun(true);
+      checkActiveRun().finally(() => setCheckingRun(false));
+    } else {
+      setCheckingRun(false);
+    }
   }, [authToken, checkActiveRun]);
 
   const [screenPhase, setScreenPhase] = useState<ScreenPhase>("TITLE");
@@ -958,44 +965,99 @@ export function StartScreen() {
 
         <div className="flex w-full flex-col items-center gap-4 px-6">
           {isLoggedIn ? (
-            <>
-              <p className="mb-2 text-sm text-[var(--text-secondary)]">
-                <span className="text-[var(--gold)]">{displayName}</span> 님, 환영합니다
-              </p>
-
-              {activeRunInfo && (
-                <button
-                  onClick={() => resumeRun()}
-                  disabled={isLoading}
-                  className="flex h-14 w-full max-w-64 flex-col items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
+            checkingRun ? (
+              <div className="flex gap-1.5 py-6">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="h-1.5 w-1.5 rounded-full bg-[var(--gold)]"
+                    style={{
+                      animation: "dotPulse 1.2s ease-in-out infinite",
+                      animationDelay: `${i * 0.2}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <>
+                <div
+                  className="mb-2"
+                  style={{ animation: "fadeSlideIn 0.4s ease-out forwards", opacity: 0 }}
                 >
-                  <span className="text-lg tracking-[3px]">이어하기</span>
-                  <span className="text-xs opacity-70">
-                    {getPresetName(activeRunInfo.presetId)} · 턴 {activeRunInfo.currentTurnNo}
-                  </span>
-                </button>
-              )}
-              <button
-                onClick={() => setScreenPhase("SELECT_PRESET")}
-                disabled={isLoading}
-                className="flex h-14 w-full max-w-64 items-center justify-center border border-[var(--gold)] bg-transparent font-display text-lg tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
-              >
-                새 게임
-              </button>
-              <button
-                onClick={handleEnterCampaign}
-                disabled={isLoading || campaignLoading}
-                className="flex h-14 w-full max-w-64 items-center justify-center border border-[var(--text-muted)] bg-transparent font-display text-lg tracking-[3px] text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
-              >
-                {campaignLoading ? "불러오는 중..." : "캠페인"}
-              </button>
-              <button
-                onClick={handleLogout}
-                className="mt-2 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
-              >
-                로그아웃
-              </button>
-            </>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    <span className="text-[var(--gold)]">{displayName}</span> 님, 환영합니다
+                  </p>
+                </div>
+
+                {activeRunInfo && (
+                  <div
+                    className="w-full max-w-64"
+                    style={{
+                      animation: "fadeSlideIn 0.4s ease-out forwards",
+                      animationDelay: "0.1s",
+                      opacity: 0,
+                    }}
+                  >
+                    <button
+                      onClick={() => resumeRun()}
+                      disabled={isLoading}
+                      className="flex h-14 w-full flex-col items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
+                    >
+                      <span className="text-lg tracking-[3px]">이어하기</span>
+                      <span className="text-xs opacity-70">
+                        {getPresetName(activeRunInfo.presetId)} · 턴 {activeRunInfo.currentTurnNo}
+                      </span>
+                    </button>
+                  </div>
+                )}
+                <div
+                  className="w-full max-w-64"
+                  style={{
+                    animation: "fadeSlideIn 0.4s ease-out forwards",
+                    animationDelay: activeRunInfo ? "0.2s" : "0.1s",
+                    opacity: 0,
+                  }}
+                >
+                  <button
+                    onClick={() => setScreenPhase("SELECT_PRESET")}
+                    disabled={isLoading}
+                    className="flex h-14 w-full items-center justify-center border border-[var(--gold)] bg-transparent font-display text-lg tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
+                  >
+                    새 게임
+                  </button>
+                </div>
+                <div
+                  className="w-full max-w-64"
+                  style={{
+                    animation: "fadeSlideIn 0.4s ease-out forwards",
+                    animationDelay: activeRunInfo ? "0.3s" : "0.2s",
+                    opacity: 0,
+                  }}
+                >
+                  <button
+                    onClick={handleEnterCampaign}
+                    disabled={isLoading || campaignLoading}
+                    className="flex h-14 w-full items-center justify-center border border-[var(--text-muted)] bg-transparent font-display text-lg tracking-[3px] text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
+                  >
+                    {campaignLoading ? "불러오는 중..." : "캠페인"}
+                  </button>
+                </div>
+                <div
+                  style={{
+                    animation: "fadeSlideIn 0.4s ease-out forwards",
+                    animationDelay: activeRunInfo ? "0.4s" : "0.3s",
+                    opacity: 0,
+                  }}
+                >
+                  <button
+                    onClick={handleLogout}
+                    className="mt-2 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+                  >
+                    로그아웃
+                  </button>
+                </div>
+              </>
+            )
           ) : (
             <button
               onClick={() => setScreenPhase("AUTH")}
