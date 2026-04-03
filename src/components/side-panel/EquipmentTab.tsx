@@ -6,6 +6,38 @@ import type { LucideIcon } from "lucide-react";
 import type { EquipmentItem } from "@/types/game";
 import { useGameStore } from "@/store/game-store";
 import { SetBonusDisplay } from "./SetBonusDisplay";
+import { getItemImagePath } from "@/data/items";
+
+/** Equipment image with Lucide icon fallback */
+function EquipImage({
+  itemId,
+  fallbackIcon: FallbackIcon,
+  fallbackColor,
+  size = 20,
+}: {
+  itemId: string;
+  fallbackIcon: LucideIcon;
+  fallbackColor: string;
+  size?: number;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const src = getItemImagePath(itemId);
+
+  if (imgError || !src) {
+    return <FallbackIcon size={size} style={{ color: fallbackColor }} />;
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      width={size + 16}
+      height={size + 16}
+      className="rounded object-cover"
+      onError={() => setImgError(true)}
+    />
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -123,9 +155,9 @@ export function EquipmentTab() {
                     : undefined
                 }
               >
-                {/* Icon */}
+                {/* Icon / Image */}
                 <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded border"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border"
                   style={{
                     borderColor: rarityColor
                       ? `${rarityColor}40`
@@ -135,10 +167,15 @@ export function EquipmentTab() {
                       : "var(--bg-secondary)",
                   }}
                 >
-                  <ItemIcon
-                    size={20}
-                    style={{ color: rarityColor ?? "var(--text-muted)" }}
-                  />
+                  {item ? (
+                    <EquipImage
+                      itemId={item.baseItemId ?? ""}
+                      fallbackIcon={ItemIcon}
+                      fallbackColor={rarityColor ?? "var(--text-muted)"}
+                    />
+                  ) : (
+                    <SlotIcon size={20} style={{ color: "var(--text-muted)" }} />
+                  )}
                 </div>
 
                 {/* Info */}
