@@ -184,11 +184,13 @@ function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactN
         segments.push(<span key={`narr-${key++}`} className="block">{nodes}</span>);
       }
     }
-    // 대사 → DialogueBubble
+    // 대사 → DialogueBubble (따옴표 제거 — 말풍선이 대사임을 시각적으로 표현)
+    const rawDialogue = match[0];
+    const strippedDialogue = rawDialogue.replace(/^[""\u201C]|[""\u201D]$/g, '').trim();
     segments.push(
       <DialogueBubble
         key={`bubble-${key++}`}
-        text={match[0]}
+        text={strippedDialogue}
         npcName={speakingNpc.displayName}
         npcImageUrl={speakingNpc.imageUrl}
         compact={bubbleIndex > 0}
