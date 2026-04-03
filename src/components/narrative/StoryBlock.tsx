@@ -364,8 +364,16 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   const fontSizes = FONT_SIZE_PRESETS[fontSizeKey];
 
   // RESOLVE 타입: 주사위 애니메이션 → 판정 결과 공개 (별도 블록)
+  // 과거 턴(history-resolve-*) 재방문 시 애니메이션 건너뜀
   if (message.type === "RESOLVE" && message.resolveOutcome) {
-    return <ResolveOutcomeInline outcome={message.resolveOutcome} breakdown={message.resolveBreakdown} />;
+    const isHistory = message.id.startsWith("history-");
+    return (
+      <ResolveOutcomeInline
+        outcome={message.resolveOutcome}
+        breakdown={message.resolveBreakdown}
+        skipAnimation={isHistory}
+      />
+    );
   }
 
   const labelColor = LABEL_COLORS[message.type] ?? "var(--text-muted)";
