@@ -28,6 +28,7 @@ export function LocationImage({
 
   useEffect(() => {
     if (imagePath !== prevPathRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- crossfade requires sync state update on prop change
       setNextSrc(imagePath);
       setShowNext(false);
       setHasError(false);

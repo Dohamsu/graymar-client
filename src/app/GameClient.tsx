@@ -7,7 +7,6 @@ import {
   Header,
   MobileHeader,
 } from "@/components/layout/Header";
-import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { NarrativePanel } from "@/components/narrative/NarrativePanel";
 import { InputSection, MobileInputSection } from "@/components/input/InputSection";
 import { SidePanel } from "@/components/side-panel/SidePanel";
@@ -82,6 +81,7 @@ export default function GameClient() {
     const scrollEl = document.getElementById("mobile-narrative-scroll");
     if (!scrollEl) {
       // 서술 탭이 아닌 경우 헤더 항상 표시
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- scroll listener setup requires sync reset
       setMobileHeaderVisible(true);
       return;
     }
@@ -95,6 +95,7 @@ export default function GameClient() {
   useEffect(() => {
     if (phase !== prevPhaseRef.current) {
       prevPhaseRef.current = phase;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- phase transition key for animation
       setPhaseKey((k) => k + 1);
     }
   }, [phase]);

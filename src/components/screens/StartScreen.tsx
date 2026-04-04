@@ -5,9 +5,7 @@ import Image from "next/image";
 import { useGameStore } from "@/store/game-store";
 import { useAuthStore } from "@/store/auth-store";
 import { PRESETS } from "@/data/presets";
-import { TRAITS, type TraitDefinition } from "@/data/traits";
-import { STAT_ACTION_HINTS } from "@/data/stat-descriptions";
-import { StatTooltip } from "@/components/ui/StatTooltip";
+import { TRAITS } from "@/data/traits";
 import {
   getActiveCampaign,
   createCampaign,
@@ -29,7 +27,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  RotateCcw,
   Check,
   ImageIcon,
   Loader2,
@@ -107,18 +104,7 @@ function getStatGrade(key: string, value: number): StatGrade {
   return "낮음";
 }
 
-const SUMMARY_STATS = ["MaxHP", "str", "dex", "wit", "con", "per", "cha"] as const;
 
-function buildStatSummary(stats: CharacterPreset["stats"]): Array<{ key: string; label: string; grade: StatGrade; hint?: string }> {
-  const items: Array<{ key: string; label: string; grade: StatGrade; hint?: string }> = [];
-  for (const key of SUMMARY_STATS) {
-    const grade = getStatGrade(key, stats[key] ?? 0);
-    if (grade === "매우 높음" || grade === "높음" || grade === "낮음") {
-      items.push({ key, label: STAT_LABELS[key], grade, hint: STAT_HINTS[key] });
-    }
-  }
-  return items;
-}
 
 // --- Portrait loading overlay with rotating messages + progress ---
 const PORTRAIT_LOADING_MSGS = [
@@ -162,6 +148,7 @@ function PortraitLoadingOverlay() {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for stat grade display
 const GRADE_COLOR: Record<StatGrade, string> = {
   "매우 높음": "text-[var(--gold)]",
   "높음": "text-[var(--text-primary)]",
