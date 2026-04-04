@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graymar Frontend Design Review — Before / After</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-card: #141414;
+    --bg-code: #1a1a1a;
+    --border: #2a2a2a;
+    --gold: #C9A962;
+    --red: #E85D5D;
+    --green: #4ADE80;
+    --blue: #60A5FA;
+    --text: #e5e5e5;
+    --text-dim: #888;
+    --text-muted: #555;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0 0 80px;
+  }
+  .hero {
+    text-align: center;
+    padding: 80px 24px 60px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #141414 0%, var(--bg) 100%);
+  }
+  .hero h1 {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .hero p { color: var(--text-dim); font-size: 1.05rem; }
+  .hero .date { color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; }
+
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding: 28px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .stat-item { text-align: center; }
+  .stat-num { font-size: 2rem; font-weight: 700; }
+  .stat-num.critical { color: var(--red); }
+  .stat-num.high { color: #F59E0B; }
+  .stat-num.medium { color: var(--blue); }
+  .stat-num.score { color: var(--gold); }
+  .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gold);
+    margin: 56px 0 8px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .section-subtitle { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 24px; }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-header .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .badge.p0 { background: var(--red); color: #fff; }
+  .badge.p1 { background: #F59E0B; color: #000; }
+  .badge.p2 { background: var(--blue); color: #000; }
+  .card-header .id { color: var(--text-muted); font-size: 0.8rem; font-family: monospace; }
+  .card-header .title { font-weight: 600; font-size: 1rem; flex: 1; }
+  .card-header .file { color: var(--text-muted); font-size: 0.75rem; font-family: monospace; }
+
+  .diff-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  @media (max-width: 720px) {
+    .diff-container { grid-template-columns: 1fr; }
+  }
+  .diff-side {
+    padding: 16px 20px;
+    overflow-x: auto;
+  }
+  .diff-side:first-child { border-right: 1px solid var(--border); }
+  @media (max-width: 720px) {
+    .diff-side:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+  .diff-label {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+  .diff-label.before { background: #3B1111; color: var(--red); }
+  .diff-label.after { background: #0B3D1A; color: var(--green); }
+
+  pre {
+    background: var(--bg-code);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 0.78rem;
+    line-height: 1.65;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: #ccc;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  pre .del { color: var(--red); text-decoration: line-through; opacity: 0.7; }
+  pre .add { color: var(--green); }
+  pre .comment { color: var(--text-muted); }
+
+  .note {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .note strong { color: var(--gold); }
+
+  .priority-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+  }
+  .priority-table th, .priority-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .priority-table th {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .priority-table td:first-child { font-weight: 600; }
+
+  .ux-scores {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .ux-score-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .ux-score-card .score {
+    font-size: 2rem;
+    font-weight: 800;
+  }
+  .ux-score-card .label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .score-high { color: var(--green); }
+  .score-mid { color: #F59E0B; }
+  .score-low { color: var(--red); }
+
+  .roadmap {
+    position: relative;
+    padding-left: 28px;
+    margin: 24px 0;
+  }
+  .roadmap::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--border);
+  }
+  .roadmap-item {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .roadmap-item::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 8px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    background: var(--bg);
+  }
+  .roadmap-item .phase {
+    font-size: 0.7rem;
+    color: var(--gold);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .roadmap-item .desc {
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+  .roadmap-item .impact {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <h1>GRAYMAR DESIGN REVIEW</h1>
+  <p>프론트엔드 디자인 점검 — Before / After 수정 계획</p>
+  <div class="date">2026-03-31 | 44 components &middot; 3 stores &middot; Tailwind v4 &middot; Next.js 16</div>
+</div>
+
+<!-- ═══ STATS BAR ═══ -->
+<div class="stats-bar">
+  <div class="stat-item"><div class="stat-num critical">6</div><div class="stat-label">P0 Critical</div></div>
+  <div class="stat-item"><div class="stat-num high">13</div><div class="stat-label">P1 High</div></div>
+  <div class="stat-item"><div class="stat-num medium">10</div><div class="stat-label">P2 Medium</div></div>
+  <div class="stat-item"><div class="stat-num score">6.9</div><div class="stat-label">UX Score /10</div></div>
+</div>
+
+<div class="container">
+
+<!-- ═══ UX SCORES ═══ -->
+<h2 class="section-title">UX 평가 요약</h2>
+<div class="section-subtitle">7개 카테고리별 점수</div>
+<div class="ux-scores">
+  <div class="ux-score-card"><div class="score score-mid">8</div><div class="label">감성/몰입감</div></div>
+  <div class="ux-score-card"><div class="score score-mid">7</div><div class="label">시각적 계층</div></div>
+  <div class="ux-score-card"><div class="score score-mid">7</div><div class="label">정보 설계</div></div>
+  <div class="ux-score-card"><div class="score score-mid">7</div><div class="label">인터랙션</div></div>
+  <div class="ux-score-card"><div class="score score-mid">7</div><div class="label">모바일 UX</div></div>
+  <div class="ux-score-card"><div class="score score-low">6</div><div class="label">인지 부하</div></div>
+  <div class="ux-score-card"><div class="score score-low">6</div><div class="label">첫인상</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 1: CRITICAL FIXES                    -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 class="section-title">Phase 1 — Critical Fixes</h2>
+<div class="section-subtitle">즉시 수정이 필요한 P0 이슈. 앱 안정성과 성능에 직접 영향</div>
+
+<!-- CARD 1: Error Boundary -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p0">P0</span>
+    <span class="id">AP-01</span>
+    <span class="title">Error Boundary 부재 — 렌더 에러 시 앱 크래시</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// app/error.tsx — 파일 없음</span>
+<span class="comment">// app/global-error.tsx — 파일 없음</span>
+<span class="comment">// 컴포넌트 렌더 에러 → 전체 앱 화이트스크린</span>
+<span class="comment">// ErrorBanner는 Zustand 에러만 처리</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="add">// app/error.tsx</span>
+<span class="add">'use client';</span>
+<span class="add">export default function Error({</span>
+<span class="add">  error, reset</span>
+<span class="add">}: { error: Error; reset: () => void }) {</span>
+<span class="add">  return (</span>
+<span class="add">    &lt;div className="flex h-screen flex-col</span>
+<span class="add">      items-center justify-center bg-[var(--bg-primary)]"&gt;</span>
+<span class="add">      &lt;h2 className="text-[var(--gold)]"&gt;</span>
+<span class="add">        문제가 발생했습니다&lt;/h2&gt;</span>
+<span class="add">      &lt;p className="text-[var(--text-muted)]"&gt;</span>
+<span class="add">        {error.message}&lt;/p&gt;</span>
+<span class="add">      &lt;button onClick={reset}&gt;다시 시도&lt;/button&gt;</span>
+<span class="add">    &lt;/div&gt;</span>
+<span class="add">  );</span>
+<span class="add">}</span></pre>
+    </div>
+  </div>
+  <div class="note"><strong>영향:</strong> 어떤 컴포넌트에서든 렌더 에러 발생 시 사용자에게 복구 옵션 제공. 현재는 화이트스크린만 보임.</div>
+</div>
+
+<!-- CARD 2: Font Optimization -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p0">P0</span>
+    <span class="id">PERF-01/02</span>
+    <span class="title">폰트 로딩 최적화 — 3.6MB+ OTF → WOFF2 + next/font</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">/* globals.css — 9개 @font-face OTF */</span>
+<span class="del">@font-face {</span>
+<span class="del">  font-family: "A2G";</span>
+<span class="del">  src: url("/fonts/에이투지체-1Thin.otf")</span>
+<span class="del">       format("opentype");</span>
+<span class="del">  font-weight: 100;</span>
+<span class="del">}</span>
+<span class="del">/* ... 9개 weight 전부 (100~900) */</span>
+<span class="del">/* 총 ~3.6MB, 렌더 블로킹 */</span>
+
+<span class="comment">/* layout.tsx — Google Fonts link 태그 */</span>
+<span class="del">&lt;link</span>
+<span class="del">  href="https://fonts.googleapis.com/</span>
+<span class="del">  css2?family=IBM+Plex+Sans+KR:wght@</span>
+<span class="del">  400;500;600;700&family=Noto+Serif+KR</span>
+<span class="del">  ...&family=Newsreader...&family=Inter"</span>
+<span class="del">  rel="stylesheet" /&gt;</span>
+<span class="comment">/* Inter, Newsreader 실제 미사용 */</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="add">// layout.tsx — next/font 사용</span>
+<span class="add">import localFont from 'next/font/local';</span>
+<span class="add">import { IBM_Plex_Sans_KR, Noto_Serif_KR</span>
+<span class="add">} from 'next/font/google';</span>
+<span class="add"></span>
+<span class="add">const a2g = localFont({</span>
+<span class="add">  src: [</span>
+<span class="add">    { path: './fonts/A2G-Regular.woff2',</span>
+<span class="add">      weight: '400' },</span>
+<span class="add">    { path: './fonts/A2G-SemiBold.woff2',</span>
+<span class="add">      weight: '600' },</span>
+<span class="add">    { path: './fonts/A2G-Bold.woff2',</span>
+<span class="add">      weight: '700' },</span>
+<span class="add">  ],</span>
+<span class="add">  variable: '--font-ui',</span>
+<span class="add">  display: 'swap',</span>
+<span class="add">});</span>
+<span class="comment">// WOFF2 변환: ~3.6MB → ~600KB (83% 절감)</span>
+<span class="comment">// 미사용 Inter, Newsreader 제거</span></pre>
+    </div>
+  </div>
+  <div class="note"><strong>영향:</strong> 초기 로딩 3MB+ 절감. 렌더 블로킹 제거. FOUT 최소화.</div>
+</div>
+
+<!-- CARD 3: Modal A11y -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p0">P0</span>
+    <span class="id">A11Y-02/03</span>
+    <span class="title">모달 접근성 — focus trap + ARIA 추가</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// LlmFailureModal.tsx:22</span>
+<span class="del">&lt;div className="fixed inset-0 z-60</span>
+<span class="del">  flex items-center justify-center</span>
+<span class="del">  bg-black/80"&gt;</span>
+<span class="del">  &lt;div className="mx-4 w-full</span>
+<span class="del">    max-w-sm rounded-lg ..."&gt;</span>
+<span class="comment">  // role 없음, aria-modal 없음</span>
+<span class="comment">  // focus trap 없음</span>
+<span class="comment">  // ESC 키 핸들러 없음</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="add">&lt;div className="fixed inset-0 z-60 ..."</span>
+<span class="add">  role="dialog"</span>
+<span class="add">  aria-modal="true"</span>
+<span class="add">  aria-labelledby="llm-fail-title"</span>
+<span class="add">  onKeyDown={(e) =&gt;</span>
+<span class="add">    e.key === 'Escape' && onClose()}</span>
+<span class="add">  ref={trapRef}&gt;</span>
+<span class="add">  &lt;div className="mx-4 ..."&gt;</span>
+<span class="add">    &lt;h3 id="llm-fail-title"&gt;</span>
+<span class="add">      AI 서술 생성 실패&lt;/h3&gt;</span>
+<span class="comment">// + useFocusTrap 훅 적용</span></pre>
+    </div>
+  </div>
+  <div class="note"><strong>영향:</strong> 스크린 리더 지원, 키보드 탐색, ESC 닫기. 모든 모달(LlmFailure, BugReport, LlmSettings)에 동일 적용.</div>
+</div>
+
+<!-- CARD 4: getState() bug -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p0">P0</span>
+    <span class="id">AP-03</span>
+    <span class="title">getState() 반응성 버그 — 엔딩 화면 미갱신</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// GameClient.tsx:105</span>
+<span class="del">const endingResult =</span>
+<span class="del">  useGameStore.getState().endingResult;</span>
+<span class="comment">// 렌더 중 getState() 호출</span>
+<span class="comment">// → endingResult 변경 시 리렌더 안됨</span>
+<span class="comment">// → 엔딩 화면이 빈 상태로 표시될 수 있음</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="comment">// GameClient.tsx — 상단 셀렉터에 추가</span>
+<span class="add">const endingResult =</span>
+<span class="add">  useGameStore((s) => s.endingResult);</span>
+<span class="comment">// React 구독 시스템 통해 반응성 확보</span>
+<span class="comment">// → endingResult 변경 시 정상 리렌더</span></pre>
+    </div>
+  </div>
+  <div class="note"><strong>영향:</strong> 엔딩 화면에서 결과 데이터가 항상 최신 상태로 표시됨.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 2: PERFORMANCE                       -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 class="section-title">Phase 2 — Performance</h2>
+<div class="section-subtitle">렌더링 최적화와 코드 스플리팅</div>
+
+<!-- CARD 5: Zustand selectors -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p1">P1</span>
+    <span class="id">PERF-03</span>
+    <span class="title">GameClient 18개 셀렉터 → useShallow 그룹화</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// GameClient.tsx:35-52</span>
+<span class="del">const phase = useGameStore((s) => s.phase);</span>
+<span class="del">const messages = useGameStore((s) => s.messages);</span>
+<span class="del">const choices = useGameStore((s) => s.choices);</span>
+<span class="del">const hud = useGameStore((s) => s.hud);</span>
+<span class="del">const currentNodeType = useGameStore(...);</span>
+<span class="del">const inventory = useGameStore(...);</span>
+<span class="del">const characterInfo = useGameStore(...);</span>
+<span class="del">const battleState = useGameStore(...);</span>
+<span class="del">/* ... 18개 개별 셀렉터 */</span>
+<span class="comment">// 어떤 값이든 변경 → 전체 리렌더</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="add">import { useShallow } from 'zustand/shallow';</span>
+<span class="add"></span>
+<span class="add">const { phase, currentNodeType, hud,</span>
+<span class="add">  locationName } = useGameStore(</span>
+<span class="add">  useShallow((s) => ({</span>
+<span class="add">    phase: s.phase,</span>
+<span class="add">    currentNodeType: s.currentNodeType,</span>
+<span class="add">    hud: s.hud,</span>
+<span class="add">    locationName: s.locationName,</span>
+<span class="add">  }))</span>
+<span class="add">);</span>
+<span class="comment">// phase별 하위 컴포넌트로 셀렉터 분산</span>
+<span class="comment">// GameClient는 라우팅만, 각 Screen이</span>
+<span class="comment">// 필요한 상태만 구독</span></pre>
+    </div>
+  </div>
+  <div class="note"><strong>영향:</strong> 불필요한 리렌더 80%+ 제거. 각 phase 컴포넌트가 자기 상태만 구독.</div>
+</div>
+
+<!-- CARD 6: MutationObserver -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p1">P1</span>
+    <span class="id">PERF-04</span>
+    <span class="title">NarrativePanel MutationObserver 디바운스</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// NarrativePanel.tsx:28</span>
+<span class="del">const observer = new MutationObserver(() => {</span>
+<span class="del">  el.scrollTo({</span>
+<span class="del">    top: el.scrollHeight,</span>
+<span class="del">    behavior: 'smooth'</span>
+<span class="del">  });</span>
+<span class="del">});</span>
+<span class="del">observer.observe(el, {</span>
+<span class="del">  childList: true,</span>
+<span class="del">  subtree: true,</span>
+<span class="del">  characterData: true</span>
+<span class="del">});</span>
+<span class="comment">// 타이핑 중 매 글자마다 scrollTo 호출</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="add">const observer = new MutationObserver(() => {</span>
+<span class="add">  if (rafId.current)</span>
+<span class="add">    cancelAnimationFrame(rafId.current);</span>
+<span class="add">  rafId.current = requestAnimationFrame(</span>
+<span class="add">    () => el.scrollTo({</span>
+<span class="add">      top: el.scrollHeight,</span>
+<span class="add">      behavior: 'smooth'</span>
+<span class="add">    })</span>
+<span class="add">  );</span>
+<span class="add">});</span>
+<span class="comment">// rAF로 1프레임에 1회만 scroll</span>
+<span class="comment">// 500자 타이핑: 500회 → ~30회</span></pre>
+    </div>
+  </div>
+  <div class="note"><strong>영향:</strong> 타이핑 애니메이션 중 스크롤 호출 94% 감소. 모바일 프레임 드롭 방지.</div>
+</div>
+
+<!-- CARD 7: Code Splitting -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p1">P1</span>
+    <span class="id">PERF-05</span>
+    <span class="title">Phase별 코드 스플리팅 — next/dynamic</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// GameClient.tsx — 모든 컴포넌트 정적 import</span>
+<span class="del">import { StartScreen } from '...';</span>
+<span class="del">import { HubScreen } from '...';</span>
+<span class="del">import { BattlePanel } from '...';</span>
+<span class="del">import { EndingScreen } from '...';</span>
+<span class="del">import { NodeTransitionScreen } from '...';</span>
+<span class="comment">// 전부 초기 번들에 포함</span>
+<span class="comment">// → 첫 로딩 시 사용하지 않는 코드도 로드</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="add">import dynamic from 'next/dynamic';</span>
+<span class="add"></span>
+<span class="add">const BattlePanel = dynamic(</span>
+<span class="add">  () => import('../components/battle/</span>
+<span class="add">    BattlePanel'),</span>
+<span class="add">  { loading: () => &lt;PhaseLoader /&gt; }</span>
+<span class="add">);</span>
+<span class="add">const EndingScreen = dynamic(</span>
+<span class="add">  () => import('../components/screens/</span>
+<span class="add">    EndingScreen')</span>
+<span class="add">);</span>
+<span class="comment">// 전투/엔딩/HUB 컴포넌트 지연 로딩</span>
+<span class="comment">// 초기 번들 ~40% 축소 예상</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 3: DESIGN CONSISTENCY                -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 class="section-title">Phase 3 — Design Consistency</h2>
+<div class="section-subtitle">색상 토큰 통일, 미사용 리소스 정리</div>
+
+<!-- CARD 8: Color tokens -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p1">P1</span>
+    <span class="id">THEME-01</span>
+    <span class="title">Raw Tailwind 색상 → CSS Variable 토큰 통일</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// IncidentTracker.tsx — raw Tailwind</span>
+<span class="del">className="text-zinc-500"</span>
+<span class="del">className="bg-zinc-800 rounded-full"</span>
+<span class="del">className="border-zinc-700 bg-zinc-900/50"</span>
+<span class="del">className="text-zinc-200"</span>
+<span class="del">className="text-green-400"</span>
+<span class="del">className="text-red-400"</span>
+<span class="comment">// 3개 컴포넌트(IncidentTracker,</span>
+<span class="comment">// NpcRelationshipCard, EndingScreen)가</span>
+<span class="comment">// 나머지 41개와 다른 색상 시스템 사용</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="comment">// IncidentTracker.tsx — CSS 변수 통일</span>
+<span class="add">className="text-[var(--text-muted)]"</span>
+<span class="add">className="bg-[var(--bg-secondary)]</span>
+<span class="add">  rounded-full"</span>
+<span class="add">className="border-[var(--border-primary)]</span>
+<span class="add">  bg-[var(--bg-card)]"</span>
+<span class="add">className="text-[var(--text-primary)]"</span>
+<span class="add">className="text-[var(--success-green)]"</span>
+<span class="add">className="text-[var(--hp-red)]"</span>
+<span class="comment">// 44개 컴포넌트 전체 동일한 토큰 사용</span>
+<span class="comment">// 향후 라이트 모드 전환 1분 내 가능</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- CARD 9: confirm() -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p2">P2</span>
+    <span class="id">AP-05</span>
+    <span class="title">confirm() → 인게임 확인 모달</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// Header.tsx:64</span>
+<span class="del">onClick={() => {</span>
+<span class="del">  if (confirm('타이틀 화면으로 돌아갑니다.</span>
+<span class="del">    진행 중인 게임은 자동 저장됩니다.'))</span>
+<span class="del">    reset();</span>
+<span class="del">}}</span>
+<span class="comment">// 브라우저 기본 다이얼로그</span>
+<span class="comment">// → 다크 테마 분위기 파괴</span>
+<span class="comment">// → 스타일링 불가</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="add">onClick={() => setConfirmDialog({</span>
+<span class="add">  title: '타이틀로 돌아가기',</span>
+<span class="add">  message: '진행 중인 게임은</span>
+<span class="add">    자동 저장됩니다.',</span>
+<span class="add">  onConfirm: reset,</span>
+<span class="add">})}</span>
+<span class="comment">// 커스텀 ConfirmDialog 컴포넌트</span>
+<span class="comment">// → 다크 테마 일관성 유지</span>
+<span class="comment">// → role="alertdialog" + focus trap</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 4: UX IMPROVEMENTS                   -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 class="section-title">Phase 4 — UX Improvements</h2>
+<div class="section-subtitle">첫인상 개선, HUB 정보 계층화, 모바일 최적화</div>
+
+<!-- CARD 10: StartScreen -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p1">P1</span>
+    <span class="id">UX-01</span>
+    <span class="title">타이틀 화면 — 게임 소개 추가 + 개발 용어 제거</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// StartScreen.tsx:725-738</span>
+<span class="del">&lt;div className="flex h-20 w-20 ...</span>
+<span class="del">  border-2 border-[var(--gold)]"&gt;</span>
+<span class="del">  &lt;span className="font-display</span>
+<span class="del">    text-3xl font-bold text-[var(--gold)]"&gt;</span>
+<span class="del">    R</span>
+<span class="del">  &lt;/span&gt;</span>
+<span class="del">&lt;/div&gt;</span>
+<span class="del">&lt;h1&gt;그림자의 왕국&lt;/h1&gt;</span>
+<span class="del">&lt;p&gt;그레이마르 항만 — 버티컬 슬라이스&lt;/p&gt;</span>
+<span class="comment">// "R" 로고: 게임과 무관</span>
+<span class="comment">// "버티컬 슬라이스": 개발 용어</span>
+<span class="comment">// 게임 설명 전무</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="add">&lt;div className="flex h-20 w-20 ...</span>
+<span class="add">  border-2 border-[var(--gold)]"&gt;</span>
+<span class="add">  &lt;span className="font-display</span>
+<span class="add">    text-3xl"&gt;왕&lt;/span&gt;</span>
+<span class="add">&lt;/div&gt;</span>
+<span class="add">&lt;h1&gt;그림자의 왕국&lt;/h1&gt;</span>
+<span class="add">&lt;p className="text-[var(--text-dim)]</span>
+<span class="add">  max-w-sm text-center leading-relaxed"&gt;</span>
+<span class="add">  권력과 음모가 뒤엉킨 항만 도시</span>
+<span class="add">  그레이마르. 이름 없는 용병의 선택이</span>
+<span class="add">  도시의 운명을 결정한다.</span>
+<span class="add">&lt;/p&gt;</span>
+<span class="comment">// 로고: "왕" (게임 테마 반영)</span>
+<span class="comment">// 개발 용어 제거, 분위기 있는 소개문</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- CARD 11: HUB Progressive Disclosure -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p1">P1</span>
+    <span class="id">UX-02</span>
+    <span class="title">HUB 화면 — 정보 계층화 (접기/펼치기)</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// HubScreen.tsx — 10+ 섹션 전부 펼침</span>
+<span class="del">&lt;PinnedAlertStack /&gt;</span>
+<span class="del">&lt;WorldDeltaSummaryCard /&gt;</span>
+<span class="del">&lt;LocationCards /&gt;  {/* 4개 */}</span>
+<span class="del">&lt;HeatResolution /&gt;</span>
+<span class="del">&lt;IncidentTracker /&gt;</span>
+<span class="del">&lt;HubNotificationList /&gt;</span>
+<span class="del">&lt;SignalFeedPanel /&gt;</span>
+<span class="del">&lt;NpcRelationshipCard /&gt;</span>
+<span class="comment">// 모바일에서 스크롤 6~8 페이지 분량</span>
+<span class="comment">// 하단 시그널/NPC 정보 안 보고 장소 선택</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="comment">// HubScreen.tsx — 스마트 접기</span>
+<span class="add">&lt;PinnedAlertStack /&gt;</span>
+<span class="add">&lt;WorldDeltaSummaryCard /&gt;</span>
+<span class="add">&lt;LocationCards /&gt;</span>
+<span class="add"></span>
+<span class="add">{/* 접기 가능 섹션 */}</span>
+<span class="add">&lt;CollapsibleSection</span>
+<span class="add">  title="진행 중인 사건"</span>
+<span class="add">  badge={incidents.length}</span>
+<span class="add">  defaultOpen={hasHighSeverity}&gt;</span>
+<span class="add">  &lt;IncidentTracker /&gt;</span>
+<span class="add">&lt;/CollapsibleSection&gt;</span>
+<span class="add">&lt;CollapsibleSection</span>
+<span class="add">  title={`시그널 ${signals.length}건`}</span>
+<span class="add">  defaultOpen={false}&gt;</span>
+<span class="add">  &lt;SignalFeedPanel /&gt;</span>
+<span class="add">&lt;/CollapsibleSection&gt;</span>
+<span class="comment">// 핵심만 노출, 부가정보는 접힌 상태</span></pre>
+    </div>
+  </div>
+  <div class="note"><strong>영향:</strong> 모바일 HUB 스크롤량 60% 감소. 중요 정보(사건 긴급도 높을 때) 자동 펼침.</div>
+</div>
+
+<!-- CARD 12: Choice Accessibility -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p1">P1</span>
+    <span class="id">A11Y-04</span>
+    <span class="title">선택지 버튼 — focus 스타일 + 터치 타겟</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// StoryBlock.tsx:367</span>
+<span class="del">&lt;button</span>
+<span class="del">  className="choice-btn cursor-pointer</span>
+<span class="del">  rounded-md px-3 py-2 text-left</span>
+<span class="del">  font-display leading-[1.6]"</span>
+<span class="del">&gt;</span>
+<span class="comment">// focus-visible 스타일 없음</span>
+<span class="comment">// py-2 → 높이 ~36px (44px 미달)</span>
+<span class="comment">// 클릭 즉시 실행, 확인 단계 없음</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="add">&lt;button</span>
+<span class="add">  className="choice-btn cursor-pointer</span>
+<span class="add">  rounded-md px-3 py-3 text-left</span>
+<span class="add">  font-display leading-[1.6]</span>
+<span class="add">  focus-visible:ring-2</span>
+<span class="add">  focus-visible:ring-[var(--gold)]</span>
+<span class="add">  focus-visible:ring-offset-2</span>
+<span class="add">  focus-visible:ring-offset-[var(</span>
+<span class="add">    --bg-primary)]</span>
+<span class="add">  min-h-[44px]"</span>
+<span class="add">&gt;</span>
+<span class="comment">// py-3 + min-h-[44px] → 터치 타겟 충족</span>
+<span class="comment">// focus-visible → 키보드 접근성</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- CARD 13: ARIA labels -->
+<div class="card">
+  <div class="card-header">
+    <span class="badge p1">P1</span>
+    <span class="id">A11Y-03</span>
+    <span class="title">아이콘 버튼 aria-label 추가</span>
+  </div>
+  <div class="diff-container">
+    <div class="diff-side">
+      <span class="diff-label before">BEFORE</span>
+      <pre><span class="comment">// Header.tsx:109-115</span>
+<span class="del">&lt;button</span>
+<span class="del">  onClick={() => setSettingsOpen(true)}</span>
+<span class="del">  title="AI 모델 설정"&gt;</span>
+<span class="del">  &lt;Settings size={16} /&gt;</span>
+<span class="del">&lt;/button&gt;</span>
+<span class="comment">// title만 있고 aria-label 없음</span>
+<span class="comment">// 스크린 리더: "button" (무의미)</span></pre>
+    </div>
+    <div class="diff-side">
+      <span class="diff-label after">AFTER</span>
+      <pre><span class="add">&lt;button</span>
+<span class="add">  onClick={() => setSettingsOpen(true)}</span>
+<span class="add">  aria-label="AI 모델 설정"</span>
+<span class="add">  title="AI 모델 설정"&gt;</span>
+<span class="add">  &lt;Settings size={16} /&gt;</span>
+<span class="add">&lt;/button&gt;</span>
+<span class="comment">// 스크린 리더: "AI 모델 설정, 버튼"</span>
+<span class="comment">// 모든 아이콘 버튼에 동일 적용</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- ROADMAP                                    -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 class="section-title">실행 로드맵</h2>
+<div class="section-subtitle">우선순위별 4단계 실행 계획</div>
+
+<div class="roadmap">
+  <div class="roadmap-item">
+    <div class="phase">Phase 1 — 즉시 (1~2시간)</div>
+    <div class="desc">error.tsx 생성, getState() 버그 수정, 모달 ARIA 추가</div>
+    <div class="impact">앱 안정성 확보 + 반응성 버그 제거</div>
+  </div>
+  <div class="roadmap-item">
+    <div class="phase">Phase 2 — 단기 (2~4시간)</div>
+    <div class="desc">next/font 마이그레이션, Zustand useShallow, MutationObserver rAF, 코드 스플리팅</div>
+    <div class="impact">초기 로딩 3MB+ 절감, 렌더링 성능 80%+ 개선</div>
+  </div>
+  <div class="roadmap-item">
+    <div class="phase">Phase 3 — 중기 (2~3시간)</div>
+    <div class="desc">색상 토큰 통일, confirm() 교체, aria-label 전수 조사, focus-visible 추가</div>
+    <div class="impact">디자인 일관성 + 접근성 기본 대응</div>
+  </div>
+  <div class="roadmap-item">
+    <div class="phase">Phase 4 — 중장기 (3~5시간)</div>
+    <div class="desc">타이틀 화면 개선, HUB 접기/펼치기, 모바일 하단 네비 복원, 터치 타겟 44px</div>
+    <div class="impact">UX 점수 6.9 → 8.0+ 목표</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- FULL ISSUE TABLE                           -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 class="section-title">전체 이슈 목록</h2>
+
+<table class="priority-table">
+  <thead>
+    <tr><th>등급</th><th>ID</th><th>이슈</th><th>파일</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="badge p0">P0</span></td><td>AP-01</td><td>Error Boundary 부재</td><td>app/error.tsx (미존재)</td></tr>
+    <tr><td><span class="badge p0">P0</span></td><td>A11Y-01</td><td>global-error.tsx 부재</td><td>app/global-error.tsx (미존재)</td></tr>
+    <tr><td><span class="badge p0">P0</span></td><td>PERF-01</td><td>9개 OTF 폰트 직접 로딩 (3.6MB)</td><td>globals.css:5-58</td></tr>
+    <tr><td><span class="badge p0">P0</span></td><td>PERF-02</td><td>Google Fonts link 태그 렌더 블로킹</td><td>layout.tsx:52-55</td></tr>
+    <tr><td><span class="badge p0">P0</span></td><td>A11Y-02</td><td>모달 focus trap / ARIA 부재</td><td>LlmFailureModal.tsx:22</td></tr>
+    <tr><td><span class="badge p0">P0</span></td><td>AP-03</td><td>getState() 렌더 중 호출 (반응성 버그)</td><td>GameClient.tsx:105</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>A11Y-03</td><td>ARIA 속성 거의 미사용 (44개 중 4개)</td><td>전체 컴포넌트</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>A11Y-04</td><td>선택지 버튼 focus 스타일 없음</td><td>StoryBlock.tsx:367</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>A11Y-05</td><td>color contrast 미달 (text-[8px])</td><td>HubScreen.tsx:81</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>PERF-03</td><td>GameClient 18개 개별 셀렉터</td><td>GameClient.tsx:35-52</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>PERF-04</td><td>MutationObserver 미디바운스</td><td>NarrativePanel.tsx:28</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>PERF-05</td><td>코드 스플리팅 없음</td><td>GameClient.tsx</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>THEME-01</td><td>Raw Tailwind 색상 3개 컴포넌트</td><td>IncidentTracker, NpcRelationship, Ending</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>THEME-02</td><td>미사용 폰트 로딩 (Inter, Newsreader)</td><td>layout.tsx:53</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>RESP-01</td><td>SidePanel 고정 너비 320px</td><td>SidePanel.tsx:34</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>RESP-02</td><td>터치 타겟 44px 미달 다수</td><td>StoryBlock, HubScreen 등</td></tr>
+    <tr><td><span class="badge p1">P1</span></td><td>RESP-03</td><td>HUB 그리드 tablet 미대응</td><td>HubScreen.tsx:269</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>A11Y-06</td><td>prefers-reduced-motion 미지원</td><td>globals.css, StoryBlock</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>A11Y-07</td><td>combobox ARIA 불완전</td><td>StartScreen.tsx:374</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>PERF-06</td><td>TypewriterText 글자별 리렌더</td><td>StoryBlock.tsx:182</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>PERF-07</td><td>Hidden image preload 비효율</td><td>StartScreen.tsx:131</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>THEME-03</td><td>spacing 토큰 비체계</td><td>전체</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>THEME-04</td><td>border-radius 비일관</td><td>전체</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>RESP-04</td><td>모바일 헤더 고정 위치 scroll 보정</td><td>Header.tsx:138</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>AP-02</td><td>StoryBlock 훅 흐름 복잡</td><td>StoryBlock.tsx:295</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>AP-04</td><td>prop drilling 비일관</td><td>GameClient.tsx</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>AP-05</td><td>confirm() 브라우저 다이얼로그</td><td>Header.tsx:64,184</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>AP-06</td><td>Location 데이터 하드코딩</td><td>HubScreen.tsx:17-67</td></tr>
+    <tr><td><span class="badge p2">P2</span></td><td>AP-07</td><td>DiceRolling useEffect deps 불필요</td><td>ResolveOutcomeBanner.tsx:133</td></tr>
+  </tbody>
+</table>
+
+</div>
+
+</body>
+</html>
