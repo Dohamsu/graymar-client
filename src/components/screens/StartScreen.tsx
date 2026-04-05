@@ -83,26 +83,6 @@ const STAT_HINTS: Record<string, string> = {
   cha: "설득 . 뇌물 . 거래",
 };
 
-const STAT_THRESHOLDS: Record<string, [number, number, number]> = {
-  MaxHP: [110, 95, 85],
-  str: [14, 11, 9],
-  dex: [10, 7, 6],
-  wit: [9, 7, 5],
-  con: [12, 10, 8],
-  per: [9, 7, 5],
-  cha: [9, 7, 5],
-};
-
-type StatGrade = "매우 높음" | "높음" | "보통" | "낮음";
-
-function getStatGrade(key: string, value: number): StatGrade {
-  const thresholds = STAT_THRESHOLDS[key];
-  if (!thresholds) return "보통";
-  if (value >= thresholds[0]) return "매우 높음";
-  if (value >= thresholds[1]) return "높음";
-  if (value >= thresholds[2]) return "보통";
-  return "낮음";
-}
 
 
 
@@ -148,13 +128,6 @@ function PortraitLoadingOverlay() {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for stat grade display
-const GRADE_COLOR: Record<StatGrade, string> = {
-  "매우 높음": "text-[var(--gold)]",
-  "높음": "text-[var(--text-primary)]",
-  "보통": "text-[var(--text-secondary)]",
-  "낮음": "text-[var(--text-muted)]",
-};
 
 // Stat descriptions for Step 4
 const STAT_DESCRIPTIONS: Record<string, string> = {
@@ -1446,6 +1419,7 @@ export function StartScreen() {
           <div className="relative aspect-[4/5] w-72 max-w-full overflow-hidden rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)]">
             {displayPortrait ? (
               portraitUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element -- AI-generated external URL */
                 <img src={displayPortrait} alt="캐릭터 초상화" className="h-full w-full object-cover object-top" />
               ) : (
                 <Image src={displayPortrait} alt="캐릭터 초상화" fill className="object-cover object-top" />
@@ -1808,6 +1782,7 @@ export function StartScreen() {
             <div className="relative aspect-[4/5] w-36 shrink-0 overflow-hidden rounded-lg border-2 border-[var(--gold)] bg-[var(--bg-secondary)]">
               {displayPortrait ? (
                 portraitUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element -- AI-generated external URL */
                   <img src={displayPortrait} alt={displayName} className="h-full w-full object-cover object-top" />
                 ) : (
                   <Image src={displayPortrait} alt={displayName} fill className="object-cover object-top" />
