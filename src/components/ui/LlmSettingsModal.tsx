@@ -27,11 +27,17 @@ interface LlmSettingsModalProps {
 const TEXT_SPEED_ORDER: TextSpeedKey[] = ["instant", "fast", "normal", "slow"];
 const FONT_SIZE_ORDER: FontSizeKey[] = ["small", "normal", "large", "xlarge"];
 
-/** 모델명 축약 (gpt-4o-2024-11-20 → gpt-4o) */
+/** 모델명 축약 */
 function shortModel(model: string | null): string {
   if (!model) return "?";
   // 날짜 접미사 제거
-  return model.replace(/-\d{4}-\d{2}-\d{2}$/, "");
+  const short = model.replace(/-\d{4}-\d{2}-\d{2}$/, "");
+  // Gemma: gemma-4-26b-a4b-it → Gemma 4 26B MoE
+  if (short.includes("gemma-4-26b-a4b")) return "Gemma 4 26B MoE";
+  if (short.includes("gemma-4-31b")) return "Gemma 4 31B";
+  if (short.includes("gemma-4-e4b")) return "Gemma 4 E4B";
+  if (short.includes("gemma-4-e2b")) return "Gemma 4 E2B";
+  return short;
 }
 
 export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
@@ -147,6 +153,33 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
             </div>
           ) : (
             <>
+              {/* 현재 LLM 모델 정보 */}
+              {settings && (
+                <div className="rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-3">
+                  <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
+                    현재 AI 모델
+                  </label>
+                  <div className="space-y-1 text-[11px]">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">Provider</span>
+                      <span className="font-mono text-[var(--text-primary)]">{settings.provider}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">Model</span>
+                      <span className="font-mono text-[var(--gold)]">
+                        {settings.provider === 'gemini' ? shortModel(settings.geminiModel ?? null)
+                          : settings.provider === 'claude' ? shortModel(settings.claudeModel ?? null)
+                          : shortModel(settings.openaiModel ?? null)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">Fallback</span>
+                      <span className="font-mono text-[var(--text-secondary)]">{settings.fallbackProvider ?? 'none'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Max Tokens */}
               <div>
                 <div className="mb-2 flex items-center justify-between">

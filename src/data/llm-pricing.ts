@@ -33,13 +33,18 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
   'gemini-2.5-pro': { input: 1.25, cached: 0.315, output: 10.0 },
   'gemini-2.5-flash': { input: 0.15, cached: 0.0375, output: 0.6 },
   'gemini-2.0-flash': { input: 0.1, cached: 0.025, output: 0.4 },
+  // Gemma 4 (via Gemini API)
+  'gemma-4-31b-it': { input: 0.14, cached: 0.035, output: 0.40 },
+  'gemma-4-26b-a4b-it': { input: 0.13, cached: 0.033, output: 0.40 },
+  'gemma-4-e4b-it': { input: 0.07, cached: 0.018, output: 0.20 },
+  'gemma-4-e2b-it': { input: 0.04, cached: 0.01, output: 0.10 },
   // DeepSeek
   'deepseek-v3': { input: 0.28, cached: 0.14, output: 0.42 },
 };
 
 const DEFAULT_PRICING: ModelPricing = { input: 2.5, cached: 1.25, output: 10.0 };
 
-export const USD_TO_KRW = 1500;
+export const USD_TO_KRW = 1380;
 
 export function findPricing(model: string | null): ModelPricing {
   if (!model) return DEFAULT_PRICING;
