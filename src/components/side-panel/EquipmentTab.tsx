@@ -28,6 +28,7 @@ function EquipImage({
   }
 
   return (
+    /* eslint-disable-next-line @next/next/no-img-element -- dynamic item icon with onError fallback */
     <img
       src={src}
       alt=""
