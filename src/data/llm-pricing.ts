@@ -44,7 +44,7 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
 
 const DEFAULT_PRICING: ModelPricing = { input: 2.5, cached: 1.25, output: 10.0 };
 
-export const USD_TO_KRW = 1380;
+export const USD_TO_KRW = 1500;
 
 export function findPricing(model: string | null): ModelPricing {
   if (!model) return DEFAULT_PRICING;
