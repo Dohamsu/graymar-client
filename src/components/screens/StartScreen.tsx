@@ -31,6 +31,7 @@ import {
   ImageIcon,
   Loader2,
   Info,
+  Users,
 } from "lucide-react";
 
 type ScreenPhase =
@@ -687,7 +688,7 @@ function getPresetName(presetId: string): string {
   return PRESETS.find((p) => p.presetId === presetId)?.name ?? presetId;
 }
 
-export function StartScreen() {
+export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const startNewGame = useGameStore((s) => s.startNewGame);
   const startCampaignRun = useGameStore((s) => s.startCampaignRun);
   const phase = useGameStore((s) => s.phase);
@@ -1002,10 +1003,29 @@ export function StartScreen() {
                     {campaignLoading ? "불러오는 중..." : "캠페인"}
                   </button>
                 </div>
+                {onParty && (
+                  <div
+                    className="w-full max-w-64"
+                    style={{
+                      animation: "fadeSlideIn 0.4s ease-out forwards",
+                      animationDelay: activeRunInfo ? "0.35s" : "0.25s",
+                      opacity: 0,
+                    }}
+                  >
+                    <button
+                      onClick={onParty}
+                      disabled={isLoading}
+                      className="flex h-14 w-full items-center justify-center gap-2 border border-[var(--text-muted)] bg-transparent font-display text-lg tracking-[3px] text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
+                    >
+                      <Users size={18} />
+                      파티
+                    </button>
+                  </div>
+                )}
                 <div
                   style={{
                     animation: "fadeSlideIn 0.4s ease-out forwards",
-                    animationDelay: activeRunInfo ? "0.4s" : "0.3s",
+                    animationDelay: activeRunInfo ? (onParty ? "0.45s" : "0.4s") : (onParty ? "0.35s" : "0.3s"),
                     opacity: 0,
                   }}
                 >

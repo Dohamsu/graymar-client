@@ -5,3 +5,4 @@ export { PartyMemberCard } from "./PartyMemberCard";
 export { PartyHUD } from "./PartyHUD";
 export { PartyChatWindow } from "./PartyChatWindow";
 export { PartyChatInput } from "./PartyChatInput";
+export { PartyMainScreen } from "./PartyMainScreen";
