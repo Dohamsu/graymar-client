@@ -134,12 +134,60 @@ export default function GameClient() {
 
   // --- Phase routing ---
   if (!authToken || phase === "TITLE" || phase === "LOADING") {
-    // 파티 카운트다운 중이면 카운트다운 표시
+    // 파티 카운트다운 중이면 카운트다운 표시 (파티원 프로필 + 진입 연출)
     if (showPartyScreen && authToken && dungeonCountdown !== null && dungeonCountdown > 0) {
       return (
-        <div className="flex h-full flex-col items-center justify-center gap-6 bg-[var(--bg-primary)]">
-          <div className="font-display text-6xl font-bold text-[var(--gold)]">{dungeonCountdown}</div>
-          <p className="text-lg text-[var(--text-secondary)]">던전에 진입합니다...</p>
+        <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)]">
+          {/* 파티원 프로필 카드 */}
+          <div className="flex gap-4">
+            {partyMembers.map((m, i) => (
+              <div
+                key={m.userId}
+                className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-bottom duration-500"
+                style={{ animationDelay: `${i * 150}ms` }}
+              >
+                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--gold)]/40 bg-[var(--bg-secondary)]">
+                  <img
+                    src={`/images/presets/${(m.presetId ?? "dockworker").toLowerCase()}.webp`}
+                    alt={m.nickname}
+                    className="h-full w-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </div>
+                <span className="text-xs font-medium text-[var(--text-secondary)]">
+                  {m.nickname}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* 카운트다운 숫자 */}
+          <div className="relative">
+            <div
+              key={dungeonCountdown}
+              className="font-display text-7xl font-bold text-[var(--gold)] animate-in zoom-in duration-300"
+            >
+              {dungeonCountdown}
+            </div>
+          </div>
+
+          {/* 진입 텍스트 */}
+          <div className="flex flex-col items-center gap-1">
+            <p className="font-display text-lg tracking-wider text-[var(--text-primary)]">
+              던전에 진입합니다
+            </p>
+            <p className="text-sm text-[var(--text-muted)]">
+              파티원 {partyMembers.length}명과 함께
+            </p>
+          </div>
+
+          {/* 하단 로딩 바 */}
+          <div className="h-1 w-48 overflow-hidden rounded-full bg-[var(--border-primary)]">
+            <div
+              className="h-full rounded-full bg-[var(--gold)] transition-all duration-1000 ease-linear"
+              style={{ width: `${((3 - dungeonCountdown) / 3) * 100}%` }}
+            />
+          </div>
         </div>
       );
     }
