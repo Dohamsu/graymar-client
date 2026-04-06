@@ -14,6 +14,9 @@ import { CharacterTab } from "@/components/side-panel/CharacterTab";
 import { InventoryTab } from "@/components/side-panel/InventoryTab";
 import { BattlePanel } from "@/components/battle/BattlePanel";
 import { StartScreen } from "@/components/screens/StartScreen";
+import { PartyMainScreen } from "@/components/party/PartyMainScreen";
+import { PartyHUD } from "@/components/party/PartyHUD";
+import { usePartyStore } from "@/store/party-store";
 
 import { RunEndScreen } from "@/components/screens/RunEndScreen";
 import { EndingScreen } from "@/components/screens/EndingScreen";
@@ -53,6 +56,12 @@ export default function GameClient() {
   const endingResult = useGameStore((s) => s.endingResult);
 
   const [mobileTab, setMobileTab] = useState("story");
+  const [showPartyScreen, setShowPartyScreen] = useState(false);
+
+  // Party store subscription (for PartyHUD in-game)
+  const partyInfo = usePartyStore((s) => s.party);
+  const partyMembers = usePartyStore((s) => s.members);
+  const currentUserId = useAuthStore((s) => s.user?.id ?? "");
 
   // --- Mobile header auto-hide on scroll ---
   const [mobileHeaderVisible, setMobileHeaderVisible] = useState(true);
@@ -102,7 +111,10 @@ export default function GameClient() {
 
   // --- Phase routing ---
   if (!authToken || phase === "TITLE" || phase === "LOADING") {
-    return <StartScreen />;
+    if (showPartyScreen && authToken) {
+      return <PartyMainScreen onBack={() => setShowPartyScreen(false)} />;
+    }
+    return <StartScreen onParty={() => setShowPartyScreen(true)} />;
   }
   if (phase === "RUN_ENDED") {
     return endingResult ? <EndingScreen /> : <RunEndScreen />;
@@ -152,6 +164,24 @@ export default function GameClient() {
       <ErrorBanner />
       {/* LLM failure modal */}
       <LlmFailureModal />
+
+      {/* ===== PartyHUD (when in a party) ===== */}
+      {partyInfo && partyMembers.length > 0 && (
+        <div className="shrink-0 px-2 pt-1 sm:px-4">
+          <PartyHUD
+            members={partyMembers.map((m) => ({
+              userId: m.userId,
+              nickname: m.nickname,
+              presetId: m.presetId ?? "DOCKWORKER",
+              portraitUrl: null,
+              hp: m.hp ?? 0,
+              maxHp: m.maxHp ?? 0,
+              turnStatus: "CHOOSING" as const,
+              isCurrentUser: m.userId === currentUserId,
+            }))}
+          />
+        </div>
+      )}
 
       {/* ===== Desktop Layout (lg+) ===== */}
       <div className="hidden h-full flex-col lg:flex animate-phase-fade" key={`desktop-${phaseKey}`}>
