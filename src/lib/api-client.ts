@@ -484,6 +484,14 @@ export function startDungeon(partyId: string) {
   });
 }
 
+/** POST /v1/parties/:partyId/lobby/invite-run — invite to leader's existing run (Phase 3). */
+export function inviteToRun(partyId: string) {
+  return request<DungeonStartResult & { isRunIntegration: boolean }>(
+    `/v1/parties/${partyId}/lobby/invite-run`,
+    { method: 'POST' },
+  );
+}
+
 /** POST /v1/parties/:partyId/runs/:runId/turns — submit party action. */
 export function submitPartyAction(
   partyId: string,
