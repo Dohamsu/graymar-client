@@ -1,6 +1,12 @@
 import { ApiError } from '@/lib/api-errors';
 import { useAuthStore } from '@/store/auth-store';
 import type { SubmitTurnResponse } from '@/types/game';
+import type {
+  PartyInfo,
+  PartyMember,
+  ChatMessage,
+  PartySearchResult,
+} from '@/types/party';
 
 function getBaseUrl(): string {
   if (typeof window === 'undefined') {
@@ -357,4 +363,93 @@ export function submitBugReport(
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+// ---------------------------------------------------------------------------
+// Party API
+// ---------------------------------------------------------------------------
+
+/** POST /v1/parties — create a new party. */
+export function createParty(name: string) {
+  return request<{ party: PartyInfo; members: PartyMember[] }>('/v1/parties', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+}
+
+/** GET /v1/parties/me — fetch the current user's party (or null). */
+export async function getMyParty(): Promise<{
+  party: PartyInfo;
+  members: PartyMember[];
+} | null> {
+  try {
+    return await request<{ party: PartyInfo; members: PartyMember[] }>(
+      '/v1/parties/me',
+    );
+  } catch {
+    return null;
+  }
+}
+
+/** GET /v1/parties/search?q=... — search open parties. */
+export function searchParties(query: string) {
+  return request<PartySearchResult[]>(
+    `/v1/parties/search?q=${encodeURIComponent(query)}`,
+  );
+}
+
+/** POST /v1/parties/join — join a party by invite code. */
+export function joinParty(inviteCode: string) {
+  return request<{ party: PartyInfo; members: PartyMember[] }>(
+    '/v1/parties/join',
+    {
+      method: 'POST',
+      body: JSON.stringify({ inviteCode }),
+    },
+  );
+}
+
+/** POST /v1/parties/:partyId/leave — leave the party. */
+export function leaveParty(partyId: string) {
+  return request<{ success: boolean }>(`/v1/parties/${partyId}/leave`, {
+    method: 'POST',
+  });
+}
+
+/** POST /v1/parties/:partyId/kick — kick a member (leader only). */
+export function kickMember(partyId: string, userId: string) {
+  return request<{ success: boolean }>(`/v1/parties/${partyId}/kick`, {
+    method: 'POST',
+    body: JSON.stringify({ userId }),
+  });
+}
+
+/** DELETE /v1/parties/:partyId — disband the party (leader only). */
+export function disbandParty(partyId: string) {
+  return request<{ success: boolean }>(`/v1/parties/${partyId}`, {
+    method: 'DELETE',
+  });
+}
+
+/** POST /v1/parties/:partyId/chat — send a chat message. */
+export function sendChatMessage(partyId: string, content: string) {
+  return request<ChatMessage>(`/v1/parties/${partyId}/chat`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+}
+
+/** GET /v1/parties/:partyId/chat — fetch chat message history. */
+export function getChatMessages(
+  partyId: string,
+  cursor?: string,
+  limit?: number,
+) {
+  const params = new URLSearchParams();
+  if (cursor) params.set('cursor', cursor);
+  if (limit) params.set('limit', String(limit));
+  const qs = params.toString();
+  return request<{ messages: ChatMessage[]; nextCursor: string | null }>(
+    `/v1/parties/${partyId}/chat${qs ? `?${qs}` : ''}`,
+  );
 }
