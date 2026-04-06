@@ -320,6 +320,10 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       get()._handleMemberStatus(data as PartyMember[]);
     });
 
+    sse.onEvent('party:error', (data) => {
+      const d = data as { code: string; message: string };
+      set({ error: d.message });
+    });
     sse.onEvent('party:member_hp_update', (data) => {
       const d = data as {
         members: { userId: string; nickname: string; hp: number; maxHp: number }[];
@@ -422,6 +426,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     sse.offEvent('party:member_left');
     sse.offEvent('party:disbanded');
     sse.offEvent('party:member_status');
+    sse.offEvent('party:error');
     sse.offEvent('party:member_hp_update');
     sse.offEvent('party:leader_changed');
     // Phase 2 events
