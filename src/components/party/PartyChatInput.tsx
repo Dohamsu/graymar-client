@@ -52,7 +52,7 @@ export function PartyChatInput({
   }
 
   return (
-    <div className="flex items-end gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-3 py-2">
+    <div className="sticky bottom-0 flex items-end gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-3 py-2">
       <textarea
         ref={textareaRef}
         value={text}
@@ -61,21 +61,21 @@ export function PartyChatInput({
         placeholder={placeholder}
         disabled={disabled}
         rows={1}
-        className="min-h-[36px] max-h-[80px] flex-1 resize-none rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none disabled:opacity-50"
+        className="min-h-[40px] max-h-[80px] flex-1 resize-none rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none disabled:opacity-50"
       />
       <button
         onClick={handleSend}
         disabled={!canSend}
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors ${
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md transition-colors ${
           canSend
             ? "bg-[var(--gold)] text-[var(--bg-primary)] hover:bg-[var(--gold)]/90"
             : "bg-[var(--border-primary)] text-[var(--text-muted)]"
         }`}
       >
         {sending ? (
-          <Loader2 size={14} className="animate-spin" />
+          <Loader2 size={16} className="animate-spin" />
         ) : (
-          <Send size={14} />
+          <Send size={16} />
         )}
       </button>
     </div>

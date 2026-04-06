@@ -120,7 +120,7 @@ export function PartyLobby({
       {/* ── Main Content ── */}
       <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
         {/* Left: Member Grid */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 [&]:[-webkit-overflow-scrolling:touch]">
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {slots.map((member, i) => (
               <PartyMemberCard
@@ -133,7 +133,7 @@ export function PartyLobby({
         </div>
 
         {/* Right: Chat */}
-        <div className="flex h-[280px] flex-col border-t border-[var(--border-primary)] bg-[var(--bg-card)] lg:h-auto lg:w-[320px] lg:border-l lg:border-t-0 xl:w-[360px]">
+        <div className="flex h-[240px] flex-col border-t border-[var(--border-primary)] bg-[var(--bg-card)] sm:h-[280px] lg:h-auto lg:w-[320px] lg:border-l lg:border-t-0 xl:w-[360px]">
           <div className="border-b border-[var(--border-primary)] px-4 py-2">
             <span className="text-xs font-semibold text-[var(--text-secondary)]">
               파티 채팅
@@ -155,9 +155,9 @@ export function PartyLobby({
       <div className="flex items-center justify-between border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3 sm:px-6">
         <button
           onClick={onLeave}
-          className="flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--hp-red)]/30 hover:text-[var(--hp-red)]"
+          className="flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] px-4 py-3 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--hp-red)]/30 hover:text-[var(--hp-red)]"
         >
-          <LogOut size={14} />
+          <LogOut size={16} />
           나가기
         </button>
 
@@ -166,13 +166,13 @@ export function PartyLobby({
           {!isLeader && (
             <button
               onClick={onToggleReady}
-              className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 rounded-md px-4 py-3 text-sm font-semibold transition-colors ${
                 isReady
                   ? "border border-[var(--success-green)]/30 bg-[var(--success-green)]/10 text-[var(--success-green)]"
                   : "border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               }`}
             >
-              <Shield size={14} />
+              <Shield size={16} />
               {isReady ? "준비 완료" : "준비"}
             </button>
           )}
@@ -182,13 +182,13 @@ export function PartyLobby({
             <button
               onClick={onStartDungeon}
               disabled={!canStart}
-              className={`flex items-center gap-1.5 rounded-md px-5 py-2 text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 rounded-md px-5 py-3 text-sm font-semibold transition-colors ${
                 canStart
                   ? "bg-[var(--gold)] text-[var(--bg-primary)] hover:bg-[var(--gold)]/90"
                   : "cursor-not-allowed bg-[var(--border-primary)] text-[var(--text-muted)]"
               }`}
             >
-              <Play size={14} />
+              <Play size={16} />
               던전 시작
             </button>
           )}

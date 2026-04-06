@@ -42,7 +42,7 @@ export function PartyChatWindow({
   return (
     <div
       ref={scrollRef}
-      className={`overflow-y-auto space-y-1.5 ${className}`}
+      className={`overflow-y-auto overscroll-contain space-y-2 [&]:[-webkit-overflow-scrolling:touch] ${className}`}
     >
       {messages.length === 0 && (
         <p className="py-8 text-center text-xs text-[var(--text-muted)]">
@@ -82,7 +82,7 @@ export function PartyChatWindow({
         return (
           <div
             key={msg.id}
-            className={`flex flex-col px-2 ${isMine ? "items-end" : "items-start"}`}
+            className={`flex flex-col px-2 py-0.5 ${isMine ? "items-end" : "items-start"}`}
           >
             {/* Sender name (not for own messages) */}
             {!isMine && msg.senderNickname && (

@@ -63,9 +63,9 @@ export function PartyJoinModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center">
       <div
-        className="mx-4 w-full max-w-md rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-2xl"
+        className="flex w-full max-h-[85dvh] flex-col rounded-t-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-2xl sm:mx-4 sm:max-h-none sm:max-w-md sm:rounded-lg sm:rounded-t-lg"
         style={{ animation: "fadeIn 0.2s ease-out" }}
       >
         {/* Header */}
@@ -78,9 +78,9 @@ export function PartyJoinModal({
           </div>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+            className="flex h-10 w-10 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
           >
-            <X size={16} />
+            <X size={20} />
           </button>
         </div>
 
@@ -90,7 +90,7 @@ export function PartyJoinModal({
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+              className={`flex-1 py-3 text-sm font-medium transition-colors ${
                 tab === t.key
                   ? "border-b-2 border-[var(--gold)] text-[var(--gold)]"
                   : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -102,7 +102,7 @@ export function PartyJoinModal({
         </div>
 
         {/* Body */}
-        <div className="px-5 py-5">
+        <div className="overflow-y-auto overscroll-contain px-5 py-5 [&]:[-webkit-overflow-scrolling:touch]">
           {tab === "code" ? (
             /* ── Invite Code Tab ── */
             <form onSubmit={handleCodeSubmit} className="space-y-4">
@@ -117,7 +117,7 @@ export function PartyJoinModal({
                   maxLength={6}
                   placeholder="6자리 코드"
                   autoFocus
-                  className="w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2.5 text-center font-mono text-lg tracking-[0.3em] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] placeholder:tracking-normal placeholder:text-sm focus:border-[var(--gold)] focus:outline-none"
+                  className="w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-3 text-center font-mono text-xl tracking-[0.3em] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] placeholder:tracking-normal placeholder:text-base focus:border-[var(--gold)] focus:outline-none"
                 />
                 <p className="mt-1 text-[10px] text-[var(--text-muted)]">
                   파티 리더에게 받은 6자리 코드를 입력하세요
@@ -134,14 +134,14 @@ export function PartyJoinModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-md px-4 py-2 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  className="rounded-md px-4 py-3 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
                   disabled={!canJoinByCode}
-                  className={`flex items-center gap-1.5 rounded-md px-5 py-2 text-xs font-semibold transition-colors ${
+                  className={`flex items-center gap-1.5 rounded-md px-5 py-3 text-sm font-semibold transition-colors ${
                     canJoinByCode
                       ? "bg-[var(--gold)] text-[var(--bg-primary)] hover:bg-[var(--gold)]/90"
                       : "cursor-not-allowed bg-[var(--border-primary)] text-[var(--text-muted)]"
@@ -166,13 +166,13 @@ export function PartyJoinModal({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="파티 이름으로 검색"
-                    className="w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] py-2.5 pl-9 pr-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+                    className="w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] py-3 pl-9 pr-3 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loading || searchQuery.trim().length < 1}
-                  className="rounded-md bg-[var(--bg-secondary)] border border-[var(--border-primary)] px-3 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-40"
+                  className="rounded-md bg-[var(--bg-secondary)] border border-[var(--border-primary)] px-3 py-3 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-40"
                 >
                   {loading ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -220,7 +220,7 @@ export function PartyJoinModal({
                           party.status === "IN_GAME" ||
                           party.memberCount >= party.maxMembers
                         }
-                        className="ml-3 shrink-0 rounded-md bg-[var(--gold)] px-3 py-1.5 text-[11px] font-semibold text-[var(--bg-primary)] hover:bg-[var(--gold)]/90 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="ml-3 shrink-0 rounded-md bg-[var(--gold)] px-4 py-2.5 text-xs font-semibold text-[var(--bg-primary)] hover:bg-[var(--gold)]/90 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         가입
                       </button>
