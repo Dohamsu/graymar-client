@@ -33,7 +33,7 @@ export function PartyMemberCard({ member, isSelf = false }: PartyMemberCardProps
   // ── Empty Slot ──
   if (!member) {
     return (
-      <div className="flex h-[180px] w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-[var(--border-primary)] bg-[var(--bg-secondary)]/50 sm:h-[200px]">
+      <div className="flex h-[160px] w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-[var(--border-primary)] bg-[var(--bg-secondary)]/50 sm:h-[200px]">
         <div className="mb-2 h-12 w-12 rounded-full border-2 border-dashed border-[var(--border-primary)]" />
         <span className="text-xs text-[var(--text-muted)]">대기 중...</span>
       </div>

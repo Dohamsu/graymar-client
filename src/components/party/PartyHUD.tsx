@@ -41,7 +41,7 @@ export function PartyHUD({ members }: PartyHUDProps) {
   if (members.length === 0) return null;
 
   return (
-    <div className="flex w-full items-center gap-1 overflow-x-auto rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-2 py-1.5 sm:gap-2 sm:px-3">
+    <div className="flex w-full items-center gap-1 overflow-x-auto overscroll-x-contain rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-2 py-1.5 sm:gap-2 sm:px-3 [&]:[-webkit-overflow-scrolling:touch]">
       {members.map((m) => {
         const hpPercent = m.maxHp > 0 ? Math.round((m.hp / m.maxHp) * 100) : 0;
 

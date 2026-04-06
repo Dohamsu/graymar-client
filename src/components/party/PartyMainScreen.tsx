@@ -267,9 +267,9 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
 
         <button
           onClick={handleBack}
-          className="mt-2 flex items-center justify-center gap-1.5 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+          className="mt-2 flex h-11 items-center justify-center gap-1.5 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={16} />
           솔로 플레이로 돌아가기
         </button>
       </div>
