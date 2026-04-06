@@ -16,6 +16,8 @@ import { BattlePanel } from "@/components/battle/BattlePanel";
 import { StartScreen } from "@/components/screens/StartScreen";
 import { PartyMainScreen } from "@/components/party/PartyMainScreen";
 import { PartyHUD } from "@/components/party/PartyHUD";
+import { PartyTurnStatus } from "@/components/party/PartyTurnStatus";
+import { VoteModal } from "@/components/party/VoteModal";
 import { usePartyStore } from "@/store/party-store";
 
 import { RunEndScreen } from "@/components/screens/RunEndScreen";
@@ -62,6 +64,12 @@ export default function GameClient() {
   const partyInfo = usePartyStore((s) => s.party);
   const partyMembers = usePartyStore((s) => s.members);
   const currentUserId = useAuthStore((s) => s.user?.id ?? "");
+  // Phase 2: dungeon state
+  const partyRunId = usePartyStore((s) => s.partyRunId);
+  const dungeonCountdown = usePartyStore((s) => s.dungeonCountdown);
+  const turnStatus = usePartyStore((s) => s.turnStatus);
+  const currentVote = usePartyStore((s) => s.currentVote);
+  const castVote = usePartyStore((s) => s.castVote);
 
   // --- Mobile header auto-hide on scroll ---
   const [mobileHeaderVisible, setMobileHeaderVisible] = useState(true);
@@ -109,8 +117,32 @@ export default function GameClient() {
     }
   }, [phase]);
 
+  // --- Party dungeon countdown → game load ---
+  const checkActiveRun = useGameStore((s) => s.checkActiveRun);
+  const resumeRun = useGameStore((s) => s.resumeRun);
+  const loadGameRef = useRef(false);
+  useEffect(() => {
+    if (dungeonCountdown === 0 && partyRunId && !loadGameRef.current) {
+      loadGameRef.current = true;
+      // 파티 런 시작 — checkActiveRun(런 감지) → resumeRun(게임 로드)
+      void (async () => {
+        await checkActiveRun();
+        await resumeRun();
+      })();
+    }
+  }, [dungeonCountdown, partyRunId, checkActiveRun, resumeRun]);
+
   // --- Phase routing ---
   if (!authToken || phase === "TITLE" || phase === "LOADING") {
+    // 파티 카운트다운 중이면 카운트다운 표시
+    if (showPartyScreen && authToken && dungeonCountdown !== null && dungeonCountdown > 0) {
+      return (
+        <div className="flex h-full flex-col items-center justify-center gap-6 bg-[var(--bg-primary)]">
+          <div className="font-display text-6xl font-bold text-[var(--gold)]">{dungeonCountdown}</div>
+          <p className="text-lg text-[var(--text-secondary)]">던전에 진입합니다...</p>
+        </div>
+      );
+    }
     if (showPartyScreen && authToken) {
       return <PartyMainScreen onBack={() => setShowPartyScreen(false)} />;
     }
@@ -176,7 +208,9 @@ export default function GameClient() {
               portraitUrl: null,
               hp: m.hp ?? 0,
               maxHp: m.maxHp ?? 0,
-              turnStatus: "CHOOSING" as const,
+              turnStatus: turnStatus?.submitted.includes(m.userId)
+                ? "SUBMITTED" as const
+                : "CHOOSING" as const,
               isCurrentUser: m.userId === currentUserId,
             }))}
           />
@@ -207,6 +241,12 @@ export default function GameClient() {
               onChoiceSelect={handleChoiceSelect}
               onNarrationComplete={flushPending}
             />
+            {/* Party turn status (above input) */}
+            {partyRunId && turnStatus && (
+              <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-2">
+                <PartyTurnStatus turnStatus={turnStatus} totalMembers={partyMembers.length} />
+              </div>
+            )}
             <InputSection
               onSubmit={handleSubmit}
               onQuickAction={handleQuickAction}
@@ -263,12 +303,19 @@ export default function GameClient() {
         </div>
 
         {mobileTab === "story" && (
-          <MobileInputSection
-            onSubmit={handleSubmit}
-            onQuickAction={handleQuickAction}
-            nodeType={currentNodeType}
-            disabled={isSubmitting}
-          />
+          <>
+            {partyRunId && turnStatus && (
+              <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2">
+                <PartyTurnStatus turnStatus={turnStatus} totalMembers={partyMembers.length} />
+              </div>
+            )}
+            <MobileInputSection
+              onSubmit={handleSubmit}
+              onQuickAction={handleQuickAction}
+              nodeType={currentNodeType}
+              disabled={isSubmitting}
+            />
+          </>
         )}
 
         {/* 하단 네비 제거 → 햄버거 메뉴로 이동 */}
@@ -281,6 +328,15 @@ export default function GameClient() {
 
       {/* Bug Report floating button */}
       <BugReportButton />
+
+      {/* Party Vote Modal (overlay) */}
+      {currentVote && (
+        <VoteModal
+          vote={currentVote}
+          currentUserId={currentUserId}
+          onCast={(voteId, choice) => castVote(voteId, choice)}
+        />
+      )}
     </div>
   );
 }

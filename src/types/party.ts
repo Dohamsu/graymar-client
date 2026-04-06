@@ -43,3 +43,49 @@ export interface PartySearchResult {
   maxMembers: number;
   status: string;
 }
+
+// ── Phase 2 Types ──
+
+export interface LobbyMemberState {
+  userId: string;
+  nickname: string;
+  presetId: string | null;
+  gender: string | null;
+  isReady: boolean;
+  isOnline: boolean;
+}
+
+export interface LobbyStateDTO {
+  partyId: string;
+  members: LobbyMemberState[];
+  allReady: boolean;
+  canStart: boolean;
+}
+
+export interface PartyVoteDTO {
+  id: string;
+  partyId: string;
+  proposerId: string;
+  proposerNickname: string;
+  voteType: string;
+  targetLocationId?: string;
+  targetLocationName?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+  yesVotes: number;
+  noVotes: number;
+  totalMembers: number;
+  expiresAt: string;
+}
+
+export interface TurnWaitingStatus {
+  turnNo: number;
+  submitted: string[];
+  pending: string[];
+  deadline: string;
+}
+
+export interface DungeonStartResult {
+  partyId: string;
+  runId: string;
+  memberUserIds: string[];
+}
