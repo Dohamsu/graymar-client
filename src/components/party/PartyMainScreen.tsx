@@ -85,16 +85,27 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
   const clearError = usePartyStore((s) => s.clearError);
   const disconnectStream = usePartyStore((s) => s.disconnectStream);
 
+  const toggleReady = usePartyStore((s) => s.toggleReady);
+  const startDungeon = usePartyStore((s) => s.startDungeon);
+  const lobbyState = usePartyStore((s) => s.lobbyState);
+  const fetchLobbyState = usePartyStore((s) => s.fetchLobbyState);
+
   const currentUserId = useAuthStore((s) => s.user?.id ?? "");
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [searchResults, setSearchResults] = useState<JoinModalSearchResult[]>([]);
+  const [isReady, setIsReady] = useState(false);
 
   // Fetch party on mount
   useEffect(() => {
     fetchMyParty();
   }, [fetchMyParty]);
+
+  // Fetch lobby state when party exists
+  useEffect(() => {
+    if (party) fetchLobbyState();
+  }, [party, fetchLobbyState]);
 
   // Cleanup SSE on unmount
   useEffect(() => {
@@ -184,7 +195,11 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
 
   if (party) {
     const isLeader = party.leaderId === currentUserId;
-    const adaptedMembers = adaptMembers(members);
+    const adaptedMembers = adaptMembers(members).map((m) => {
+      // Merge lobby ready state
+      const lobbyMember = lobbyState?.members.find((lm) => lm.userId === m.userId);
+      return { ...m, isReady: lobbyMember?.isReady ?? m.isReady };
+    });
     const adaptedMessages = adaptMessages(messages);
 
     return (
@@ -197,9 +212,15 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
           chatMessages={adaptedMessages}
           currentUserId={currentUserId}
           isLeader={isLeader}
-          isReady={true}
-          onToggleReady={() => {/* Phase 2 */}}
-          onStartDungeon={() => {/* Phase 2 */}}
+          isReady={isReady}
+          onToggleReady={async () => {
+            const next = !isReady;
+            setIsReady(next);
+            await toggleReady(next);
+          }}
+          onStartDungeon={async () => {
+            await startDungeon();
+          }}
           onLeave={handleLeave}
           onSendChat={handleSendChat}
         />

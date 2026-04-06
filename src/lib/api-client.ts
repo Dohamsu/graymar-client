@@ -453,3 +453,73 @@ export function getChatMessages(
     `/v1/parties/${partyId}/chat${qs ? `?${qs}` : ''}`,
   );
 }
+
+// ---------------------------------------------------------------------------
+// Party Phase 2 — Lobby / Dungeon / Votes
+// ---------------------------------------------------------------------------
+
+import type {
+  LobbyStateDTO,
+  DungeonStartResult,
+  PartyVoteDTO,
+} from '@/types/party';
+
+/** GET /v1/parties/:partyId/lobby — get lobby state. */
+export function getLobbyState(partyId: string) {
+  return request<LobbyStateDTO>(`/v1/parties/${partyId}/lobby`);
+}
+
+/** POST /v1/parties/:partyId/lobby/ready — toggle ready status. */
+export function toggleReady(partyId: string, ready: boolean) {
+  return request<LobbyStateDTO>(`/v1/parties/${partyId}/lobby/ready`, {
+    method: 'POST',
+    body: JSON.stringify({ ready }),
+  });
+}
+
+/** POST /v1/parties/:partyId/lobby/start — start dungeon (leader only). */
+export function startDungeon(partyId: string) {
+  return request<DungeonStartResult>(`/v1/parties/${partyId}/lobby/start`, {
+    method: 'POST',
+  });
+}
+
+/** POST /v1/parties/:partyId/runs/:runId/turns — submit party action. */
+export function submitPartyAction(
+  partyId: string,
+  runId: string,
+  inputType: 'ACTION' | 'CHOICE',
+  rawInput: string,
+  idempotencyKey: string,
+) {
+  return request<{ accepted: boolean; allSubmitted: boolean }>(
+    `/v1/parties/${partyId}/runs/${runId}/turns`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ inputType, rawInput, idempotencyKey }),
+    },
+  );
+}
+
+/** POST /v1/parties/:partyId/votes — propose a movement vote. */
+export function createVote(partyId: string, targetLocationId: string) {
+  return request<PartyVoteDTO>(`/v1/parties/${partyId}/votes`, {
+    method: 'POST',
+    body: JSON.stringify({ targetLocationId }),
+  });
+}
+
+/** POST /v1/parties/:partyId/votes/:voteId/cast — cast a vote. */
+export function castVote(
+  partyId: string,
+  voteId: string,
+  choice: 'yes' | 'no',
+) {
+  return request<{ voteId: string; status: string }>(
+    `/v1/parties/${partyId}/votes/${voteId}/cast`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ choice }),
+    },
+  );
+}

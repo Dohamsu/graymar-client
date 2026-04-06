@@ -7,6 +7,9 @@ import type {
   PartyMember,
   ChatMessage,
   PartySearchResult,
+  LobbyStateDTO,
+  PartyVoteDTO,
+  TurnWaitingStatus,
 } from '@/types/party';
 
 // ---------------------------------------------------------------------------
@@ -30,6 +33,13 @@ interface PartyState {
   isLoading: boolean;
   error: string | null;
 
+  // Phase 2 State
+  lobbyState: LobbyStateDTO | null;
+  currentVote: PartyVoteDTO | null;
+  turnStatus: TurnWaitingStatus | null;
+  partyRunId: string | null;
+  dungeonCountdown: number | null;
+
   // REST actions
   createParty: (name: string) => Promise<void>;
   joinParty: (inviteCode: string) => Promise<void>;
@@ -40,6 +50,14 @@ interface PartyState {
   searchParties: (query: string) => Promise<PartySearchResult[]>;
   sendMessage: (content: string) => Promise<void>;
   fetchMessages: (cursor?: string) => Promise<void>;
+
+  // Phase 2 REST actions
+  toggleReady: (ready: boolean) => Promise<void>;
+  startDungeon: () => Promise<void>;
+  submitPartyAction: (rawInput: string, inputType?: 'ACTION' | 'CHOICE') => Promise<void>;
+  proposeMove: (locationId: string) => Promise<void>;
+  castVote: (voteId: string, choice: 'yes' | 'no') => Promise<void>;
+  fetchLobbyState: () => Promise<void>;
 
   // SSE connection
   connectStream: () => void;
@@ -70,6 +88,13 @@ export const usePartyStore = create<PartyState>((set, get) => ({
   unreadCount: 0,
   isLoading: false,
   error: null,
+
+  // Phase 2 State
+  lobbyState: null,
+  currentVote: null,
+  turnStatus: null,
+  partyRunId: null,
+  dungeonCountdown: null,
 
   // -----------------------------------------------------------------------
   // REST actions
@@ -188,6 +213,82 @@ export const usePartyStore = create<PartyState>((set, get) => ({
   },
 
   // -----------------------------------------------------------------------
+  // Phase 2 REST actions
+  // -----------------------------------------------------------------------
+
+  toggleReady: async (ready) => {
+    const { party } = get();
+    if (!party) return;
+    try {
+      const state = await api.toggleReady(party.id, ready);
+      set({ lobbyState: state });
+    } catch (e) {
+      set({ error: extractMsg(e, '준비 상태 변경에 실패했습니다.') });
+    }
+  },
+
+  startDungeon: async () => {
+    const { party } = get();
+    if (!party) return;
+    set({ isLoading: true, error: null });
+    try {
+      const result = await api.startDungeon(party.id);
+      set({ partyRunId: result.runId, isLoading: false });
+    } catch (e) {
+      set({ isLoading: false, error: extractMsg(e, '던전 시작에 실패했습니다.') });
+    }
+  },
+
+  submitPartyAction: async (rawInput, inputType = 'ACTION') => {
+    const { party, partyRunId } = get();
+    if (!party || !partyRunId) return;
+    try {
+      const idempotencyKey = `${partyRunId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      await api.submitPartyAction(
+        party.id,
+        partyRunId,
+        inputType,
+        rawInput,
+        idempotencyKey,
+      );
+    } catch (e) {
+      set({ error: extractMsg(e, '행동 제출에 실패했습니다.') });
+    }
+  },
+
+  proposeMove: async (locationId) => {
+    const { party } = get();
+    if (!party) return;
+    try {
+      const vote = await api.createVote(party.id, locationId);
+      set({ currentVote: vote });
+    } catch (e) {
+      set({ error: extractMsg(e, '투표 제안에 실패했습니다.') });
+    }
+  },
+
+  castVote: async (voteId, choice) => {
+    const { party } = get();
+    if (!party) return;
+    try {
+      await api.castVote(party.id, voteId, choice);
+    } catch (e) {
+      set({ error: extractMsg(e, '투표에 실패했습니다.') });
+    }
+  },
+
+  fetchLobbyState: async () => {
+    const { party } = get();
+    if (!party) return;
+    try {
+      const state = await api.getLobbyState(party.id);
+      set({ lobbyState: state });
+    } catch {
+      // non-critical
+    }
+  },
+
+  // -----------------------------------------------------------------------
   // SSE connection
   // -----------------------------------------------------------------------
 
@@ -219,6 +320,92 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       get()._handleMemberStatus(data as PartyMember[]);
     });
 
+    sse.onEvent('party:member_hp_update', (data) => {
+      const d = data as {
+        members: { userId: string; nickname: string; hp: number; maxHp: number }[];
+      };
+      set((s) => ({
+        members: s.members.map((m) => {
+          const update = d.members.find((u) => u.userId === m.userId);
+          return update ? { ...m, hp: update.hp, maxHp: update.maxHp } : m;
+        }),
+      }));
+    });
+    sse.onEvent('party:leader_changed', (data) => {
+      const d = data as { newLeaderId: string };
+      set((s) =>
+        s.party ? { party: { ...s.party, leaderId: d.newLeaderId } } : s,
+      );
+    });
+
+    // Phase 2 SSE events
+    sse.onEvent('lobby:state_updated', (data) => {
+      set({ lobbyState: data as LobbyStateDTO });
+    });
+    sse.onEvent('lobby:dungeon_starting', (data) => {
+      const d = data as { runId: string; countdown: number };
+      set({ partyRunId: d.runId, dungeonCountdown: d.countdown });
+      // 카운트다운 후 자동 전환 (dungeonCountdown → 0)
+      let remaining = d.countdown;
+      const countdownInterval = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(countdownInterval);
+          set({ dungeonCountdown: 0 });
+        } else {
+          set({ dungeonCountdown: remaining });
+        }
+      }, 1000);
+    });
+    sse.onEvent('dungeon:action_received', () => {
+      // UI will reflect via dungeon:waiting
+    });
+    sse.onEvent('dungeon:waiting', (data) => {
+      set({ turnStatus: data as TurnWaitingStatus });
+    });
+    sse.onEvent('dungeon:timeout_warning', (data) => {
+      const d = data as { secondsLeft: number };
+      set((s) =>
+        s.turnStatus
+          ? {
+              turnStatus: {
+                ...s.turnStatus,
+                deadline: new Date(
+                  Date.now() + d.secondsLeft * 1000,
+                ).toISOString(),
+              },
+            }
+          : s,
+      );
+    });
+    sse.onEvent('dungeon:turn_resolved', (data) => {
+      set({ turnStatus: null });
+      // 런 종료 체크
+      const d = data as Record<string, unknown>;
+      const sr = d.serverResult as Record<string, unknown> | undefined;
+      if (sr?.nodeOutcome === 'RUN_ENDED') {
+        // 던전 종료 → 파티 상태 리셋 + 파티 정보 재조회
+        set({ partyRunId: null, dungeonCountdown: null });
+        get().fetchMyParty();
+      }
+    });
+    sse.onEvent('dungeon:location_changed', (data) => {
+      const d = data as { targetLocationId: string; targetLocationName?: string };
+      // 게임 스토어가 자동으로 런 상태를 폴링하여 새 장소 반영
+    });
+    sse.onEvent('vote:proposed', (data) => {
+      set({ currentVote: data as PartyVoteDTO });
+    });
+    sse.onEvent('vote:updated', (data) => {
+      const d = data as Partial<PartyVoteDTO>;
+      set((s) =>
+        s.currentVote ? { currentVote: { ...s.currentVote, ...d } } : s,
+      );
+    });
+    sse.onEvent('vote:resolved', () => {
+      set({ currentVote: null });
+    });
+
     sse.onConnect(() => {
       set({ isConnected: true });
     });
@@ -235,6 +422,19 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     sse.offEvent('party:member_left');
     sse.offEvent('party:disbanded');
     sse.offEvent('party:member_status');
+    sse.offEvent('party:member_hp_update');
+    sse.offEvent('party:leader_changed');
+    // Phase 2 events
+    sse.offEvent('lobby:state_updated');
+    sse.offEvent('lobby:dungeon_starting');
+    sse.offEvent('dungeon:action_received');
+    sse.offEvent('dungeon:waiting');
+    sse.offEvent('dungeon:timeout_warning');
+    sse.offEvent('dungeon:turn_resolved');
+    sse.offEvent('dungeon:location_changed');
+    sse.offEvent('vote:proposed');
+    sse.offEvent('vote:updated');
+    sse.offEvent('vote:resolved');
     sse.disconnectPartyStream();
     set({ isConnected: false });
   },
@@ -298,6 +498,11 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       unreadCount: 0,
       isLoading: false,
       error: null,
+      lobbyState: null,
+      currentVote: null,
+      turnStatus: null,
+      partyRunId: null,
+      dungeonCountdown: null,
     });
   },
 
