@@ -54,6 +54,7 @@ interface PartyState {
   // Phase 2 REST actions
   toggleReady: (ready: boolean) => Promise<void>;
   startDungeon: () => Promise<void>;
+  inviteToRun: () => Promise<void>;
   submitPartyAction: (rawInput: string, inputType?: 'ACTION' | 'CHOICE') => Promise<void>;
   proposeMove: (locationId: string) => Promise<void>;
   castVote: (voteId: string, choice: 'yes' | 'no') => Promise<void>;
@@ -236,6 +237,18 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       set({ partyRunId: result.runId, isLoading: false });
     } catch (e) {
       set({ isLoading: false, error: extractMsg(e, '던전 시작에 실패했습니다.') });
+    }
+  },
+
+  inviteToRun: async () => {
+    const { party } = get();
+    if (!party) return;
+    set({ isLoading: true, error: null });
+    try {
+      const result = await api.inviteToRun(party.id);
+      set({ partyRunId: result.runId, isLoading: false });
+    } catch (e) {
+      set({ isLoading: false, error: extractMsg(e, '내 세계에 초대에 실패했습니다.') });
     }
   },
 

@@ -221,6 +221,9 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
           onStartDungeon={async () => {
             await startDungeon();
           }}
+          onInviteToRun={async () => {
+            await usePartyStore.getState().inviteToRun();
+          }}
           onLeave={handleLeave}
           onSendChat={handleSendChat}
         />

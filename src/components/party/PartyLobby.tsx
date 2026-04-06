@@ -42,6 +42,7 @@ interface PartyLobbyProps {
   isReady: boolean;
   onToggleReady: () => void;
   onStartDungeon: () => void;
+  onInviteToRun?: () => void;
   onLeave: () => void;
   onSendChat: (text: string) => void;
   chatSending?: boolean;
@@ -59,6 +60,7 @@ export function PartyLobby({
   isReady,
   onToggleReady,
   onStartDungeon,
+  onInviteToRun,
   onLeave,
   onSendChat,
   chatSending = false,
@@ -177,20 +179,36 @@ export function PartyLobby({
             </button>
           )}
 
-          {/* Start button (leader only) */}
+          {/* Start buttons (leader only) */}
           {isLeader && (
-            <button
-              onClick={onStartDungeon}
-              disabled={!canStart}
-              className={`flex items-center gap-1.5 rounded-md px-5 py-3 text-sm font-semibold transition-colors ${
-                canStart
-                  ? "bg-[var(--gold)] text-[var(--bg-primary)] hover:bg-[var(--gold)]/90"
-                  : "cursor-not-allowed bg-[var(--border-primary)] text-[var(--text-muted)]"
-              }`}
-            >
-              <Play size={16} />
-              던전 시작
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onStartDungeon}
+                disabled={!canStart}
+                className={`flex items-center gap-1.5 rounded-md px-5 py-3 text-sm font-semibold transition-colors ${
+                  canStart
+                    ? "bg-[var(--gold)] text-[var(--bg-primary)] hover:bg-[var(--gold)]/90"
+                    : "cursor-not-allowed bg-[var(--border-primary)] text-[var(--text-muted)]"
+                }`}
+              >
+                <Play size={16} />
+                새 던전
+              </button>
+              {onInviteToRun && (
+                <button
+                  onClick={onInviteToRun}
+                  disabled={!canStart}
+                  className={`flex items-center gap-1.5 rounded-md border px-5 py-3 text-sm font-semibold transition-colors ${
+                    canStart
+                      ? "border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)] hover:text-[var(--bg-primary)]"
+                      : "cursor-not-allowed border-[var(--border-primary)] text-[var(--text-muted)]"
+                  }`}
+                >
+                  <Play size={16} />
+                  내 세계에 초대
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
