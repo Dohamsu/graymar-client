@@ -407,11 +407,36 @@ export function submitBugReport(
 // ---------------------------------------------------------------------------
 
 /** POST /v1/parties — create a new party. */
-export function createParty(name: string) {
-  return request<{ party: PartyInfo; members: PartyMember[] }>('/v1/parties', {
+/**
+ * 서버 파티 응답은 flat 구조:
+ * { id, name, leaderId, status, maxMembers, inviteCode, memberCount, members: [...], createdAt }
+ * 이를 { party, members }로 분리하여 반환.
+ */
+function parsePartyResponse(data: Record<string, unknown>): {
+  party: PartyInfo;
+  members: PartyMember[];
+} {
+  const members = (data.members ?? []) as PartyMember[];
+  return {
+    party: {
+      id: data.id as string,
+      name: data.name as string,
+      leaderId: data.leaderId as string,
+      status: data.status as PartyInfo['status'],
+      maxMembers: (data.maxMembers as number) ?? 4,
+      inviteCode: (data.inviteCode as string) ?? '',
+      createdAt: (data.createdAt as string) ?? '',
+    },
+    members,
+  };
+}
+
+export async function createParty(name: string) {
+  const data = await request<Record<string, unknown>>('/v1/parties', {
     method: 'POST',
     body: JSON.stringify({ name }),
   });
+  return parsePartyResponse(data);
 }
 
 /** GET /v1/parties/me — fetch the current user's party (or null). */
@@ -420,9 +445,11 @@ export async function getMyParty(): Promise<{
   members: PartyMember[];
 } | null> {
   try {
-    return await request<{ party: PartyInfo; members: PartyMember[] }>(
+    const data = await request<Record<string, unknown> | null>(
       '/v1/parties/me',
     );
+    if (!data || !data.id) return null;
+    return parsePartyResponse(data);
   } catch {
     return null;
   }
@@ -436,14 +463,15 @@ export function searchParties(query: string) {
 }
 
 /** POST /v1/parties/join — join a party by invite code. */
-export function joinParty(inviteCode: string) {
-  return request<{ party: PartyInfo; members: PartyMember[] }>(
+export async function joinParty(inviteCode: string) {
+  const data = await request<Record<string, unknown>>(
     '/v1/parties/join',
     {
       method: 'POST',
       body: JSON.stringify({ inviteCode }),
     },
   );
+  return parsePartyResponse(data);
 }
 
 /** POST /v1/parties/:partyId/leave — leave the party. */
