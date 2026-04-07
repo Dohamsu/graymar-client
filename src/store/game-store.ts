@@ -340,6 +340,13 @@ function pollForNarrative(
         return;
       }
 
+      if (detail.llm.status === 'SKIPPED') {
+        clearInterval(timer);
+        // SKIPPED: 하드코딩 프롤로그 등 — fallbackText(display)로 즉시 표시
+        flushNarrator(fallbackText, turnNo, get, set);
+        return;
+      }
+
       if (detail.llm.status === 'FAILED') {
         clearInterval(timer);
         const errInfo = detail.llm.error;
