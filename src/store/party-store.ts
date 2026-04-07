@@ -333,6 +333,23 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       get()._handleMemberStatus(data as PartyMember[]);
     });
 
+    sse.onEvent('party:member_left_dungeon', (data) => {
+      const d = data as { userId: string; nickname: string };
+      // 던전 이탈한 멤버를 목록에서 AI 표시 (제거하지 않음)
+      set((s) => ({
+        members: s.members.map((m) =>
+          m.userId === d.userId ? { ...m, isOnline: false } : m,
+        ),
+      }));
+    });
+    sse.onEvent('party:member_ai_controlled', (data) => {
+      const d = data as { userId: string };
+      set((s) => ({
+        members: s.members.map((m) =>
+          m.userId === d.userId ? { ...m, isOnline: false } : m,
+        ),
+      }));
+    });
     sse.onEvent('party:error', (data) => {
       const d = data as { code: string; message: string };
       set({ error: d.message });
@@ -439,6 +456,8 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     sse.offEvent('party:member_left');
     sse.offEvent('party:disbanded');
     sse.offEvent('party:member_status');
+    sse.offEvent('party:member_left_dungeon');
+    sse.offEvent('party:member_ai_controlled');
     sse.offEvent('party:error');
     sse.offEvent('party:member_hp_update');
     sse.offEvent('party:leader_changed');
