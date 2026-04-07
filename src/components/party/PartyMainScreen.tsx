@@ -51,6 +51,7 @@ function adaptMessages(
 function adaptMembers(
   members: { id: string; userId: string; nickname: string; role: "LEADER" | "MEMBER"; isOnline: boolean; joinedAt: string; presetId?: string; hp?: number; maxHp?: number }[],
 ) {
+  if (!Array.isArray(members)) return [];
   return members.map((m) => ({
     userId: m.userId,
     nickname: m.nickname,
