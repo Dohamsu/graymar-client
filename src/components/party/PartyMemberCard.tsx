@@ -26,7 +26,7 @@ interface PartyMemberCardProps {
 
 /** Map preset ID to a default portrait path */
 function defaultPortrait(presetId: string): string {
-  return `/images/presets/${presetId.toLowerCase()}.webp`;
+  return `/${presetId.toLowerCase()}_m.png`;
 }
 
 export function PartyMemberCard({ member, isSelf = false }: PartyMemberCardProps) {

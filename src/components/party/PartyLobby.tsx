@@ -156,7 +156,11 @@ export function PartyLobby({
       {/* ── Footer Buttons ── */}
       <div className="flex items-center justify-between border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3 sm:px-6">
         <button
-          onClick={onLeave}
+          onClick={() => {
+            if (window.confirm("정말 파티에서 나가시겠습니까?")) {
+              onLeave();
+            }
+          }}
           className="flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] px-4 py-3 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--hp-red)]/30 hover:text-[var(--hp-red)]"
         >
           <LogOut size={16} />
