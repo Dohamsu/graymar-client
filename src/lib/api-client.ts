@@ -456,9 +456,13 @@ export async function getMyParty(): Promise<{
 }
 
 /** GET /v1/parties/search?q=... — search open parties. */
-export function searchParties(query: string) {
-  return request<PartySearchResult[]>(
-    `/v1/parties/search?q=${encodeURIComponent(query)}`,
+export function searchParties(query: string, cursor?: string) {
+  const params = new URLSearchParams();
+  if (query) params.set('q', query);
+  if (cursor) params.set('cursor', cursor);
+  params.set('limit', '20');
+  return request<{ items: PartySearchResult[]; nextCursor: string | null }>(
+    `/v1/parties/search?${params.toString()}`,
   );
 }
 

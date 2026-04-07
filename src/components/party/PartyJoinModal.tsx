@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Search, Users, Loader2, UserPlus } from "lucide-react";
 
 // ── Types ──
@@ -40,6 +40,21 @@ export function PartyJoinModal({
   const [tab, setTab] = useState<TabKey>("code");
   const [code, setCode] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [initialLoaded, setInitialLoaded] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 검색 탭 진입 시 자동으로 전체 목록 로드
+  useEffect(() => {
+    if (tab === "search" && !initialLoaded && onSearch) {
+      onSearch("");
+      setInitialLoaded(true);
+    }
+  }, [tab, initialLoaded, onSearch]);
+
+  // 탭 변경 시 초기화
+  useEffect(() => {
+    if (tab !== "search") setInitialLoaded(false);
+  }, [tab]);
 
   if (!open) return null;
 
