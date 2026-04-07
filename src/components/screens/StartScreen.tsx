@@ -11,6 +11,7 @@ import {
   createCampaign,
   getAvailableScenarios,
   generatePortrait,
+  uploadPortrait,
   type CampaignResponse,
   type ScenarioInfo,
 } from "@/lib/api-client";
@@ -32,6 +33,7 @@ import {
   Loader2,
   Info,
   Users,
+  Upload,
 } from "lucide-react";
 
 type ScreenPhase =
@@ -727,6 +729,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const [portraitDescription, setPortraitDescription] = useState("");
   const [showPortraitInput, setShowPortraitInput] = useState(false);
   const [portraitError, setPortraitError] = useState<string | null>(null);
+  const [portraitUploading, setPortraitUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [focusedStat, setFocusedStat] = useState<string | null>(null);
 
   // Campaign state
@@ -807,6 +811,27 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       setPortraitError(err instanceof Error ? err.message : "초상화 생성에 실패했습니다.");
     } finally {
       setPortraitLoading(false);
+    }
+  };
+
+  // Portrait upload
+  const handleUploadPortrait = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPortraitUploading(true);
+    setPortraitError(null);
+    try {
+      const result = await uploadPortrait(file);
+      setPortraitUrl(result.imageUrl);
+      setShowPortraitInput(false);
+    } catch (err) {
+      setPortraitError(
+        err instanceof Error ? err.message : "이미지 업로드에 실패했습니다.",
+      );
+    } finally {
+      setPortraitUploading(false);
+      // Reset file input
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -1456,16 +1481,35 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           <div className="flex flex-col items-center gap-3 w-full max-w-sm">
             {!showPortraitInput ? (
               <>
-                <button
-                  onClick={() => setShowPortraitInput(true)}
-                  disabled={portraitLoading || portraitGenCount >= 3}
-                  className="text-sm text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
-                >
-                  새로 생성하기
-                  {portraitGenCount > 0 && (
-                    <span className="ml-1 text-xs">({3 - portraitGenCount}회 남음)</span>
-                  )}
-                </button>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setShowPortraitInput(true)}
+                    disabled={portraitLoading || portraitUploading || portraitGenCount >= 3}
+                    className="text-sm text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+                  >
+                    <Sparkles size={12} className="mr-1 inline-block" />
+                    AI 생성
+                    {portraitGenCount > 0 && (
+                      <span className="ml-1 text-xs">({3 - portraitGenCount}회 남음)</span>
+                    )}
+                  </button>
+                  <span className="text-xs text-[var(--text-muted)]">또는</span>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={portraitLoading || portraitUploading}
+                    className="text-sm text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+                  >
+                    <Upload size={12} className="mr-1 inline-block" />
+                    {portraitUploading ? "업로드 중..." : "이미지 업로드"}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleUploadPortrait}
+                    className="hidden"
+                  />
+                </div>
                 {portraitUrl && (
                   <button
                     onClick={() => { setPortraitUrl(null); }}
