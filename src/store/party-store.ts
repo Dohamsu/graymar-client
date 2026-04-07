@@ -177,7 +177,8 @@ export const usePartyStore = create<PartyState>((set, get) => ({
 
   searchParties: async (query) => {
     try {
-      return await api.searchParties(query);
+      const result = await api.searchParties(query);
+      return result.items ?? [];
     } catch {
       return [];
     }
