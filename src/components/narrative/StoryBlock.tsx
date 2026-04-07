@@ -166,37 +166,57 @@ function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactN
     return <>{parts}</>;
   }
 
-  // speakingNpc가 있으면 큰따옴표 대사 → DialogueBubble
+  // @[NPC이름] "대사" 또는 일반 "대사" → DialogueBubble
   const segments: React.ReactNode[] = [];
-  const dialogueRegex = /("[^"]*"?|\u201C[^\u201D]*\u201D?)/g;
+  // @[표시이름] "대사" 패턴 + 일반 큰따옴표 대사
+  const dialogueRegex = /(?:@\[([^\]]*)\]\s*)?("[^"]*"?|\u201C[^\u201D]*\u201D?)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   let key = 0;
-  let bubbleIndex = 0;
+  const npcBubbleCounts = new Map<string, number>(); // NPC별 연속 대사 카운트
 
   while ((match = dialogueRegex.exec(text)) !== null) {
+    const markerName = match[1]; // @[이름] 에서 추출, 없으면 undefined
+    const rawDialogue = match[2];
+
+    // 마커 포함하여 앞부분 서술 추출 (마커 앞의 @[ 시작 위치)
+    const fullMatchStart = markerName !== undefined
+      ? text.lastIndexOf(`@[${markerName}]`, match.index)
+      : match.index;
+    const actualStart = fullMatchStart >= 0 ? fullMatchStart : match.index;
+
     // 대사 앞 서술 부분
-    if (match.index > lastIndex) {
-      const narration = text.slice(lastIndex, match.index);
+    if (actualStart > lastIndex) {
+      const narration = text.slice(lastIndex, actualStart);
       const { nodes, nextKey } = renderInlineText(narration, key);
       key = nextKey;
       if (nodes.length > 0) {
         segments.push(<span key={`narr-${key++}`} className="block">{nodes}</span>);
       }
     }
-    // 대사 → DialogueBubble (따옴표 제거 — 말풍선이 대사임을 시각적으로 표현)
-    const rawDialogue = match[0];
+
+    // NPC 이름 결정: @[이름] 마커 > speakingNpc fallback
+    const npcName = markerName || speakingNpc?.displayName || '무명 인물';
+    const npcImage = markerName
+      ? undefined // 마커 NPC는 서버가 초상화를 별도 전달하지 않음 (미소개 방지)
+      : speakingNpc?.imageUrl;
+
+    // 연속 대사 카운트 (같은 NPC면 compact)
+    const count = npcBubbleCounts.get(npcName) ?? 0;
+    npcBubbleCounts.set(npcName, count + 1);
+
     const strippedDialogue = rawDialogue.replace(/^[""\u201C]|[""\u201D]$/g, '').trim();
-    segments.push(
-      <DialogueBubble
-        key={`bubble-${key++}`}
-        text={strippedDialogue}
-        npcName={speakingNpc.displayName}
-        npcImageUrl={speakingNpc.imageUrl}
-        compact={bubbleIndex > 0}
-      />,
-    );
-    bubbleIndex++;
+    if (strippedDialogue) {
+      segments.push(
+        <DialogueBubble
+          key={`bubble-${key++}`}
+          text={strippedDialogue}
+          npcName={npcName}
+          npcImageUrl={npcImage}
+          compact={count > 0}
+        />,
+      );
+    }
     lastIndex = dialogueRegex.lastIndex;
   }
 
