@@ -34,6 +34,8 @@ export function PartyChatInput({
   }, [canSend, onSend, text]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // 한글 조합(IME composition) 중에는 Enter 무시 — 중복 전송 방지
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
