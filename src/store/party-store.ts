@@ -423,6 +423,12 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         get().fetchMyParty();
       }
     });
+    sse.onEvent('dungeon:loot_distributed', () => {
+      // LootDistribution 모달 표시용 — 추후 UI 연동
+    });
+    sse.onEvent('dungeon:gold_distributed', () => {
+      // 골드 분배 알림 — 추후 UI 연동
+    });
     sse.onEvent('dungeon:location_changed', (data) => {
       const d = data as { targetLocationId: string; targetLocationName?: string };
       // 게임 스토어가 자동으로 런 상태를 폴링하여 새 장소 반영
@@ -468,6 +474,8 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     sse.offEvent('dungeon:waiting');
     sse.offEvent('dungeon:timeout_warning');
     sse.offEvent('dungeon:turn_resolved');
+    sse.offEvent('dungeon:loot_distributed');
+    sse.offEvent('dungeon:gold_distributed');
     sse.offEvent('dungeon:location_changed');
     sse.offEvent('vote:proposed');
     sse.offEvent('vote:updated');
