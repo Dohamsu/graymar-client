@@ -608,7 +608,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
           ) : (
             <NarratorContent text={message.text} speakingNpc={message.speakingNpc} />
           )}
-          {!isNarratorTypewriting && <SceneImageButton messageId={message.id} />}
+          {/* 장면 그리기 버튼 — 비활성화 (고도화 후 복원) */}
         </div>
       ) : (
         /* ── 일반 메시지 (PLAYER, SYSTEM) ── */
