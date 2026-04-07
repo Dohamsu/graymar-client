@@ -65,7 +65,7 @@ export function PartyJoinModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center">
       <div
-        className="flex w-full max-h-[85dvh] flex-col rounded-t-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-2xl sm:mx-4 sm:max-h-none sm:max-w-md sm:rounded-lg sm:rounded-t-lg"
+        className="flex w-full max-h-[90dvh] flex-col rounded-t-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-2xl sm:mx-4 sm:max-h-[80vh] sm:max-w-md sm:rounded-lg sm:rounded-t-lg"
         style={{ animation: "fadeIn 0.2s ease-out" }}
       >
         {/* Header */}
@@ -101,11 +101,11 @@ export function PartyJoinModal({
           ))}
         </div>
 
-        {/* Body */}
-        <div className="overflow-y-auto overscroll-contain px-5 py-5 [&]:[-webkit-overflow-scrolling:touch]">
+        {/* Body — 고정 최소 높이로 탭 전환 시 들썩임 방지 */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 [&]:[-webkit-overflow-scrolling:touch]" style={{ minHeight: '320px' }}>
           {tab === "code" ? (
             /* ── Invite Code Tab ── */
-            <form onSubmit={handleCodeSubmit} className="space-y-4">
+            <form onSubmit={handleCodeSubmit} className="flex h-full flex-col justify-between space-y-4">
               <div>
                 <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
                   초대 코드 입력
@@ -154,7 +154,7 @@ export function PartyJoinModal({
             </form>
           ) : (
             /* ── Search Tab ── */
-            <div className="space-y-4">
+            <div className="flex h-full flex-col space-y-4">
               <form onSubmit={handleSearch} className="flex gap-2">
                 <div className="relative flex-1">
                   <Search
@@ -183,7 +183,7 @@ export function PartyJoinModal({
               </form>
 
               {/* Search Results */}
-              <div className="max-h-[240px] space-y-2 overflow-y-auto">
+              <div className="flex-1 min-h-[200px] max-h-[50dvh] space-y-2 overflow-y-auto">
                 {searchResults.length === 0 ? (
                   <p className="py-8 text-center text-xs text-[var(--text-muted)]">
                     검색 결과가 없습니다
@@ -217,12 +217,11 @@ export function PartyJoinModal({
                         onClick={() => onJoinBySearch(party.id)}
                         disabled={
                           loading ||
-                          party.status === "IN_GAME" ||
                           party.memberCount >= party.maxMembers
                         }
                         className="ml-3 shrink-0 rounded-md bg-[var(--gold)] px-4 py-2.5 text-xs font-semibold text-[var(--bg-primary)] hover:bg-[var(--gold)]/90 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        가입
+                        {party.status === "IN_GAME" ? "합류" : "가입"}
                       </button>
                     </div>
                   ))
