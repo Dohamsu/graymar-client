@@ -1480,9 +1480,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                 onChange={handleUploadPortrait}
                 className="hidden"
               />
-              <p className="text-[10px] text-[var(--text-muted)] text-center leading-relaxed">
-                JPEG, PNG, WebP, HEIC, GIF · 최대 20MB<br />
-                얼굴이 잘 보이는 정면 사진을 권장합니다
+              <p className="text-[10px] text-[var(--text-muted)] text-center">
+                JPEG, PNG, WebP, HEIC, GIF · 최대 20MB
               </p>
               {portraitUrl && (
                 <button
