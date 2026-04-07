@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Copy, Check, LogOut, Play, Shield } from "lucide-react";
+import { Copy, Check, LogOut, Play, Shield, AlertTriangle } from "lucide-react";
 import { PartyMemberCard } from "./PartyMemberCard";
 import { PartyChatWindow } from "./PartyChatWindow";
 import { PartyChatInput } from "./PartyChatInput";
@@ -67,6 +67,7 @@ export function PartyLobby({
   startLoading = false,
 }: PartyLobbyProps) {
   const [codeCopied, setCodeCopied] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   // Pad members array to maxMembers
   const slots: (PartyMember | null)[] = Array.from(
@@ -156,11 +157,7 @@ export function PartyLobby({
       {/* ── Footer Buttons ── */}
       <div className="flex items-center justify-between border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3 sm:px-6">
         <button
-          onClick={() => {
-            if (window.confirm("정말 파티에서 나가시겠습니까?")) {
-              onLeave();
-            }
-          }}
+          onClick={() => setShowLeaveConfirm(true)}
           className="flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] px-4 py-3 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--hp-red)]/30 hover:text-[var(--hp-red)]"
         >
           <LogOut size={16} />
@@ -216,6 +213,47 @@ export function PartyLobby({
           )}
         </div>
       </div>
+
+      {/* Leave Confirm Modal */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div
+            className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-6 shadow-xl"
+            style={{ animation: "fadeIn 0.15s ease-out" }}
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--hp-red)]/10">
+                <AlertTriangle size={20} className="text-[var(--hp-red)]" />
+              </div>
+              <div>
+                <h3 className="font-display text-base font-semibold text-[var(--text-primary)]">
+                  파티 나가기
+                </h3>
+                <p className="text-sm text-[var(--text-muted)]">
+                  정말 파티에서 나가시겠습니까?
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLeaveConfirm(false)}
+                className="flex-1 rounded-md border border-[var(--border-primary)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  setShowLeaveConfirm(false);
+                  onLeave();
+                }}
+                className="flex-1 rounded-md bg-[var(--hp-red)] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--hp-red)]/90"
+              >
+                나가기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
