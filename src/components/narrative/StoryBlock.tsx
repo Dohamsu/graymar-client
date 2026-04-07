@@ -166,9 +166,9 @@ function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactN
     return <>{parts}</>;
   }
 
-  // @[NPC이름] "대사" 또는 일반 "대사" → DialogueBubble
+  // @[NPC이름] "대사" 또는 @[NPC이름|초상화URL] "대사" 또는 일반 "대사" → DialogueBubble
   const segments: React.ReactNode[] = [];
-  // @[표시이름] "대사" 패턴 + 일반 큰따옴표 대사
+  // @[표시이름] 또는 @[표시이름|URL] "대사" 패턴 + 일반 큰따옴표 대사
   const dialogueRegex = /(?:@\[([^\]]*)\]\s*)?("[^"]*"?|\u201C[^\u201D]*\u201D?)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -176,8 +176,21 @@ function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactN
   const npcBubbleCounts = new Map<string, number>(); // NPC별 연속 대사 카운트
 
   while ((match = dialogueRegex.exec(text)) !== null) {
-    const markerName = match[1]; // @[이름] 에서 추출, 없으면 undefined
+    const rawMarker = match[1]; // @[이름] 또는 @[이름|URL] 에서 추출
     const rawDialogue = match[2];
+
+    // @[이름|URL] 분리
+    let markerName: string | undefined;
+    let markerImage: string | undefined;
+    if (rawMarker) {
+      const pipeIdx = rawMarker.indexOf('|');
+      if (pipeIdx >= 0) {
+        markerName = rawMarker.slice(0, pipeIdx).trim();
+        markerImage = rawMarker.slice(pipeIdx + 1).trim() || undefined;
+      } else {
+        markerName = rawMarker.trim();
+      }
+    }
 
     // 마커 포함하여 앞부분 서술 추출 (마커 앞의 @[ 시작 위치)
     const fullMatchStart = markerName !== undefined
@@ -197,8 +210,9 @@ function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactN
 
     // NPC 이름 결정: @[이름] 마커 > speakingNpc fallback
     const npcName = markerName || speakingNpc?.displayName || '무명 인물';
+    // 초상화: @[이름|URL]의 URL > speakingNpc fallback
     const npcImage = markerName
-      ? undefined // 마커 NPC는 서버가 초상화를 별도 전달하지 않음 (미소개 방지)
+      ? markerImage // 마커에 초상화 URL 포함 (소개된 NPC만)
       : speakingNpc?.imageUrl;
 
     // 연속 대사 카운트 (같은 NPC면 compact)
