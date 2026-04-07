@@ -79,6 +79,43 @@ export function generatePortrait(presetId: string, gender: string, appearanceDes
   });
 }
 
+/** POST /v1/portrait/upload — upload and process a character portrait image. */
+export async function uploadPortrait(file: File): Promise<{
+  imageUrl: string;
+  thumbUrl: string;
+  width: number;
+  height: number;
+  sizeBytes: number;
+}> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token =
+    typeof window !== 'undefined'
+      ? document.cookie
+          .split('; ')
+          .find((c) => c.startsWith('graymar_token='))
+          ?.split('=')[1] ?? ''
+      : '';
+
+  const res = await fetch(`${getBaseUrl()}/v1/portrait/upload`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      (err as Record<string, string>).message ?? '이미지 업로드에 실패했습니다.',
+    );
+  }
+
+  return res.json();
+}
+
 /** GET /v1/runs — fetch active run info (or null). */
 export async function getActiveRun(): Promise<{
   runId: string;
