@@ -431,15 +431,15 @@ export function disbandParty(partyId: string) {
   });
 }
 
-/** POST /v1/parties/:partyId/chat — send a chat message. */
+/** POST /v1/parties/:partyId/messages — send a chat message. */
 export function sendChatMessage(partyId: string, content: string) {
-  return request<ChatMessage>(`/v1/parties/${partyId}/chat`, {
+  return request<ChatMessage>(`/v1/parties/${partyId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ content }),
   });
 }
 
-/** GET /v1/parties/:partyId/chat — fetch chat message history. */
+/** GET /v1/parties/:partyId/messages — fetch chat message history. */
 export function getChatMessages(
   partyId: string,
   cursor?: string,
@@ -450,7 +450,7 @@ export function getChatMessages(
   if (limit) params.set('limit', String(limit));
   const qs = params.toString();
   return request<{ messages: ChatMessage[]; nextCursor: string | null }>(
-    `/v1/parties/${partyId}/chat${qs ? `?${qs}` : ''}`,
+    `/v1/parties/${partyId}/messages${qs ? `?${qs}` : ''}`,
   );
 }
 
