@@ -90,10 +90,11 @@ function PortraitLightbox({
 
 function DialogueBubbleInner({ text, npcName, npcImageUrl, compact }: DialogueBubbleProps) {
   const [showLightbox, setShowLightbox] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const handlePortraitClick = useCallback(() => {
-    if (npcImageUrl) setShowLightbox(true);
-  }, [npcImageUrl]);
+    if (npcImageUrl && !imgError) setShowLightbox(true);
+  }, [npcImageUrl, imgError]);
 
   return (
     <>
@@ -107,7 +108,7 @@ function DialogueBubbleInner({ text, npcName, npcImageUrl, compact }: DialogueBu
             role={npcImageUrl ? "button" : undefined}
             aria-label={npcImageUrl ? `${npcName} 초상화 보기` : undefined}
           >
-            {npcImageUrl ? (
+            {npcImageUrl && !imgError ? (
               <Image
                 src={npcImageUrl}
                 alt={npcName}
@@ -115,6 +116,7 @@ function DialogueBubbleInner({ text, npcName, npcImageUrl, compact }: DialogueBu
                 height={40}
                 sizes="40px"
                 className="h-full w-full object-cover"
+                onError={() => setImgError(true)}
               />
             ) : (
               <User
