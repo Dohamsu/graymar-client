@@ -281,7 +281,7 @@ function derivePhase(
 }
 
 const LLM_POLL_INTERVAL_MS = 2000;
-const LLM_POLL_MAX_ATTEMPTS = 15; // 최대 30초
+const LLM_POLL_MAX_ATTEMPTS = 45; // 최대 90초 (Gemma4 + nano 후처리)
 
 // ---------------------------------------------------------------------------
 // Helpers
