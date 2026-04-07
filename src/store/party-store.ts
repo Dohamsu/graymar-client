@@ -523,8 +523,16 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     get().resetParty();
   },
 
-  _handleMemberStatus: (members) => {
-    set({ members });
+  _handleMemberStatus: (data) => {
+    // 서버가 { userId, isOnline } 단일 객체를 보냄 — 멤버 목록 교체가 아닌 업데이트
+    const d = data as unknown as { userId: string; isOnline: boolean };
+    if (d.userId) {
+      set((s) => ({
+        members: s.members.map((m) =>
+          m.userId === d.userId ? { ...m, isOnline: d.isOnline } : m,
+        ),
+      }));
+    }
   },
 
   // -----------------------------------------------------------------------
