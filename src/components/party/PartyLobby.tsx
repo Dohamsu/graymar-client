@@ -136,7 +136,7 @@ export function PartyLobby({
         </div>
 
         {/* Right: Chat */}
-        <div className="flex h-[240px] flex-col border-t border-[var(--border-primary)] bg-[var(--bg-card)] sm:h-[280px] lg:h-auto lg:w-[320px] lg:border-l lg:border-t-0 xl:w-[360px]">
+        <div className="flex h-[320px] flex-col border-t border-[var(--border-primary)] bg-[var(--bg-card)] sm:h-[380px] lg:h-auto lg:w-[320px] lg:border-l lg:border-t-0 xl:w-[360px]">
           <div className="border-b border-[var(--border-primary)] px-4 py-2">
             <span className="text-xs font-semibold text-[var(--text-secondary)]">
               파티 채팅
