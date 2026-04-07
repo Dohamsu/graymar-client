@@ -439,14 +439,14 @@ export async function createParty(name: string) {
   return parsePartyResponse(data);
 }
 
-/** GET /v1/parties/me — fetch the current user's party (or null). */
+/** GET /v1/parties/my — fetch the current user's party (or null). */
 export async function getMyParty(): Promise<{
   party: PartyInfo;
   members: PartyMember[];
 } | null> {
   try {
     const data = await request<Record<string, unknown> | null>(
-      '/v1/parties/me',
+      '/v1/parties/my',
     );
     if (!data || !data.id) return null;
     return parsePartyResponse(data);
