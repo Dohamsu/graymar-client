@@ -1012,22 +1012,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                     새 게임
                   </button>
                 </div>
-                <div
-                  className="w-full max-w-64"
-                  style={{
-                    animation: "fadeSlideIn 0.4s ease-out forwards",
-                    animationDelay: activeRunInfo ? "0.3s" : "0.2s",
-                    opacity: 0,
-                  }}
-                >
-                  <button
-                    onClick={handleEnterCampaign}
-                    disabled={isLoading || campaignLoading}
-                    className="flex h-14 w-full items-center justify-center border border-[var(--text-muted)] bg-transparent font-display text-lg tracking-[3px] text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
-                  >
-                    {campaignLoading ? "불러오는 중..." : "캠페인"}
-                  </button>
-                </div>
+                {/* 캠페인 버튼 — 시나리오 2+ 준비될 때까지 숨김 */}
                 {onParty && (
                   <div
                     className="w-full max-w-64"
