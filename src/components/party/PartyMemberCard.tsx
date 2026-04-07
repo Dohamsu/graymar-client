@@ -81,36 +81,20 @@ export function PartyMemberCard({ member, isSelf = false }: PartyMemberCardProps
         />
       </div>
 
-      {/* Name */}
-      <span className="mb-0.5 max-w-full truncate text-sm font-semibold text-[var(--text-primary)]">
-        {member.nickname}
-      </span>
-
-      {/* Preset + Level */}
-      <span className="mb-2 text-[11px] text-[var(--text-muted)]">
-        {member.presetLabel} Lv.{member.level}
-      </span>
-
-      {/* HP bar */}
-      <div className="mb-2 w-full">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--border-primary)]">
-          <div
-            className="h-full rounded-full transition-all duration-300"
-            style={{
-              width: `${hpPercent}%`,
-              backgroundColor:
-                hpPercent > 50
-                  ? "var(--stamina-green)"
-                  : hpPercent > 25
-                    ? "var(--orange)"
-                    : "var(--hp-red)",
-            }}
-          />
-        </div>
-        <div className="mt-0.5 text-center text-[10px] text-[var(--text-muted)]">
-          {member.hp}/{member.maxHp}
-        </div>
+      {/* Name + Level */}
+      <div className="mb-0.5 flex items-baseline gap-1.5 max-w-full">
+        <span className="truncate text-sm font-semibold text-[var(--text-primary)]">
+          {member.nickname}
+        </span>
+        <span className="shrink-0 text-[10px] text-[var(--text-muted)]">
+          Lv.{member.level}
+        </span>
       </div>
+
+      {/* Preset */}
+      <span className="mb-2 text-[11px] text-[var(--text-muted)]">
+        {member.presetLabel}
+      </span>
 
       {/* Ready state */}
       {member.isReady ? (
