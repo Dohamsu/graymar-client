@@ -165,20 +165,18 @@ export function PartyLobby({
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Ready toggle (non-leader) */}
-          {!isLeader && (
-            <button
-              onClick={onToggleReady}
-              className={`flex items-center gap-1.5 rounded-md px-4 py-3 text-sm font-semibold transition-colors ${
-                isReady
-                  ? "border border-[var(--success-green)]/30 bg-[var(--success-green)]/10 text-[var(--success-green)]"
-                  : "border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              }`}
-            >
-              <Shield size={16} />
-              {isReady ? "준비 완료" : "준비"}
-            </button>
-          )}
+          {/* Ready toggle (all members including leader) */}
+          <button
+            onClick={onToggleReady}
+            className={`flex items-center gap-1.5 rounded-md px-4 py-3 text-sm font-semibold transition-colors ${
+              isReady
+                ? "border border-[var(--success-green)]/30 bg-[var(--success-green)]/10 text-[var(--success-green)]"
+                : "border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            <Shield size={16} />
+            {isReady ? "준비 완료" : "준비"}
+          </button>
 
           {/* Start buttons (leader only) */}
           {isLeader && (
