@@ -3,14 +3,14 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.dimtale.com"),
-  title: "그레이마르 — 정치 음모 RPG",
+  title: "DimTale — AI 텍스트 RPG",
   description:
-    "왕국의 항만 도시 그레이마르에서 펼쳐지는 정치 음모 텍스트 RPG. AI가 만들어내는 살아있는 세계에서 용병으로서 권력 투쟁에 뛰어들어라.",
+    "AI가 만들어내는 살아있는 판타지 세계. 중세 항만 도시에서 펼쳐지는 몰입형 텍스트 RPG. 당신의 선택이 이야기를 바꿉니다.",
   openGraph: {
-    title: "그레이마르 — 정치 음모 RPG",
+    title: "DimTale — AI 텍스트 RPG",
     description:
-      "왕국의 항만 도시 그레이마르에서 펼쳐지는 정치 음모 텍스트 RPG. AI가 만들어내는 살아있는 세계에서 용병으로서 권력 투쟁에 뛰어들어라.",
-    siteName: "Graymar",
+      "AI가 만들어내는 살아있는 판타지 세계. 중세 항만 도시에서 펼쳐지는 몰입형 텍스트 RPG. 당신의 선택이 이야기를 바꿉니다.",
+    siteName: "DimTale",
     locale: "ko_KR",
     type: "website",
     images: [
@@ -18,15 +18,15 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "그레이마르 — 정치 음모 RPG",
+        alt: "DimTale — AI 텍스트 RPG",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "그레이마르 — 정치 음모 RPG",
+    title: "DimTale — AI 텍스트 RPG",
     description:
-      "AI가 만들어내는 살아있는 세계. 항만 도시의 권력 투쟁에 뛰어들어라.",
+      "AI가 만들어내는 살아있는 판타지 세계. 당신의 선택이 이야기를 바꿉니다.",
     images: ["/og-image.png"],
   },
   icons: {
