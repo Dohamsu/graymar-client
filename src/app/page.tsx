@@ -8,15 +8,14 @@ import { AuthRedirect } from "./landing/AuthRedirect";
 /* ─── SEO & AI SEO Metadata ─── */
 
 export const metadata: Metadata = {
-  title: "GRAYMAR | 잿빛 항구의 음모 — AI 정치 음모 텍스트 RPG",
+  title: "DimTale — AI 텍스트 RPG | 당신의 선택이 이야기를 만든다",
   description:
-    "왕국의 항만 도시 그레이마르에서 펼쳐지는 AI 기반 정치 음모 텍스트 RPG. 42명의 NPC, 5개의 권력 투쟁, 3가지 결말. 당신의 선택이 역사를 쓴다. 무료 웹 RPG.",
+    "AI가 만들어내는 몰입형 판타지 텍스트 RPG. 중세 항만 도시에서 펼쳐지는 모험과 음모. 40명 이상의 NPC, 자유로운 행동, 멀티플레이 파티. 무료 웹 TRPG.",
   keywords: [
     "텍스트 RPG",
     "AI RPG",
-    "정치 음모 RPG",
-    "그레이마르",
-    "GRAYMAR",
+    "TRPG",
+    "DimTale",
     "웹 RPG",
     "무료 RPG",
     "인터랙티브 픽션",
@@ -25,15 +24,17 @@ export const metadata: Metadata = {
     "한국어 RPG",
     "text RPG",
     "AI narrative game",
+    "판타지 RPG",
+    "멀티플레이 RPG",
   ],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "GRAYMAR | 잿빛 항구의 음모 — AI 정치 음모 텍스트 RPG",
+    title: "DimTale — AI 텍스트 RPG",
     description:
-      "42명의 NPC와 5개의 권력 투쟁이 얽힌 AI 기반 정치 음모 텍스트 RPG. 당신의 선택이 세계를 바꾼다.",
-    siteName: "GRAYMAR",
+      "AI가 만들어내는 몰입형 판타지 텍스트 RPG. 당신의 선택이 이야기를 바꿉니다.",
+    siteName: "DimTale",
     locale: "ko_KR",
     type: "website",
     images: [
@@ -41,15 +42,15 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "GRAYMAR — 잿빛 항구의 음모, AI 정치 음모 텍스트 RPG",
+        alt: "DimTale — AI 텍스트 RPG",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "GRAYMAR | AI 정치 음모 텍스트 RPG",
+    title: "DimTale — AI 텍스트 RPG",
     description:
-      "42명의 NPC, 5개의 권력 투쟁, 3가지 결말. AI가 만드는 살아있는 세계에서 용병으로 뛰어들어라.",
+      "AI가 만들어내는 몰입형 판타지 세계. 당신의 선택이 이야기를 바꿉니다.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -77,7 +78,7 @@ function JsonLd() {
         alternateName: "그레이마르",
         url: "https://www.dimtale.com",
         description:
-          "AI 기반 정치 음모 텍스트 RPG. 42명의 NPC와 5개의 권력 투쟁이 얽힌 살아있는 세계.",
+          "AI 기반 몰입형 텍스트 RPG. 42명의 NPC와 5개의 모험과 음모이 얽힌 살아있는 세계.",
         inLanguage: "ko",
       },
       {
@@ -85,11 +86,11 @@ function JsonLd() {
         name: "GRAYMAR — 잿빛 항구의 음모",
         alternateName: ["그레이마르", "Graymar RPG"],
         description:
-          "왕국의 항만 도시 그레이마르에서 펼쳐지는 AI 기반 정치 음모 텍스트 RPG. 42명의 NPC, 5개의 독립적 권력 투쟁, 3가지 결말. 이름 없는 용병으로서 당신의 선택이 역사를 쓴다.",
+          "왕국의 항만 도시 그레이마르에서 펼쳐지는 AI 기반 몰입형 텍스트 RPG. 42명의 NPC, 5개의 독립적 모험과 음모, 3가지 결말. 이름 없는 용병으로서 당신의 선택이 역사를 쓴다.",
         genre: [
           "텍스트 RPG",
           "인터랙티브 픽션",
-          "정치 음모",
+          "판타지 모험",
           "턴제 전략",
         ],
         gamePlatform: "Web Browser",
@@ -117,7 +118,7 @@ function JsonLd() {
             name: "GRAYMAR는 어떤 게임인가요?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "GRAYMAR는 AI가 만들어내는 살아있는 세계에서 정치적 음모에 뛰어드는 텍스트 RPG입니다. 42명의 NPC, 5개의 독립적 권력 투쟁, 3가지 결말이 있으며, 플레이어의 선택에 따라 이야기가 달라집니다.",
+              text: "GRAYMAR는 AI가 만들어내는 살아있는 세계에서 정치적 음모에 뛰어드는 텍스트 RPG입니다. 42명의 NPC, 5개의 독립적 모험과 음모, 3가지 결말이 있으며, 플레이어의 선택에 따라 이야기가 달라집니다.",
             },
           },
           {
@@ -284,7 +285,7 @@ export default function HomePage() {
               className="tracking-[0.3em] uppercase mb-4 block animate-pulse text-sm"
               style={{ fontFamily: "'Inter', sans-serif", color: "#ffdea5" }}
             >
-              A Political Intrigue Text RPG
+              An AI-Powered Text RPG
             </span>
             <h1
               className="text-5xl sm:text-6xl md:text-8xl font-black leading-none tracking-tighter mb-4"
@@ -309,7 +310,7 @@ export default function HomePage() {
               className="text-base sm:text-lg mb-8 sm:mb-12 max-w-xl mx-auto leading-relaxed"
               style={{ color: "#9a8f80" }}
             >
-              항구 도시의 권력 투쟁에 뛰어든 이름 없는 용병.
+              항구 도시의 모험과 음모에 뛰어든 이름 없는 용병.
               <br className="hidden sm:block" />
               누구의 편에 설지는 당신이 정한다.
             </p>
@@ -545,7 +546,7 @@ export default function HomePage() {
               />
               <Image
                 src="/landing/document.jpg"
-                alt="봉인된 왕실 문서 — 비밀스러운 정치 음모의 증거"
+                alt="봉인된 왕실 문서 — 비밀스러운 판타지 모험의 증거"
                 width={600}
                 height={500}
                 className="relative z-10 w-full h-[500px] object-cover border"
@@ -640,8 +641,8 @@ export default function HomePage() {
           </h2>
           <div className="space-y-6">
             {[
-              { q: "GRAYMAR는 어떤 게임인가요?", a: "AI가 만들어내는 살아있는 세계에서 정치적 음모에 뛰어드는 텍스트 RPG입니다. 42명의 NPC가 각자의 비밀과 목표를 가지고 움직이며, 플레이어의 모든 행동을 기억합니다. 부패를 폭로할지, 혼란을 이용할지, 권력과 손잡을지 — 선택은 당신의 것입니다." },
-              { q: "무료인가요?", a: "네, GRAYMAR는 완전 무료 웹 RPG입니다. 별도 설치 없이 PC와 모바일 브라우저에서 바로 플레이할 수 있습니다. 회원가입은 30초면 충분합니다." },
+              { q: "DimTale은 어떤 게임인가요?", a: "AI가 만들어내는 살아있는 판타지 세계에서 모험을 떠나는 텍스트 RPG입니다. 40명 이상의 NPC가 각자의 비밀과 목표를 가지고 움직이며, 플레이어의 모든 행동을 기억합니다. 파티를 구성하여 함께 모험할 수도 있습니다." },
+              { q: "무료인가요?", a: "네, DimTale은 완전 무료 웹 RPG입니다. 별도 설치 없이 PC와 모바일 브라우저에서 바로 플레이할 수 있습니다. 회원가입은 30초면 충분합니다." },
               { q: "AI는 어떤 역할을 하나요?", a: "AI는 풍부한 서사 텍스트를 생성합니다. NPC의 대사, 장면 묘사, 분위기를 매 턴마다 새롭게 만들어냅니다. 모든 게임 판정(전투, 탐색, 대화 성공 여부)은 서버에서 주사위와 스탯 기반으로 결정되며, AI는 그 결과를 생동감 있는 이야기로 풀어냅니다." },
               { q: "플레이 시간은 얼마나 걸리나요?", a: "한 번의 런은 약 20~30턴, 30분~1시간 정도입니다. 중간에 저장되므로 언제든 이어할 수 있습니다. 다양한 출신과 선택에 따라 여러 번 반복 플레이할 수 있습니다." },
               { q: "모바일에서도 할 수 있나요?", a: "네, 모바일 브라우저에 최적화되어 있습니다. 터치로 선택지를 고르고, 직접 행동을 입력할 수 있습니다." },
