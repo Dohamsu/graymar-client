@@ -1468,18 +1468,22 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={portraitUploading}
-                className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+                className="flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm text-[var(--text-secondary)] transition-colors hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Upload size={12} />
-                {portraitUploading ? "업로드 중..." : "내 이미지 업로드"}
+                <Upload size={14} />
+                {portraitUploading ? "처리 중..." : "내 이미지 업로드"}
               </button>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/gif"
                 onChange={handleUploadPortrait}
                 className="hidden"
               />
+              <p className="text-[10px] text-[var(--text-muted)] text-center leading-relaxed">
+                JPEG, PNG, WebP, HEIC, GIF · 최대 20MB<br />
+                얼굴이 잘 보이는 정면 사진을 권장합니다
+              </p>
               {portraitUrl && (
                 <button
                   onClick={() => { setPortraitUrl(null); }}
