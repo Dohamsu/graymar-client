@@ -1464,75 +1464,31 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
           {/* Actions */}
           <div className="flex flex-col items-center gap-3 w-full max-w-sm">
-            {!showPortraitInput ? (
-              <>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setShowPortraitInput(true)}
-                    disabled={portraitLoading || portraitUploading || portraitGenCount >= 3}
-                    className="text-sm text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
-                  >
-                    <Sparkles size={12} className="mr-1 inline-block" />
-                    AI 생성
-                    {portraitGenCount > 0 && (
-                      <span className="ml-1 text-xs">({3 - portraitGenCount}회 남음)</span>
-                    )}
-                  </button>
-                  <span className="text-xs text-[var(--text-muted)]">또는</span>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={portraitLoading || portraitUploading}
-                    className="text-sm text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
-                  >
-                    <Upload size={12} className="mr-1 inline-block" />
-                    {portraitUploading ? "업로드 중..." : "이미지 업로드"}
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handleUploadPortrait}
-                    className="hidden"
-                  />
-                </div>
-                {portraitUrl && (
-                  <button
-                    onClick={() => { setPortraitUrl(null); }}
-                    className="text-xs text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--text-secondary)]"
-                  >
-                    기본 초상화로 되돌리기
-                  </button>
-                )}
-              </>
-            ) : (
-              <div className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
-                <label className="mb-2 block text-xs text-[var(--text-muted)]">외모를 설명해주세요</label>
-                <textarea
-                  value={portraitDescription}
-                  onChange={(e) => setPortraitDescription(e.target.value)}
-                  placeholder="예: 짧은 흑발, 왼쪽 눈 위에 긴 흉터, 강인한 인상"
-                  rows={3}
-                  maxLength={200}
-                  className="w-full resize-none rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
-                  autoFocus
-                />
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={() => setShowPortraitInput(false)}
-                    className="flex h-9 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleGeneratePortrait}
-                    disabled={portraitLoading || !portraitDescription.trim()}
-                    className="flex h-9 flex-[2] items-center justify-center gap-1.5 rounded-md border border-[var(--gold)] bg-[var(--gold)] text-sm font-bold text-[var(--bg-primary)] transition-all hover:shadow-[0_0_12px_rgba(201,169,98,0.3)] disabled:opacity-40"
-                  >
-                    <Sparkles size={14} /> 생성하기
-                  </button>
-                </div>
-              </div>
-            )}
+            <>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={portraitUploading}
+                className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+              >
+                <Upload size={12} />
+                {portraitUploading ? "업로드 중..." : "내 이미지 업로드"}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleUploadPortrait}
+                className="hidden"
+              />
+              {portraitUrl && (
+                <button
+                  onClick={() => { setPortraitUrl(null); }}
+                  className="text-xs text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--text-secondary)]"
+                >
+                  기본 초상화로 되돌리기
+                </button>
+              )}
+            </>
           </div>
 
           {portraitError && (

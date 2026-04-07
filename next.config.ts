@@ -33,6 +33,10 @@ const nextConfig: NextConfig = {
         destination: `${backendUrl}/portraits/generated/:path*`,
       },
       {
+        source: "/portraits/uploaded/:path*",
+        destination: `${backendUrl}/portraits/uploaded/:path*`,
+      },
+      {
         source: "/npc-portraits/:path*",
         destination: `${backendUrl}/npc-portraits/:path*`,
       },
