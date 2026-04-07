@@ -18,7 +18,7 @@ export interface StoryMessage {
   };
   /** 대사 주체 NPC 정보 (primaryNpcId 기반, DialogueBubble용) */
   speakingNpc?: {
-    npcId: string;
+    npcId: string | null; // null = 무명 인물 (실루엣)
     displayName: string;
     imageUrl?: string;
   };
