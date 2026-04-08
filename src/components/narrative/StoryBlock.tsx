@@ -106,7 +106,7 @@ function NarratorLoading() {
 // speakingNpc가 있으면 큰따옴표 대사를 DialogueBubble로 변환
 // ---------------------------------------------------------------------------
 
-/** 인라인 스타일링만 (작은따옴표 강조 + 일반 텍스트). 큰따옴표 대사는 포함하지 않음. */
+/** 인라인 스타일링만 (홑따옴표 강조 + 일반 텍스트). 큰따옴표 대사는 포함하지 않음. */
 function renderInlineText(text: string, keyBase: number): { nodes: React.ReactNode[]; nextKey: number } {
   const parts: React.ReactNode[] = [];
   const regex = /('[^']*'?|\u2018[^\u2019]*\u2019?)/g;
@@ -118,8 +118,9 @@ function renderInlineText(text: string, keyBase: number): { nodes: React.ReactNo
     if (match.index > lastIndex) {
       parts.push(<span key={key++}>{text.slice(lastIndex, match.index)}</span>);
     }
+    // 홑따옴표 = 쪽지/간판/소문 인용, 단어 강조 → 밝은 청록색 + 볼드
     parts.push(
-      <span key={key++} className="font-dialogue" style={{ color: "var(--gold)" }}>
+      <span key={key++} className="font-semibold" style={{ color: "var(--info-blue)" }}>
         {match[0]}
       </span>,
     );
@@ -132,8 +133,11 @@ function renderInlineText(text: string, keyBase: number): { nodes: React.ReactNo
 }
 
 function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactNode {
-  // speakingNpc가 없으면 기존 동작 (큰따옴표 = 골드색 블록, 작은따옴표 = 인라인)
-  if (!speakingNpc) {
+  // 텍스트에 @[마커]가 있으면 speakingNpc 없어도 마커 파싱 경로로 진행 (이어하기 복원용)
+  const hasAtMarker = /@\[/.test(text);
+
+  // speakingNpc가 없고 @마커도 없으면 기존 동작 (큰따옴표 = 골드색 블록, 작은따옴표 = 인라인)
+  if (!speakingNpc && !hasAtMarker) {
     const parts: React.ReactNode[] = [];
     const regex = /("[^"]*"?|\u201C[^\u201D]*\u201D?|'[^']*'?|\u2018[^\u2019]*\u2019?)/g;
     let lastIndex = 0;
@@ -150,8 +154,8 @@ function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactN
       parts.push(
         <span
           key={key++}
-          className={isDialogue ? "block my-6 font-dialogue" : "font-dialogue"}
-          style={{ color: "var(--gold)" }}
+          className={isDialogue ? "block my-6 font-dialogue" : "font-semibold"}
+          style={{ color: isDialogue ? "var(--gold)" : "var(--info-blue)" }}
         >
           {match[0]}
         </span>,
