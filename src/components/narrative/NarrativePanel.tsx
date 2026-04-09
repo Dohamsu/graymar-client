@@ -33,12 +33,9 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
   }, [handleScrollEvent]);
 
   // 메시지 변경 시 스크롤 (사용자가 위로 스크롤한 상태면 스킵)
-  // 하단에서 약간 위로 오프셋하여 타이핑 중인 텍스트가 화면 중하단에 위치
-  const SCROLL_BOTTOM_OFFSET = 80; // px — 하단에서 이만큼 위에 포커싱
   useEffect(() => {
     if (scrollRef.current && !isUserScrolledUp.current) {
-      const target = Math.max(0, scrollRef.current.scrollHeight - scrollRef.current.clientHeight - SCROLL_BOTTOM_OFFSET);
-      scrollRef.current.scrollTo({ top: target, behavior: 'smooth' });
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
@@ -51,8 +48,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
       if (isUserScrolledUp.current) return;
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        const target = Math.max(0, el.scrollHeight - el.clientHeight - SCROLL_BOTTOM_OFFSET);
-        el.scrollTo({ top: target, behavior: 'smooth' });
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
       });
     });
     observer.observe(el, { childList: true, subtree: true, characterData: true });
@@ -63,7 +59,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
   }, []);
 
   return (
-    <div ref={scrollRef} id={scrollId} className="flex flex-1 flex-col gap-4 overflow-y-auto p-3 pb-4 md:p-6 lg:p-6 lg:pb-6">
+    <div ref={scrollRef} id={scrollId} className="flex flex-1 flex-col gap-4 overflow-y-auto p-3 pb-20 md:p-6 md:pb-24 lg:p-6 lg:pb-24">
       {messages.map((msg) => (
         <StoryBlock key={msg.id} message={msg} onChoiceSelect={onChoiceSelect} onNarrationComplete={onNarrationComplete} />
       ))}

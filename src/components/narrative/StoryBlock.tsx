@@ -751,14 +751,24 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
         <>
           {message.locationImage && (
             <div className="relative mb-2 h-[120px] w-full overflow-hidden rounded lg:h-[160px]">
-              <Image
-                src={message.locationImage}
-                alt="장소"
-                fill
-                sizes="(max-width: 768px) 100vw, 600px"
-                className="object-cover"
+              {/* 켄 번스 효과: 서서히 줌인 + 미세 패닝 */}
+              <div className="absolute inset-0 animate-[kenBurns_8s_ease-in-out_forwards]">
+                <Image
+                  src={message.locationImage}
+                  alt="장소"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 600px"
+                  className="object-cover"
+                />
+              </div>
+              {/* 비네팅: 가장자리 어둡게 → 중심 밝아짐 */}
+              <div className="pointer-events-none absolute inset-0 animate-[vignetteReveal_1.5s_ease-out_forwards]"
+                style={{
+                  background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.7) 100%)',
+                }}
               />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent from-60% to-[var(--bg-card)]" />
+              {/* 하단 그라디언트 (카드 배경으로 자연스럽게 이어짐) */}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent from-50% to-[var(--bg-card)]" />
             </div>
           )}
           <p
