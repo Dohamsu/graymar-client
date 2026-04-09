@@ -30,6 +30,7 @@ import { LocationHeader } from "@/components/hub/LocationHeader";
 import { TurnResultBanner } from "@/components/location/TurnResultBanner";
 import { LocationToastLayer } from "@/components/location/LocationToastLayer";
 import type { BattleEnemy } from "@/types/game";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 export default function GameClient() {
   const authToken = useAuthStore((s) => s.token);
@@ -197,7 +198,11 @@ export default function GameClient() {
     return <StartScreen onParty={() => setShowPartyScreen(true)} />;
   }
   if (phase === "RUN_ENDED") {
-    return endingResult ? <EndingScreen /> : <RunEndScreen />;
+    return (
+      <PageTransition phase="RUN_ENDED">
+        {endingResult ? <EndingScreen /> : <RunEndScreen />}
+      </PageTransition>
+    );
   }
 
   // Extract battle enemies for BattlePanel
@@ -239,6 +244,7 @@ export default function GameClient() {
   };
 
   return (
+    <PageTransition phase={phase as "HUB" | "LOCATION" | "COMBAT" | "NODE_TRANSITION" | "RUN_ENDED" | "ERROR" | "TITLE" | "LOADING"}>
     <div className="mx-auto flex h-full max-w-[1440px] flex-col">
       {/* Error banner */}
       <ErrorBanner />
@@ -386,5 +392,6 @@ export default function GameClient() {
         />
       )}
     </div>
+    </PageTransition>
   );
 }
