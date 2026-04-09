@@ -31,6 +31,11 @@ export function PageTransition({ phase, children }: { phase: GamePhase; children
   const prevPhaseRef = useRef(phase);
   const transitioning = useRef(false);
 
+  // phase 변경 감지 즉시 플래그 설정 (useEffect보다 먼저 실행 — 동기적)
+  if (phase !== prevPhaseRef.current && !transitioning.current) {
+    isPageTransitioning = true;
+  }
+
   useEffect(() => {
     if (phase === prevPhaseRef.current) return;
     if (transitioning.current) {
