@@ -275,58 +275,177 @@ function NarratorContent({ text, speakingNpc }: { text: string; speakingNpc?: Sp
 }
 
 // ---------------------------------------------------------------------------
-// TypewriterText — 글자 단위 타이핑 + 문단 경계 숨 쉬기 + 대사/문단 스타일
+// TypewriterText — 세그먼트 기반 타이핑 + 대사 즉시 표시 + 리듬감
 // ---------------------------------------------------------------------------
 
-function findParagraphBreaks(text: string): Set<number> {
-  const breaks = new Set<number>();
-  const re = /\n\n*/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    breaks.add(m.index + m[0].length);
+/** 서술 텍스트를 narration/dialogue 세그먼트로 사전 분할 */
+interface NarrSegment {
+  type: 'narration' | 'dialogue';
+  text: string;          // narration: 서술 텍스트, dialogue: 대사 텍스트
+  markerName?: string;   // dialogue: NPC 표시명
+  markerImage?: string;  // dialogue: 초상화 URL
+}
+
+function parseNarrativeSegments(text: string): NarrSegment[] {
+  const segments: NarrSegment[] = [];
+  const regex = /@\[([^\]]*)\]\s*("[^"]*"?|\u201C[^\u201D]*\u201D?)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    // @[마커] 시작 위치 찾기
+    const markerStart = text.lastIndexOf(`@[${match[1]}]`, match.index);
+    const actualStart = markerStart >= 0 ? markerStart : match.index;
+
+    // 마커 앞의 서술 부분
+    if (actualStart > lastIndex) {
+      segments.push({ type: 'narration', text: text.slice(lastIndex, actualStart) });
+    }
+
+    // 마커 파싱
+    const rawMarker = match[1];
+    const pipeIdx = rawMarker.indexOf('|');
+    const markerName = pipeIdx >= 0 ? rawMarker.slice(0, pipeIdx).trim() : rawMarker.trim();
+    const markerImage = pipeIdx >= 0 ? rawMarker.slice(pipeIdx + 1).trim() : undefined;
+
+    // 대사 텍스트 (따옴표 제거)
+    const rawDialogue = match[2];
+    const stripped = rawDialogue.replace(/^["\u201C]|["\u201D]$/g, '');
+
+    segments.push({
+      type: 'dialogue',
+      text: stripped,
+      markerName: markerName || undefined,
+      markerImage: markerImage || undefined,
+    });
+
+    lastIndex = match.index + match[0].length;
   }
-  return breaks;
+
+  // 나머지 서술
+  if (lastIndex < text.length) {
+    segments.push({ type: 'narration', text: text.slice(lastIndex) });
+  }
+
+  // @마커가 없으면 원본 텍스트 그대로 (기존 동작 유지)
+  if (segments.length === 0) {
+    segments.push({ type: 'narration', text });
+  }
+
+  return segments;
+}
+
+/** 구두점에 따른 타이핑 딜레이 계산 */
+function getCharDelay(
+  text: string,
+  pos: number,
+  charSpeed: number,
+  paragraphPause: number,
+): number {
+  if (pos >= text.length) return 0;
+  const ch = text[pos - 1]; // 방금 표시한 문자
+  if (!ch) return charSpeed;
+  // 문단 경계
+  if (ch === '\n' && pos < text.length && text[pos] === '\n') return paragraphPause;
+  // 마침표/느낌표/물음표 뒤 멈춤
+  if ('.!?。'.includes(ch)) return charSpeed * 5;
+  // 쉼표/세미콜론 뒤 살짝 멈춤
+  if (',;，'.includes(ch)) return charSpeed * 2;
+  return charSpeed;
 }
 
 function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onComplete?: () => void; speakingNpc?: SpeakingNpc }) {
   const textSpeed = useSettingsStore((s) => s.textSpeed);
   const preset = TEXT_SPEED_PRESETS[textSpeed];
 
-  const [displayLen, setDisplayLen] = useState(0);
+  const segments = useMemo(() => parseNarrativeSegments(text), [text]);
+  const [segIdx, setSegIdx] = useState(0);       // 현재 세그먼트 인덱스
+  const [charIdx, setCharIdx] = useState(0);      // 현재 세그먼트 내 글자 위치
   const [prevText, setPrevText] = useState(text);
   const onCompleteRef = useRef(onComplete);
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  });
-  const breaks = useMemo(() => findParagraphBreaks(text), [text]);
+  useEffect(() => { onCompleteRef.current = onComplete; });
 
-  // text 변경 시 displayLen 리셋 (derived state 패턴)
+  // text 변경 시 리셋
   if (text !== prevText) {
     setPrevText(text);
-    setDisplayLen(0);
+    setSegIdx(0);
+    setCharIdx(0);
   }
 
+  const isComplete = segIdx >= segments.length;
+
   useEffect(() => {
-    if (displayLen >= text.length) {
+    if (isComplete) {
       onCompleteRef.current?.();
       return;
     }
-    // 즉시 모드: 한번에 전부 표시 (setTimeout으로 비동기 처리하여 cascading render 방지)
+
+    // 즉시 모드
     if (preset.charSpeed === 0) {
-      const timer = setTimeout(() => setDisplayLen(text.length), 0);
+      const timer = setTimeout(() => { setSegIdx(segments.length); }, 0);
       return () => clearTimeout(timer);
     }
-    const delay = breaks.has(displayLen) ? preset.paragraphPause : preset.charSpeed;
+
+    const seg = segments[segIdx];
+
+    if (seg.type === 'dialogue') {
+      // 대사 세그먼트: 짧은 멈춤 후 즉시 표시 → 다음 세그먼트
+      const timer = setTimeout(() => {
+        setSegIdx((prev) => prev + 1);
+        setCharIdx(0);
+      }, preset.charSpeed * 12); // 대사 전 300ms 정도 멈춤
+      return () => clearTimeout(timer);
+    }
+
+    // narration 세그먼트: 한 글자씩
+    if (charIdx >= seg.text.length) {
+      // 세그먼트 완료 → 다음 세그먼트
+      const nextSeg = segments[segIdx + 1];
+      const pauseBeforeDialogue = nextSeg?.type === 'dialogue' ? preset.charSpeed * 8 : 0;
+      const timer = setTimeout(() => {
+        setSegIdx((prev) => prev + 1);
+        setCharIdx(0);
+      }, pauseBeforeDialogue);
+      return () => clearTimeout(timer);
+    }
+
+    const delay = getCharDelay(seg.text, charIdx, preset.charSpeed, preset.paragraphPause);
     const timer = setTimeout(() => {
-      setDisplayLen((prev) => Math.min(prev + 1, text.length));
+      setCharIdx((prev) => prev + 1);
     }, delay);
     return () => clearTimeout(timer);
-  }, [displayLen, text, breaks, preset]);
+  }, [segIdx, charIdx, segments, preset, isComplete]);
+
+  // 렌더링: 완료된 세그먼트 + 현재 타이핑 중인 세그먼트
+  const rendered: React.ReactNode[] = [];
+  for (let i = 0; i < Math.min(segIdx + 1, segments.length); i++) {
+    const seg = segments[i];
+    if (seg.type === 'dialogue' && i <= segIdx) {
+      // 완료된 대사 → DialogueBubble
+      rendered.push(
+        <DialogueBubble
+          key={`tw-bubble-${i}`}
+          text={seg.text}
+          npcName={seg.markerName ?? ''}
+          npcImageUrl={seg.markerImage ?? undefined}
+          compact={false}
+        />,
+      );
+    } else if (seg.type === 'narration') {
+      const displayText = i < segIdx ? seg.text : seg.text.slice(0, charIdx);
+      if (displayText) {
+        const { nodes } = renderInlineText(displayText, i * 1000);
+        rendered.push(
+          <span key={`tw-narr-${i}`} className="leading-relaxed">{nodes}</span>,
+        );
+      }
+    }
+  }
 
   return (
     <>
-      <NarratorContent text={text.slice(0, displayLen)} speakingNpc={speakingNpc} />
-      {displayLen < text.length && (
+      {rendered}
+      {!isComplete && (
         <span className="ml-0.5 inline-block h-[1em] w-[2px] animate-pulse bg-[var(--success-green)] align-text-bottom" />
       )}
     </>
