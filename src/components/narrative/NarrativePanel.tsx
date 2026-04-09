@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback } from "react";
 import { StoryBlock } from "./StoryBlock";
+import { isPageTransitioning } from "@/components/ui/PageTransition";
 import type { StoryMessage } from "@/types/game";
 
 interface NarrativePanelProps {
@@ -32,20 +33,20 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     return () => el.removeEventListener('scroll', handleScrollEvent);
   }, [handleScrollEvent]);
 
-  // 메시지 변경 시 스크롤 (사용자가 위로 스크롤한 상태면 스킵)
+  // 메시지 변경 시 스크롤 (사용자가 위로 스크롤한 상태면 스킵, 페이지 전환 중이면 스킵)
   useEffect(() => {
-    if (scrollRef.current && !isUserScrolledUp.current) {
+    if (scrollRef.current && !isUserScrolledUp.current && !isPageTransitioning) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
-  // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (사용자 스크롤 존중)
+  // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (사용자 스크롤/페이지 전환 존중)
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     let rafId: number | null = null;
     const observer = new MutationObserver(() => {
-      if (isUserScrolledUp.current) return;
+      if (isUserScrolledUp.current || isPageTransitioning) return;
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });

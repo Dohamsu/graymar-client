@@ -22,6 +22,9 @@ const TRANSITIONS: Record<string, { exit: string; enter: string; duration: numbe
 
 const DEFAULT_TRANSITION = { exit: 'animate-[fadeToBlack_0.3s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_0.4s_ease-out]', duration: 320 };
 
+/** 전환 중 여부를 외부에서 확인할 수 있도록 노출 */
+export let isPageTransitioning = false;
+
 export function PageTransition({ phase, children }: { phase: GamePhase; children: ReactNode }) {
   const [animClass, setAnimClass] = useState('');
   const [frozenChildren, setFrozenChildren] = useState<ReactNode>(null);
@@ -34,6 +37,7 @@ export function PageTransition({ phase, children }: { phase: GamePhase; children
       // 전환 중 또 바뀌면 즉시 완료 처리
       prevPhaseRef.current = phase;
       transitioning.current = false;
+      isPageTransitioning = false;
       setAnimClass('');
       setFrozenChildren(null);
       return;
@@ -42,6 +46,7 @@ export function PageTransition({ phase, children }: { phase: GamePhase; children
     const key = `${prevPhaseRef.current}→${phase}`;
     const trans = TRANSITIONS[key] ?? DEFAULT_TRANSITION;
     transitioning.current = true;
+    isPageTransitioning = true;
 
     // 현재 children 동결 (exit 애니메이션 동안 화면 유지)
     setFrozenChildren(children);
@@ -55,6 +60,7 @@ export function PageTransition({ phase, children }: { phase: GamePhase; children
       const enterTimer = setTimeout(() => {
         setAnimClass('');
         transitioning.current = false;
+        isPageTransitioning = false;
         prevPhaseRef.current = phase;
       }, trans.duration);
 
