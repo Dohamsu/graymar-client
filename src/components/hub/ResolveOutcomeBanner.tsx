@@ -91,28 +91,44 @@ export function ResolveOutcomeInline({
   );
 }
 
-/** 주사위 분해 공식 표시 */
+/** 주사위 분해 공식 — 묶음별 순차 fade-in */
 function BreakdownFormula({ breakdown }: { breakdown: ResolveBreakdown }) {
   const { diceRoll, statKey, statBonus, baseMod, totalScore, traitBonus, gamblerLuckTriggered } = breakdown;
   const statLabel = statKey ? (STAT_KOREAN_NAMES[statKey] ?? STAT_KEY_TO_LABEL[statKey] ?? statKey) : null;
   const statColorKey = statKey ? (STAT_KEY_TO_LABEL[statKey] ?? statKey.toUpperCase()) : null;
   const statColor = statColorKey ? (STAT_COLORS[statColorKey] ?? "var(--text-secondary)") : null;
 
-  return (
-    <div
-      className="flex items-center gap-1 text-xs text-[var(--text-muted)] animate-[fadeIn_0.3s_ease-out]"
-    >
-      <span>🎲</span>
-      <span className="text-[var(--text-secondary)]">{diceRoll}</span>
-      {statLabel && (
-        <>
-          <span>+</span>
+  // 표시할 묶음 구성 (순서: 스탯 → 주사위 → 보정 → 특성 → 도박꾼 → 합계)
+  const chunks: Array<{ key: string; node: React.ReactNode }> = [];
+
+  if (statLabel) {
+    chunks.push({
+      key: 'stat',
+      node: (
+        <span className="flex items-center gap-0.5">
           <span style={{ color: statColor ?? undefined }}>{statLabel}</span>
           <span className="text-[var(--text-secondary)]">{statBonus}</span>
-        </>
-      )}
-      {baseMod != null && baseMod !== 0 && (
-        <>
+        </span>
+      ),
+    });
+  }
+
+  chunks.push({
+    key: 'dice',
+    node: (
+      <span className="flex items-center gap-0.5">
+        {chunks.length > 0 && <span className="mx-0.5">+</span>}
+        <span>🎲</span>
+        <span className="text-[var(--text-secondary)]">{diceRoll}</span>
+      </span>
+    ),
+  });
+
+  if (baseMod != null && baseMod !== 0) {
+    chunks.push({
+      key: 'mod',
+      node: (
+        <span className="flex items-center gap-0.5">
           <span>{baseMod > 0 ? "+" : ""}</span>
           <span
             className="font-semibold"
@@ -120,18 +136,61 @@ function BreakdownFormula({ breakdown }: { breakdown: ResolveBreakdown }) {
           >
             보정 {baseMod > 0 ? `+${baseMod}` : baseMod}
           </span>
-        </>
-      )}
-      {traitBonus != null && traitBonus !== 0 && (
-        <span className="text-xs text-[var(--gold)]">
+        </span>
+      ),
+    });
+  }
+
+  if (traitBonus != null && traitBonus !== 0) {
+    chunks.push({
+      key: 'trait',
+      node: (
+        <span className="text-[var(--gold)]">
           특성 {traitBonus > 0 ? `+${traitBonus}` : traitBonus}
         </span>
-      )}
-      {gamblerLuckTriggered && (
-        <span className="text-xs text-[var(--gold)]">도박꾼의 운!</span>
-      )}
-      <span>=</span>
-      <span className="font-bold text-[var(--text-primary)]">{totalScore}</span>
+      ),
+    });
+  }
+
+  if (gamblerLuckTriggered) {
+    chunks.push({
+      key: 'luck',
+      node: <span className="text-[var(--gold)]">도박꾼의 운!</span>,
+    });
+  }
+
+  chunks.push({
+    key: 'total',
+    node: (
+      <span className="flex items-center gap-0.5">
+        <span>=</span>
+        <span className="font-bold text-[var(--text-primary)]">{totalScore}</span>
+      </span>
+    ),
+  });
+
+  // 각 묶음을 300ms 간격으로 순차 표시
+  const [visibleCount, setVisibleCount] = useState(0);
+
+  useEffect(() => {
+    if (visibleCount >= chunks.length) return;
+    const timer = setTimeout(() => {
+      setVisibleCount((prev) => prev + 1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [visibleCount, chunks.length]);
+
+  return (
+    <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+      {chunks.slice(0, visibleCount).map((chunk, i) => (
+        <span
+          key={chunk.key}
+          className="animate-[fadeIn_0.3s_ease-out]"
+          style={{ animationDelay: `${i * 0.05}s` }}
+        >
+          {chunk.node}
+        </span>
+      ))}
     </div>
   );
 }
