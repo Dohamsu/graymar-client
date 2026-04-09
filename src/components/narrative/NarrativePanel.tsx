@@ -33,9 +33,12 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
   }, [handleScrollEvent]);
 
   // 메시지 변경 시 스크롤 (사용자가 위로 스크롤한 상태면 스킵)
+  // 하단에서 약간 위로 오프셋하여 타이핑 중인 텍스트가 화면 중하단에 위치
+  const SCROLL_BOTTOM_OFFSET = 80; // px — 하단에서 이만큼 위에 포커싱
   useEffect(() => {
     if (scrollRef.current && !isUserScrolledUp.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+      const target = Math.max(0, scrollRef.current.scrollHeight - scrollRef.current.clientHeight - SCROLL_BOTTOM_OFFSET);
+      scrollRef.current.scrollTo({ top: target, behavior: 'smooth' });
     }
   }, [messages]);
 
@@ -45,10 +48,11 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     if (!el) return;
     let rafId: number | null = null;
     const observer = new MutationObserver(() => {
-      if (isUserScrolledUp.current) return; // 사용자가 위로 스크롤한 상태면 자동 스크롤 안 함
+      if (isUserScrolledUp.current) return;
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        const target = Math.max(0, el.scrollHeight - el.clientHeight - SCROLL_BOTTOM_OFFSET);
+        el.scrollTo({ top: target, behavior: 'smooth' });
       });
     });
     observer.observe(el, { childList: true, subtree: true, characterData: true });
