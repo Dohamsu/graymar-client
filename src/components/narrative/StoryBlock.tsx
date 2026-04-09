@@ -389,11 +389,21 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
     const seg = segments[segIdx];
 
     if (seg.type === 'dialogue') {
-      // 대사 세그먼트: 짧은 멈춤 후 즉시 표시 → 다음 세그먼트
+      // 대사 세그먼트: 한 글자씩 타이핑 (DialogueBubble 안에서)
+      if (charIdx >= seg.text.length) {
+        // 대사 완료 → 대사 후 멈춤 → 다음 세그먼트
+        const timer = setTimeout(() => {
+          setSegIdx((prev) => prev + 1);
+          setCharIdx(0);
+        }, preset.charSpeed * 15); // 대사 후 ~375ms 멈춤
+        return () => clearTimeout(timer);
+      }
+      // 대사 글자 타이핑 (narration보다 약간 빠르게)
+      const dialogueSpeed = Math.max(Math.floor(preset.charSpeed * 0.7), 5);
+      const delay = getCharDelay(seg.text, charIdx, dialogueSpeed, preset.paragraphPause);
       const timer = setTimeout(() => {
-        setSegIdx((prev) => prev + 1);
-        setCharIdx(0);
-      }, preset.charSpeed * 12); // 대사 전 300ms 정도 멈춤
+        setCharIdx((prev) => prev + 1);
+      }, delay);
       return () => clearTimeout(timer);
     }
 
@@ -421,16 +431,19 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
   for (let i = 0; i < Math.min(segIdx + 1, segments.length); i++) {
     const seg = segments[i];
     if (seg.type === 'dialogue' && i <= segIdx) {
-      // 완료된 대사 → DialogueBubble
-      rendered.push(
-        <DialogueBubble
-          key={`tw-bubble-${i}`}
-          text={seg.text}
-          npcName={seg.markerName ?? ''}
-          npcImageUrl={seg.markerImage ?? undefined}
-          compact={false}
-        />,
-      );
+      // 대사 → DialogueBubble (타이핑 중이면 부분 텍스트)
+      const dialogueText = i < segIdx ? seg.text : seg.text.slice(0, charIdx);
+      if (dialogueText || i < segIdx) {
+        rendered.push(
+          <DialogueBubble
+            key={`tw-bubble-${i}`}
+            text={dialogueText || seg.text}
+            npcName={seg.markerName ?? ''}
+            npcImageUrl={seg.markerImage ?? undefined}
+            compact={false}
+          />,
+        );
+      }
     } else if (seg.type === 'narration') {
       const displayText = i < segIdx ? seg.text : seg.text.slice(0, charIdx);
       if (displayText) {
