@@ -33,11 +33,20 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     return () => el.removeEventListener('scroll', handleScrollEvent);
   }, [handleScrollEvent]);
 
-  // 메시지 변경 시 스크롤 (사용자가 위로 스크롤한 상태면 스킵, 페이지 전환 중이면 스킵)
+  // 메시지 변경 시 스크롤 — 페이지 전환 직후에는 지연 실행
   useEffect(() => {
-    if (scrollRef.current && !isUserScrolledUp.current && !isPageTransitioning) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    if (!scrollRef.current || isUserScrolledUp.current) return;
+    // 페이지 전환 중이면 전환 완료 후 스크롤 (1초 지연)
+    if (isPageTransitioning) {
+      const timer = setTimeout(() => {
+        if (scrollRef.current && !isUserScrolledUp.current) {
+          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'auto' });
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
     }
+    // 일반 스크롤
+    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
   // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (사용자 스크롤/페이지 전환 존중)
