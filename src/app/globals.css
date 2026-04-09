@@ -175,6 +175,44 @@
   }
 }
 
+/* ── 서술 로딩 깃펜 애니메이션 ── */
+
+@keyframes quillWrite {
+  0%, 100% { transform: rotate(-5deg) translateY(0); }
+  25% { transform: rotate(3deg) translateY(-1px); }
+  50% { transform: rotate(-3deg) translateY(1px); }
+  75% { transform: rotate(2deg) translateY(-1px); }
+}
+
+/* ── NPC 초상화 카드 연출 ── */
+
+@keyframes npcShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes npcBadgeBounce {
+  0% { opacity: 0; transform: scale(0.5) translateY(4px); }
+  60% { opacity: 1; transform: scale(1.1) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── 시간대 전환 알림 ── */
+
+@keyframes timePhaseReveal {
+  0% { opacity: 0; transform: scale(0.9); }
+  15% { opacity: 1; transform: scale(1); }
+  75% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.02); }
+}
+
+@keyframes timePhaseIcon {
+  0% { opacity: 0; transform: translateY(8px) scale(0.8); }
+  30% { opacity: 1; transform: translateY(0) scale(1.1); }
+  50% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
 /* ── Phase transition fade-in ── */
 
 @keyframes phaseFadeIn {

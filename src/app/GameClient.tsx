@@ -31,6 +31,8 @@ import { TurnResultBanner } from "@/components/location/TurnResultBanner";
 import { LocationToastLayer } from "@/components/location/LocationToastLayer";
 import type { BattleEnemy } from "@/types/game";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { TimePhaseTransition } from "@/components/hub/TimePhaseTransition";
+import { NetworkStatus } from "@/components/ui/NetworkStatus";
 
 export default function GameClient() {
   const authToken = useAuthStore((s) => s.token);
@@ -246,8 +248,12 @@ export default function GameClient() {
   return (
     <PageTransition phase={phase as "HUB" | "LOCATION" | "COMBAT" | "NODE_TRANSITION" | "RUN_ENDED" | "ERROR" | "TITLE" | "LOADING"}>
     <div className="mx-auto flex h-full max-w-[1440px] flex-col">
+      {/* 네트워크 상태 */}
+      <NetworkStatus />
       {/* Error banner */}
       <ErrorBanner />
+      {/* 시간대 전환 알림 */}
+      {worldState && <TimePhaseTransition timePhase={worldState.timePhase} />}
       {/* LLM failure modal */}
       <LlmFailureModal />
 

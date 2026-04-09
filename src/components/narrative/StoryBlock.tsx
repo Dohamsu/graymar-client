@@ -20,14 +20,14 @@ const AFFORDANCE_TO_STAT: Record<string, string> = {
 };
 
 const LOADING_MESSAGES = [
-  "서술 생성 중...",
-  "이야기를 짜는 중...",
-  "당신의 운명을 엮는 중...",
-  "세계를 구축하는 중...",
-  "장면을 그리는 중...",
-  "등장인물이 준비하는 중...",
-  "사건의 실마리를 잇는 중...",
-  "분위기를 조성하는 중...",
+  "어둠 속에서 이야기가 풀려나간다...",
+  "운명의 실타래가 엮이고 있다...",
+  "잉크가 양피지 위를 스친다...",
+  "그레이마르의 밤바람이 속삭인다...",
+  "깃펜이 움직이기 시작한다...",
+  "누군가의 발소리가 들려온다...",
+  "등불이 일렁이며 그림자가 흔들린다...",
+  "도시의 비밀이 드러나려 한다...",
 ];
 
 const SCENE_LOADING_MSGS = [
@@ -76,27 +76,49 @@ interface StoryBlockProps {
 
 function NarratorLoading() {
   const [msgIndex, setMsgIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    const msgTimer = setInterval(() => {
       setMsgIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-    }, 5000);
-    return () => clearInterval(timer);
+    }, 4000);
+    // 프로그레스 바: 80%까지 빠르게 → 이후 95%까지 느리게 계속 진행
+    const progTimer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev < 80) return prev + 1.5;         // 0~80%: 빠르게 (10초)
+        if (prev < 95) return prev + 0.15;         // 80~95%: 느리게 (20초 추가)
+        return prev;                                // 95%에서 정지
+      });
+    }, 200);
+    return () => { clearInterval(msgTimer); clearInterval(progTimer); };
   }, []);
 
   return (
-    <div className="flex items-center gap-2 py-1">
-      <div className="flex gap-1">
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--success-green)] opacity-60" style={{ animationDelay: "0ms" }} />
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--success-green)] opacity-60" style={{ animationDelay: "150ms" }} />
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--success-green)] opacity-60" style={{ animationDelay: "300ms" }} />
+    <div className="flex flex-col gap-2.5 py-2">
+      <div className="flex items-center gap-2.5">
+        {/* 깃펜 아이콘 — 글 쓰는 애니메이션 */}
+        <span className="text-base animate-[quillWrite_1.5s_ease-in-out_infinite]" style={{ color: 'var(--gold)', opacity: 0.7 }}>
+          ✦
+        </span>
+        <span
+          className="text-sm font-narrative italic animate-[fadeIn_0.5s_ease-out]"
+          style={{ color: 'var(--text-muted)' }}
+          key={msgIndex}
+        >
+          {LOADING_MESSAGES[msgIndex]}
+        </span>
       </div>
-      <span
-        className="text-sm text-[var(--text-muted)] transition-opacity duration-500"
-        key={msgIndex}
-      >
-        {LOADING_MESSAGES[msgIndex]}
-      </span>
+      {/* 프로그레스 바 */}
+      <div className="h-[2px] w-32 overflow-hidden rounded-full bg-[var(--border-primary)]">
+        <div
+          className="h-full rounded-full transition-all duration-300 ease-out"
+          style={{
+            width: `${progress}%`,
+            background: 'linear-gradient(90deg, var(--gold), var(--success-green))',
+            opacity: 0.6,
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -549,23 +571,51 @@ function SceneImageButton({ messageId }: { messageId: string }) {
 // ---------------------------------------------------------------------------
 
 function NpcPortraitCard({ npcPortrait }: { npcPortrait: NonNullable<StoryMessage['npcPortrait']> }) {
-  const [visible, setVisible] = useState(false);
+  const [phase, setPhase] = useState<'hidden' | 'slide' | 'name' | 'badge'>('hidden');
+  const [nameLen, setNameLen] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 50);
+    // 슬라이드인
+    const t1 = setTimeout(() => setPhase('slide'), 50);
+    // 이름 타이핑 시작
+    const t2 = setTimeout(() => setPhase('name'), 550);
+    // 뱃지 등장
+    const t3 = setTimeout(() => setPhase('badge'), 550 + npcPortrait.npcName.length * 60 + 200);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [npcPortrait.npcName.length]);
+
+  // 이름 타이핑
+  useEffect(() => {
+    if (phase !== 'name' && phase !== 'badge') return;
+    if (nameLen >= npcPortrait.npcName.length) return;
+    const timer = setTimeout(() => setNameLen((p) => p + 1), 60);
     return () => clearTimeout(timer);
-  }, []);
+  }, [phase, nameLen, npcPortrait.npcName.length]);
+
+  const isSlideIn = phase !== 'hidden';
+  const showBadge = phase === 'badge';
+  const displayName = npcPortrait.npcName.slice(0, nameLen);
+  const badgeText = npcPortrait.isNewlyIntroduced ? '이름이 밝혀졌다' : '첫 만남';
 
   return (
     <div
-      className="mb-3 flex items-center gap-3 rounded-lg p-3 transition-opacity duration-500"
+      className="mb-3 flex items-center gap-3 rounded-lg p-3 transition-all duration-500"
       style={{
-        opacity: visible ? 1 : 0,
+        opacity: isSlideIn ? 1 : 0,
+        transform: isSlideIn ? 'translateX(0)' : 'translateX(-20px)',
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border-primary)',
       }}
     >
-      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
+      {/* 초상화 — 골드 테두리 글로우 */}
+      <div
+        className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg"
+        style={{
+          boxShadow: isSlideIn ? '0 0 12px rgba(255, 215, 0, 0.3), 0 0 4px rgba(255, 215, 0, 0.2)' : 'none',
+          border: '2px solid var(--gold)',
+          transition: 'box-shadow 0.8s ease-out',
+        }}
+      >
         <Image
           src={npcPortrait.imageUrl}
           alt={npcPortrait.npcName}
@@ -573,23 +623,38 @@ function NpcPortraitCard({ npcPortrait }: { npcPortrait: NonNullable<StoryMessag
           sizes="80px"
           className="object-cover"
         />
+        {/* shimmer 효과 */}
+        {isSlideIn && (
+          <div
+            className="pointer-events-none absolute inset-0 animate-[npcShimmer_2s_ease-in-out]"
+            style={{
+              background: 'linear-gradient(105deg, transparent 40%, rgba(255,215,0,0.15) 50%, transparent 60%)',
+            }}
+          />
+        )}
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
+        {/* 이름 타이핑 */}
         <span
           className="text-sm font-semibold font-display"
           style={{ color: 'var(--text-primary)' }}
         >
-          {npcPortrait.npcName}
+          {displayName}
+          {nameLen < npcPortrait.npcName.length && (
+            <span className="ml-0.5 inline-block h-[1em] w-[2px] animate-pulse bg-[var(--gold)] align-text-bottom" />
+          )}
         </span>
-        {npcPortrait.isNewlyIntroduced && (
+        {/* 뱃지 — 바운스 등장 */}
+        {showBadge && (
           <span
-            className="inline-block w-fit rounded px-1.5 py-0.5 text-[10px] font-semibold"
+            className="inline-block w-fit rounded px-1.5 py-0.5 text-[10px] font-semibold animate-[npcBadgeBounce_0.4s_ease-out]"
             style={{
               color: 'var(--gold)',
               border: '1px solid var(--gold)',
+              backgroundColor: 'rgba(255, 215, 0, 0.06)',
             }}
           >
-            첫 만남
+            {badgeText}
           </span>
         )}
       </div>
