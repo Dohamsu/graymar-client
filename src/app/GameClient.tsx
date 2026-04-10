@@ -14,6 +14,7 @@ import { CharacterTab } from "@/components/side-panel/CharacterTab";
 import { InventoryTab } from "@/components/side-panel/InventoryTab";
 import { BattlePanel } from "@/components/battle/BattlePanel";
 import { StartScreen } from "@/components/screens/StartScreen";
+import SplashScreen from "@/components/ui/SplashScreen";
 import { PartyMainScreen } from "@/components/party/PartyMainScreen";
 import { PartyHUD } from "@/components/party/PartyHUD";
 import { PartyTurnStatus } from "@/components/party/PartyTurnStatus";
@@ -136,6 +137,11 @@ export default function GameClient() {
   }, [dungeonCountdown, partyRunId, checkActiveRun, resumeRun]);
 
   // --- Phase routing ---
+  // LOADING phase — 스플래시 스크린 (게임 데이터 로딩 중)
+  if (phase === "LOADING" && authToken) {
+    return <SplashScreen />;
+  }
+
   if (!authToken || phase === "TITLE" || phase === "LOADING") {
     // 파티 카운트다운 중이면 카운트다운 표시 (파티원 프로필 + 진입 연출)
     if (showPartyScreen && authToken && dungeonCountdown !== null && dungeonCountdown > 0) {
