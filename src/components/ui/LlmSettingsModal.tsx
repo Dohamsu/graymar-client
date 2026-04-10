@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Check, Loader2, AlertCircle } from "lucide-react";
+import { X, Check, Loader2, AlertCircle, Trash2 } from "lucide-react";
 import {
   getLlmSettings,
   updateLlmSettings,
@@ -338,6 +338,36 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
                     </div>
                   </>
                 )}
+              </div>
+
+              {/* 캐시 초기화 */}
+              <div className="border-t border-[var(--border-primary)] pt-4">
+                <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
+                  앱 관리
+                </label>
+                <button
+                  onClick={async () => {
+                    if (!confirm("캐시를 초기화하면 페이지가 새로고침됩니다. 진행할까요?")) return;
+                    try {
+                      const names = await caches.keys();
+                      await Promise.all(names.map((name) => caches.delete(name)));
+                      if ("serviceWorker" in navigator) {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(registrations.map((r) => r.unregister()));
+                      }
+                      window.location.reload();
+                    } catch {
+                      window.location.reload();
+                    }
+                  }}
+                  className="flex items-center gap-2 rounded-md border border-[var(--hp-red)]/30 px-3 py-2 text-xs font-medium text-[var(--hp-red)] hover:bg-[var(--hp-red)]/10 transition-colors"
+                >
+                  <Trash2 size={14} />
+                  캐시 초기화
+                </button>
+                <p className="mt-1.5 text-[10px] text-[var(--text-muted)]">
+                  PWA 캐시 및 Service Worker를 삭제하고 새로고침합니다
+                </p>
               </div>
 
               {/* Error */}
