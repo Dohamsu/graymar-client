@@ -31,13 +31,22 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
   // Gemini
   'gemini-3.1-pro': { input: 2.0, cached: 0.5, output: 12.0 },
   'gemini-2.5-pro': { input: 1.25, cached: 0.315, output: 10.0 },
-  'gemini-2.5-flash': { input: 0.15, cached: 0.0375, output: 0.6 },
+  'gemini-2.5-flash': { input: 0.30, cached: 0.075, output: 2.50 },
+  'gemini-2.5-flash-lite': { input: 0.10, cached: 0.01, output: 0.40 },
   'gemini-2.0-flash': { input: 0.1, cached: 0.025, output: 0.4 },
-  // Gemma 4 (via Gemini API)
+  // Gemma 4 (via Gemini API / OpenRouter)
   'gemma-4-31b-it': { input: 0.14, cached: 0.035, output: 0.40 },
   'gemma-4-26b-a4b-it': { input: 0.13, cached: 0.033, output: 0.40 },
   'gemma-4-e4b-it': { input: 0.07, cached: 0.018, output: 0.20 },
   'gemma-4-e2b-it': { input: 0.04, cached: 0.01, output: 0.10 },
+  // Qwen3 (via OpenRouter)
+  'qwen3-235b-a22b': { input: 0.071, cached: 0.018, output: 0.10 },
+  'qwen3-next-80b-a3b': { input: 0.09, cached: 0.023, output: 1.10 },
+  'qwen3-32b': { input: 0.08, cached: 0.02, output: 0.24 },
+  'qwen3-30b-a3b': { input: 0.08, cached: 0.02, output: 0.28 },
+  // Llama 4 (via OpenRouter)
+  'llama-4-scout': { input: 0.08, cached: 0.02, output: 0.30 },
+  'llama-4-maverick': { input: 0.15, cached: 0.04, output: 0.60 },
   // DeepSeek
   'deepseek-v3': { input: 0.28, cached: 0.14, output: 0.42 },
 };
