@@ -1,12 +1,32 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 /**
  * SplashScreen — 게임 로딩 시 DimTale 활자 애니메이션
  * LOADING phase에서 표시, 데이터 로드 완료 시 페이드아웃
  */
-export default function SplashScreen() {
+export default function SplashScreen({ exiting = false }: { exiting?: boolean }) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (exiting) {
+      // 페이드아웃 후 DOM에서 제거
+      const timer = setTimeout(() => setVisible(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [exiting]);
+
+  if (!visible) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--bg-primary)]">
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--bg-primary)]"
+      style={{
+        transition: "opacity 0.5s ease-out",
+        opacity: exiting ? 0 : 1,
+      }}
+    >
       {/* 메인 타이틀 — 글자별 순차 페이드인 */}
       <div className="mb-4 flex items-baseline gap-[2px]">
         {"DimTale".split("").map((char, i) => (

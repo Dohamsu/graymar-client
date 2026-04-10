@@ -60,6 +60,33 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700;900&display=swap"
           rel="stylesheet"
         />
+        {/* iOS 네이티브 스플래시 — data URI SVG로 모든 해상도 대응 */}
+        <link
+          rel="apple-touch-startup-image"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 430 932'%3E%3Crect fill='%230F0F0F' width='430' height='932'/%3E%3Ctext x='50%25' y='45%25' text-anchor='middle' font-family='serif' font-size='42' font-weight='700' fill='%23C8A96E'%3EDimTale%3C/text%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' font-family='sans-serif' font-size='14' letter-spacing='4' fill='%23706050'%3EAI TEXT RPG%3C/text%3E%3C/svg%3E"
+          media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 393 852'%3E%3Crect fill='%230F0F0F' width='393' height='852'/%3E%3Ctext x='50%25' y='45%25' text-anchor='middle' font-family='serif' font-size='40' font-weight='700' fill='%23C8A96E'%3EDimTale%3C/text%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' font-family='sans-serif' font-size='13' letter-spacing='4' fill='%23706050'%3EAI TEXT RPG%3C/text%3E%3C/svg%3E"
+          media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 844'%3E%3Crect fill='%230F0F0F' width='390' height='844'/%3E%3Ctext x='50%25' y='45%25' text-anchor='middle' font-family='serif' font-size='40' font-weight='700' fill='%23C8A96E'%3EDimTale%3C/text%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' font-family='sans-serif' font-size='13' letter-spacing='4' fill='%23706050'%3EAI TEXT RPG%3C/text%3E%3C/svg%3E"
+          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 375 812'%3E%3Crect fill='%230F0F0F' width='375' height='812'/%3E%3Ctext x='50%25' y='45%25' text-anchor='middle' font-family='serif' font-size='38' font-weight='700' fill='%23C8A96E'%3EDimTale%3C/text%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' font-family='sans-serif' font-size='12' letter-spacing='4' fill='%23706050'%3EAI TEXT RPG%3C/text%3E%3C/svg%3E"
+          media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)"
+        />
+        {/* iPad */}
+        <link
+          rel="apple-touch-startup-image"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 820 1180'%3E%3Crect fill='%230F0F0F' width='820' height='1180'/%3E%3Ctext x='50%25' y='45%25' text-anchor='middle' font-family='serif' font-size='52' font-weight='700' fill='%23C8A96E'%3EDimTale%3C/text%3E%3Ctext x='50%25' y='51%25' text-anchor='middle' font-family='sans-serif' font-size='16' letter-spacing='5' fill='%23706050'%3EAI TEXT RPG%3C/text%3E%3C/svg%3E"
+          media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2)"
+        />
         {/* iOS Safari 핀치줌 차단 — gesturestart/touchmove 이벤트 방지 */}
         <script
           dangerouslySetInnerHTML={{
