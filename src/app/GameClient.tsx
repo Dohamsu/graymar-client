@@ -136,10 +136,32 @@ export default function GameClient() {
     }
   }, [dungeonCountdown, partyRunId, checkActiveRun, resumeRun]);
 
+  // --- 스플래시 페이드아웃 관리 ---
+  const [splashExiting, setSplashExiting] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
+  const splashPrevPhase = useRef(phase);
+
+  useEffect(() => {
+    if (splashPrevPhase.current === "LOADING" && phase !== "LOADING") {
+      setSplashExiting(true);
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+        setSplashExiting(false);
+      }, 600);
+      splashPrevPhase.current = phase;
+      return () => clearTimeout(timer);
+    }
+    if (phase === "LOADING") {
+      setShowSplash(true);
+      setSplashExiting(false);
+    }
+    splashPrevPhase.current = phase;
+  }, [phase]);
+
   // --- Phase routing ---
   // LOADING phase — 스플래시 스크린 (게임 데이터 로딩 중)
-  if (phase === "LOADING" && authToken) {
-    return <SplashScreen />;
+  if ((phase === "LOADING" || showSplash) && authToken) {
+    return <SplashScreen exiting={splashExiting} />;
   }
 
   if (!authToken || phase === "TITLE" || phase === "LOADING") {
