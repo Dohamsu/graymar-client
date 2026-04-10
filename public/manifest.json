@@ -3,10 +3,14 @@
   "short_name": "DimTale",
   "description": "왕국의 항만 도시 그레이마르에서 펼쳐지는 AI 기반 몰입형 텍스트 RPG. 당신의 선택이 이야기를 만든다.",
   "start_url": "/play",
+  "id": "/play",
   "display": "standalone",
   "background_color": "#0F0F0F",
   "theme_color": "#0F0F0F",
   "orientation": "portrait",
+  "lang": "ko",
+  "dir": "ltr",
+  "categories": ["games", "entertainment"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -24,5 +28,33 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "DimTale — AI가 만들어내는 살아있는 판타지 세계"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "이어하기",
+      "short_name": "이어하기",
+      "description": "진행 중인 모험을 이어합니다",
+      "url": "/play",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "파티 참여",
+      "short_name": "파티",
+      "description": "파티를 만들거나 참여합니다",
+      "url": "/play?party=true",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }

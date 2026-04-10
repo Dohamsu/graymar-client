@@ -15,6 +15,7 @@ import { InventoryTab } from "@/components/side-panel/InventoryTab";
 import { BattlePanel } from "@/components/battle/BattlePanel";
 import { StartScreen } from "@/components/screens/StartScreen";
 import SplashScreen from "@/components/ui/SplashScreen";
+import InstallPrompt from "@/components/ui/InstallPrompt";
 import { PartyMainScreen } from "@/components/party/PartyMainScreen";
 import { PartyHUD } from "@/components/party/PartyHUD";
 import { PartyTurnStatus } from "@/components/party/PartyTurnStatus";
@@ -274,6 +275,7 @@ export default function GameClient() {
   };
 
   return (
+    <>
     <PageTransition phase={phase as "HUB" | "LOCATION" | "COMBAT" | "NODE_TRANSITION" | "RUN_ENDED" | "ERROR" | "TITLE" | "LOADING"}>
     <div className="mx-auto flex h-full max-w-[1440px] flex-col">
       {/* 네트워크 상태 */}
@@ -427,5 +429,7 @@ export default function GameClient() {
       )}
     </div>
     </PageTransition>
+    <InstallPrompt />
+    </>
   );
 }
