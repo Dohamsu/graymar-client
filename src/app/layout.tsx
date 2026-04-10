@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
-    "apple-mobile-web-app-title": "GRAYMAR",
+    "apple-mobile-web-app-title": "DimTale",
   },
 };
 
