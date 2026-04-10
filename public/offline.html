@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DimTale — 오프라인</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0F0F0F;
+      color: #E8E0D4;
+      font-family: 'IBM Plex Sans KR', -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 2rem;
+    }
+    .container {
+      text-align: center;
+      max-width: 360px;
+      animation: fadeIn 0.8s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .icon {
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
+      opacity: 0.6;
+    }
+    h1 {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #C8A96E;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+    p {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #A09888;
+      margin-bottom: 2rem;
+    }
+    .retry-btn {
+      display: inline-block;
+      padding: 0.75rem 2rem;
+      background: transparent;
+      border: 1px solid #C8A96E;
+      color: #C8A96E;
+      font-size: 0.9rem;
+      font-family: inherit;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .retry-btn:hover {
+      background: #C8A96E;
+      color: #0F0F0F;
+    }
+    .pulse {
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+    .subtitle {
+      font-size: 0.8rem;
+      color: #5A5248;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon pulse">⚔️</div>
+    <h1>연결이 끊어졌습니다</h1>
+    <p>
+      DimTale은 온라인에서 이용 가능한 게임입니다.<br>
+      인터넷 연결을 확인한 후 다시 시도해주세요.
+    </p>
+    <button class="retry-btn" onclick="window.location.reload()">
+      다시 연결
+    </button>
+    <div class="subtitle">DimTale — AI 텍스트 RPG</div>
+  </div>
+</body>
+</html>
