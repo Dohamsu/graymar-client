@@ -154,7 +154,22 @@ function renderInlineText(text: string, keyBase: number): { nodes: React.ReactNo
   return { nodes: parts, nextKey: key };
 }
 
+/** 잔여 @태그 클린업 — 서버 후처리에서 미제거된 마커 원문 방어 */
+function cleanResidualMarkers(text: string): string {
+  // @[NPC이름|URL] 또는 @[NPC이름] 이 대사와 분리되어 남은 경우 제거
+  // 정상 패턴(@[이름] "대사")은 renderStyledText에서 파싱되므로 여기서 제거하지 않음
+  // 비정상: 대사 없이 단독으로 남은 @태그, 또는 문장 중간에 끼인 @태그
+  return text
+    // @[이름|/npc-portraits/xxx.png] 가 대사 없이 단독 → 제거
+    .replace(/@\[[^\]]*\|\/npc-portraits\/[^\]]*\]\s*(?=[^""\u201C]|$)/g, '')
+    // @NPC_ID (대문자+언더스코어) 가 대사 앞에 남은 경우 → @[호칭] 형태가 아닌 raw ID 제거
+    .replace(/@NPC_[A-Z_0-9]+\s*/g, '')
+    .trim();
+}
+
 function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactNode {
+  // 잔여 @태그 클린업
+  text = cleanResidualMarkers(text);
   // 텍스트에 @[마커]가 있으면 speakingNpc 없어도 마커 파싱 경로로 진행 (이어하기 복원용)
   const hasAtMarker = /@\[/.test(text);
 
