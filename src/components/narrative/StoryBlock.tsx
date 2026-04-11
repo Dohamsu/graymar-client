@@ -154,17 +154,29 @@ function renderInlineText(text: string, keyBase: number): { nodes: React.ReactNo
   return { nodes: parts, nextKey: key };
 }
 
-/** 잔여 @태그 클린업 — 서버 후처리에서 미제거된 마커 원문 방어 */
+/** 잔여 @태그 클린업 + 마커 재배치 — 서버 후처리에서 미처리된 마커 방어 */
 function cleanResidualMarkers(text: string): string {
-  // @[NPC이름|URL] 또는 @[NPC이름] 이 대사와 분리되어 남은 경우 제거
-  // 정상 패턴(@[이름] "대사")은 renderStyledText에서 파싱되므로 여기서 제거하지 않음
-  // 비정상: 대사 없이 단독으로 남은 @태그, 또는 문장 중간에 끼인 @태그
-  return text
-    // @[이름|/npc-portraits/xxx.png] 가 대사 없이 단독 → 제거
-    .replace(/@\[[^\]]*\|\/npc-portraits\/[^\]]*\]\s*(?=[^""\u201C]|$)/g, '')
-    // @NPC_ID (대문자+언더스코어) 가 대사 앞에 남은 경우 → @[호칭] 형태가 아닌 raw ID 제거
-    .replace(/@NPC_[A-Z_0-9]+\s*/g, '')
-    .trim();
+  // 1. 대사 내부에 끼인 @마커를 대사 앞으로 재배치
+  //    "대사 텍스트@[호칭] " → @[호칭] "대사 텍스트"
+  //    "대사.@[호칭|URL] " → @[호칭|URL] "대사."
+  text = text.replace(
+    /(["\u201C])([^"\u201D]*?)@\[([^\]]+)\]\s*(["\u201D])/g,
+    (_, q1, before, marker, q2) => `@[${marker}] ${q1}${before}${q2}`,
+  );
+
+  // 2. 대사 끝 직후에 붙은 @마커 → 다음 대사 앞으로 이동 또는 제거
+  text = text.replace(
+    /(["\u201D])(\s*)@\[([^\]]+)\]\s*(?=[^"\u201C]|$)/g,
+    (match, q, space, marker) => `${q}${space}`,
+  );
+
+  // 3. @NPC_ID raw 제거
+  text = text.replace(/@NPC_[A-Z_0-9]+\s*/g, '');
+
+  // 4. /npc-portraits/ URL이 텍스트에 노출된 경우 제거
+  text = text.replace(/\/npc-portraits\/[^\s\]"]+/g, '');
+
+  return text.trim();
 }
 
 function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactNode {
