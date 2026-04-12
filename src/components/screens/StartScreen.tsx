@@ -15,6 +15,7 @@ import {
   type CampaignResponse,
   type ScenarioInfo,
 } from "@/lib/api-client";
+import PortraitCropModal from "@/components/ui/PortraitCropModal";
 import type { CharacterPreset } from "@/types/game";
 import {
   Sword,
@@ -730,6 +731,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const [showPortraitInput, setShowPortraitInput] = useState(false);
   const [portraitError, setPortraitError] = useState<string | null>(null);
   const [portraitUploading, setPortraitUploading] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [focusedStat, setFocusedStat] = useState<string | null>(null);
 
@@ -814,13 +816,26 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     }
   };
 
-  // Portrait upload
-  const handleUploadPortrait = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Portrait upload — 파일 선택 → 크롭 모달 표시
+  const handleUploadPortrait = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPortraitError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // 크롭 확인 → 서버 업로드
+  const handleCropConfirm = async (croppedBlob: Blob) => {
+    setCropImageSrc(null);
     setPortraitUploading(true);
     setPortraitError(null);
     try {
+      const file = new File([croppedBlob], "portrait.webp", { type: "image/webp" });
       const result = await uploadPortrait(file);
       setPortraitUrl(result.imageUrl);
       setShowPortraitInput(false);
@@ -830,8 +845,6 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       );
     } finally {
       setPortraitUploading(false);
-      // Reset file input
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -1496,6 +1509,14 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
           {portraitError && (
             <p className="text-sm text-[var(--hp-red)]">{portraitError}</p>
+          )}
+
+          {cropImageSrc && (
+            <PortraitCropModal
+              imageSrc={cropImageSrc}
+              onConfirm={handleCropConfirm}
+              onCancel={() => setCropImageSrc(null)}
+            />
           )}
         </div>
       </CreationLayout>
