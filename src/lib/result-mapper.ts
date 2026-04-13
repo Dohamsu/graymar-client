@@ -185,7 +185,7 @@ export function mapResultToMessages(
 
   // 3. Narrator summary (장면 묘사 — 시스템 이벤트 후)
   //    LLM 스킵이면 NARRATOR 생략
-  if (result.summary?.short && !isLlmSkipped) {
+  if ((result.summary?.short || result.summary?.display) && !isLlmSkipped) {
     const isLlmTarget = idPrefix === 'narrator';
     // speakingNpc: 서버 ui.speakingNpc → npcPortrait fallback
     const speakingNpc = result.ui?.speakingNpc
@@ -196,7 +196,7 @@ export function mapResultToMessages(
     messages.push({
       id: `${idPrefix}-${result.turnNo}`,
       type: 'NARRATOR',
-      text: isLlmTarget ? '' : (result.summary.display ?? result.summary.short),
+      text: isLlmTarget ? '' : (result.summary.display || result.summary.short || ''),
       loading: isLlmTarget,
       ...(result.ui?.npcPortrait ? { npcPortrait: result.ui.npcPortrait } : {}),
       ...(speakingNpc ? { speakingNpc } : {}),
