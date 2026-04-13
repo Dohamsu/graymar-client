@@ -140,7 +140,8 @@ export function mapResultToMessages(
   const ws = result.ui?.worldState as { currentLocationId?: string; timePhase?: string; hubSafety?: string; phaseV2?: string } | undefined;
   for (const event of result.events ?? []) {
     const isLocationEnter = event.tags?.includes('LOCATION_ENTER');
-    if (SYSTEM_EVENT_KINDS.has(event.kind) || isLocationEnter) {
+    const isPostureChange = event.tags?.includes('POSTURE_CHANGE');
+    if (SYSTEM_EVENT_KINDS.has(event.kind) || isLocationEnter || isPostureChange) {
       messages.push({
         id: crypto.randomUUID(),
         type: 'SYSTEM',
@@ -153,6 +154,7 @@ export function mapResultToMessages(
             ws.phaseV2,
           ),
         } : {}),
+        ...(isPostureChange ? { tags: ['POSTURE_CHANGE'] } : {}),
       });
     }
   }

@@ -868,8 +868,11 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
               isPlayer ? "font-ui italic" : "font-narrative"
             }`}
             style={{
-              color: isPlayer ? "var(--text-secondary)" : "var(--text-primary)",
+              color: message.tags?.includes('POSTURE_CHANGE')
+                ? 'var(--gold)'
+                : isPlayer ? "var(--text-secondary)" : "var(--text-primary)",
               fontSize: `${fontSizes.narrative}px`,
+              ...(message.tags?.includes('POSTURE_CHANGE') ? { fontStyle: 'italic' } : {}),
             }}
           >
             {message.text}
