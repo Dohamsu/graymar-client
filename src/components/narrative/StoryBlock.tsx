@@ -407,7 +407,7 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
   const textSpeed = useSettingsStore((s) => s.textSpeed);
   const preset = TEXT_SPEED_PRESETS[textSpeed];
 
-  const segments = useMemo(() => parseNarrativeSegments(text), [text]);
+  const segments = useMemo(() => parseNarrativeSegments(cleanResidualMarkers(text)), [text]);
   const [segIdx, setSegIdx] = useState(0);       // 현재 세그먼트 인덱스
   const [charIdx, setCharIdx] = useState(0);      // 현재 세그먼트 내 글자 위치
   const [prevText, setPrevText] = useState(text);
