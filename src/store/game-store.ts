@@ -914,7 +914,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   // startNewGame
   // -----------------------------------------------------------------------
   startNewGame: async (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string }) => {
-    set({ phase: 'LOADING', error: null });
+    // 이전 런 데이터 초기화 (이전 캐릭터로 시작 시 잔류 방지)
+    set({ phase: 'LOADING', error: null, messages: [], choices: [], pendingMessages: [], pendingChoices: [] });
 
     try {
       const data = (await createRun(presetId, gender, options)) as Record<string, unknown>;
