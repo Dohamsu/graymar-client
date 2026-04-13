@@ -118,12 +118,19 @@ export async function uploadPortrait(file: File): Promise<{
 
 /** GET /v1/runs — fetch active run info (or null). */
 export async function getActiveRun(): Promise<{
-  runId: string;
-  presetId: string;
-  gender: 'male' | 'female';
-  currentTurnNo: number;
-  currentNodeIndex: number;
-  startedAt: string;
+  runId?: string;
+  presetId?: string;
+  gender?: 'male' | 'female';
+  currentTurnNo?: number;
+  currentNodeIndex?: number;
+  startedAt?: string;
+  lastCharacter?: {
+    presetId: string;
+    gender: string;
+    characterName?: string;
+    traitId?: string;
+    portraitUrl?: string;
+  };
 } | null> {
   const res = await fetch(`${getBaseUrl()}/v1/runs`, {
     credentials: 'include',

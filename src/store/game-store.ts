@@ -748,7 +748,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
     try {
       const info = await getActiveRun();
-      set({ activeRunInfo: info ?? null });
+      // lastCharacter를 별도 저장 (activeRunInfo에서 분리)
+      if (info?.lastCharacter) {
+        try {
+          localStorage.setItem('graymar_last_character', JSON.stringify(info.lastCharacter));
+        } catch { /* ignore */ }
+      }
+      set({ activeRunInfo: info?.runId ? info as any : null });
     } catch {
       set({ activeRunInfo: null });
     }
