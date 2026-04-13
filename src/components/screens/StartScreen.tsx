@@ -784,7 +784,52 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     if (bonusPointsUsed > 0) opts.bonusStats = bonusStats;
     if (selectedTraitId) opts.traitId = selectedTraitId;
     if (portraitUrl) opts.portraitUrl = portraitUrl;
+    // 캐릭터 정보를 localStorage에 저장 (새 게임 시 재사용 가능)
+    try {
+      localStorage.setItem('graymar_last_character', JSON.stringify({
+        presetId: selectedPresetId,
+        gender: effectiveGender,
+        characterName: opts.characterName,
+        bonusStats: opts.bonusStats,
+        traitId: opts.traitId,
+        portraitUrl: opts.portraitUrl,
+      }));
+    } catch { /* ignore */ }
     startNewGame(selectedPresetId, effectiveGender, Object.keys(opts).length > 0 ? opts : undefined);
+  };
+
+  // 이전 캐릭터 정보 복원
+  const [lastCharacter, setLastCharacter] = useState<{
+    presetId: string; gender: string;
+    characterName?: string; bonusStats?: Record<string, number>;
+    traitId?: string; portraitUrl?: string;
+  } | null>(null);
+  const [showNewGameChoice, setShowNewGameChoice] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('graymar_last_character');
+      if (saved) setLastCharacter(JSON.parse(saved));
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleNewGameClick = () => {
+    if (lastCharacter) {
+      setShowNewGameChoice(true);
+    } else {
+      setScreenPhase("SELECT_PRESET");
+    }
+  };
+
+  const handleQuickStart = () => {
+    setShowNewGameChoice(false);
+    if (!lastCharacter) return;
+    const opts: Record<string, unknown> = {};
+    if (lastCharacter.characterName) opts.characterName = lastCharacter.characterName;
+    if (lastCharacter.bonusStats) opts.bonusStats = lastCharacter.bonusStats;
+    if (lastCharacter.traitId) opts.traitId = lastCharacter.traitId;
+    if (lastCharacter.portraitUrl) opts.portraitUrl = lastCharacter.portraitUrl;
+    startNewGame(lastCharacter.presetId, lastCharacter.gender as 'male' | 'female', Object.keys(opts).length > 0 ? opts as any : undefined);
   };
 
   const handleLogout = () => {
@@ -1018,7 +1063,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                   }}
                 >
                   <button
-                    onClick={() => setScreenPhase("SELECT_PRESET")}
+                    onClick={handleNewGameClick}
                     disabled={isLoading}
                     className="flex h-14 w-full items-center justify-center border border-[var(--gold)] bg-transparent font-display text-lg tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
                   >
@@ -1059,6 +1104,32 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                     로그아웃
                   </button>
                 </div>
+
+                {/* 새 게임 선택 모달 */}
+                {showNewGameChoice && lastCharacter && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setShowNewGameChoice(false)}>
+                    <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
+                      <h3 className="mb-4 text-center font-display text-lg text-[var(--gold)]">새 게임</h3>
+                      <p className="mb-5 text-center text-sm text-[var(--text-secondary)]">
+                        이전 캐릭터 <span className="text-[var(--gold)]">{lastCharacter.characterName || getPresetName(lastCharacter.presetId)}</span>(으)로 바로 시작하거나, 새 캐릭터를 생성할 수 있습니다.
+                      </p>
+                      <div className="flex flex-col gap-3">
+                        <button
+                          onClick={handleQuickStart}
+                          className="h-12 w-full rounded border border-[var(--gold)] bg-[var(--gold)] font-display tracking-wider text-[var(--bg-primary)] transition-all hover:shadow-[0_0_15px_rgba(201,169,98,0.3)]"
+                        >
+                          이전 캐릭터로 시작
+                        </button>
+                        <button
+                          onClick={() => { setShowNewGameChoice(false); setScreenPhase("SELECT_PRESET"); }}
+                          className="h-12 w-full rounded border border-[var(--border-primary)] font-display tracking-wider text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                        >
+                          새 캐릭터 생성
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )
           ) : (
