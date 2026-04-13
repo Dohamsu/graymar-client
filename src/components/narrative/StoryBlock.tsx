@@ -177,8 +177,8 @@ function cleanResidualMarkers(text: string): string {
   text = text.replace(/\/npc-portraits\/[^\s\]"]+/g, '');
 
   // 5. 대사와 연결되지 않은 고립 @[이름] 또는 @[이름|URL] 마커 제거
-  //    parseNarrativeSegments에서 @[이름] "대사" 패턴으로 매칭되지 않은 잔여 마커
-  text = text.replace(/@\[[^\]]*\]\s*(?!["\u201C])/g, '');
+  //    마커 뒤에 공백/줄바꿈 후 따옴표가 오면 대사 연결 → 유지
+  text = text.replace(/@\[[^\]]*\](?![\s\n]*["\u201C])/g, '');
 
   return text.trim();
 }
@@ -341,7 +341,7 @@ interface NarrSegment {
 
 function parseNarrativeSegments(text: string): NarrSegment[] {
   const segments: NarrSegment[] = [];
-  const regex = /@\[([^\]]*)\]\s*("[^"]*"?|\u201C[^\u201D]*\u201D?)/g;
+  const regex = /@\[([^\]]*)\][\s\n]*("[^"]*"?|\u201C[^\u201D]*\u201D?)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
