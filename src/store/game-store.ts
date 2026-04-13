@@ -1163,7 +1163,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { runId, currentTurnNo, isSubmitting } = get();
     if (!runId || isSubmitting) return;
 
-    set({ isSubmitting: true, error: null });
+    set({ isSubmitting: true, error: null, choices: [] });
 
     // Add the player message to the feed immediately
     const playerMsg: StoryMessage = {
