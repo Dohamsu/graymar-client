@@ -35,6 +35,7 @@ import type { BattleEnemy } from "@/types/game";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { TimePhaseTransition } from "@/components/hub/TimePhaseTransition";
 import { NetworkStatus } from "@/components/ui/NetworkStatus";
+import NewsModal from "@/components/ui/NewsModal";
 
 export default function GameClient() {
   const authToken = useAuthStore((s) => s.token);
@@ -61,6 +62,7 @@ export default function GameClient() {
   const clearInventoryChanges = useGameStore((s) => s.clearInventoryChanges);
   const notifications = useGameStore((s) => s.notifications);
   const endingResult = useGameStore((s) => s.endingResult);
+  const pendingNewsSignals = useGameStore((s) => s.pendingNewsSignals);
 
   const [mobileTab, setMobileTab] = useState("story");
   const [showPartyScreen, setShowPartyScreen] = useState(false);
@@ -286,6 +288,13 @@ export default function GameClient() {
       {worldState && <TimePhaseTransition timePhase={worldState.timePhase} />}
       {/* LLM failure modal */}
       <LlmFailureModal />
+      {/* 그레이마르 호외 — 새 시그널 알림 */}
+      {pendingNewsSignals.length > 0 && (
+        <NewsModal
+          signals={pendingNewsSignals}
+          onClose={() => useGameStore.setState({ pendingNewsSignals: [] })}
+        />
+      )}
 
       {/* ===== PartyHUD (when in a party) ===== */}
       {partyInfo && partyMembers.length > 0 && (

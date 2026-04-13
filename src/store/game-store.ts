@@ -73,6 +73,7 @@ export interface GameState {
   inventoryChanges: InventoryChanges | null;
   // Narrative Engine v1
   signalFeed: SignalFeedItemUI[];
+  pendingNewsSignals: SignalFeedItemUI[];
   activeIncidents: IncidentSummaryUI[];
   operationProgress: OperationProgressUI | null;
   npcEmotional: NpcEmotionalUI[];
@@ -505,7 +506,15 @@ function processTurnResponse(
     const ai = uiBundle.activeIncidents as import('@/types/game').IncidentSummaryUI[] | undefined;
     const op = uiBundle.operationProgress as import('@/types/game').OperationProgressUI | undefined;
     const ne = uiBundle.npcEmotional as import('@/types/game').NpcEmotionalUI[] | undefined;
-    if (sf) set({ signalFeed: sf });
+    if (sf) {
+      // 이전 시그널 ID 목록과 비교하여 새로 추가된 중요 시그널 감지
+      const prevIds = new Set(get().signalFeed.map(s => s.id));
+      const newImportant = sf.filter(s => !prevIds.has(s.id) && s.severity >= 3);
+      set({ signalFeed: sf });
+      if (newImportant.length > 0) {
+        set({ pendingNewsSignals: newImportant });
+      }
+    }
     if (ai) set({ activeIncidents: ai });
     if (op !== undefined) set({ operationProgress: op ?? null });
     if (ne) set({ npcEmotional: ne });
@@ -685,6 +694,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   inventoryChanges: null,
   // Narrative Engine v1
   signalFeed: [],
+  pendingNewsSignals: [],
   activeIncidents: [],
   operationProgress: null,
   npcEmotional: [],
@@ -1477,6 +1487,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       locationName: null,
       // Narrative Engine v1
       signalFeed: [],
+      pendingNewsSignals: [],
       activeIncidents: [],
       operationProgress: null,
       npcEmotional: [],
