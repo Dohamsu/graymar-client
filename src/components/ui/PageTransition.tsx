@@ -4,20 +4,24 @@ import { useState, useEffect, useRef, type ReactNode } from "react";
 
 type GamePhase = 'TITLE' | 'LOADING' | 'HUB' | 'LOCATION' | 'COMBAT' | 'NODE_TRANSITION' | 'RUN_ENDED' | 'ERROR';
 
+const FADE_SHORT = { exit: 'animate-[fadeToBlack_0.3s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_0.4s_ease-out]', duration: 320 };
+const FADE_MED   = { exit: 'animate-[fadeToBlack_0.4s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_0.6s_ease-out]', duration: 450 };
+const FADE_LONG  = { exit: 'animate-[slowFadeToBlack_1s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_1.2s_ease-out]', duration: 1050 };
+
 const TRANSITIONS: Record<string, { exit: string; enter: string; duration: number }> = {
-  'TITLE→HUB':        { exit: 'animate-[fadeToBlack_0.6s_ease-in_forwards]',    enter: 'animate-[fadeFromBlack_0.8s_ease-out]',  duration: 650 },
-  'TITLE→LOADING':    { exit: 'animate-[fadeToBlack_0.6s_ease-in_forwards]',    enter: 'animate-[fadeFromBlack_0.8s_ease-out]',  duration: 650 },
-  'LOADING→HUB':      { exit: 'animate-[fadeToBlack_0.4s_ease-in_forwards]',    enter: 'animate-[fadeFromBlack_0.6s_ease-out]',  duration: 450 },
-  'LOADING→LOCATION': { exit: 'animate-[fadeToBlack_0.4s_ease-in_forwards]',    enter: 'animate-[fadeFromBlack_0.6s_ease-out]',  duration: 450 },
-  'HUB→LOCATION':     { exit: 'animate-[slideOutLeft_0.4s_ease-in_forwards]',   enter: 'animate-[slideInRight_0.4s_ease-out]',   duration: 420 },
-  'LOCATION→HUB':     { exit: 'animate-[slideOutRight_0.4s_ease-in_forwards]',  enter: 'animate-[slideInLeft_0.4s_ease-out]',    duration: 420 },
-  'LOCATION→COMBAT':  { exit: 'animate-[combatFlash_0.5s_ease-in_forwards]',    enter: 'animate-[combatEnter_0.4s_ease-out]',    duration: 520 },
-  'HUB→COMBAT':       { exit: 'animate-[combatFlash_0.5s_ease-in_forwards]',    enter: 'animate-[combatEnter_0.4s_ease-out]',    duration: 520 },
-  'COMBAT→LOCATION':  { exit: 'animate-[combatFadeOut_0.5s_ease-out_forwards]', enter: 'animate-[fadeFromBlack_0.6s_ease-out]',  duration: 550 },
-  'COMBAT→HUB':       { exit: 'animate-[combatFadeOut_0.5s_ease-out_forwards]', enter: 'animate-[fadeFromBlack_0.6s_ease-out]',  duration: 550 },
-  'HUB→RUN_ENDED':      { exit: 'animate-[slowFadeToBlack_1s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_1.2s_ease-out]', duration: 1050 },
-  'LOCATION→RUN_ENDED': { exit: 'animate-[slowFadeToBlack_1s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_1.2s_ease-out]', duration: 1050 },
-  'COMBAT→RUN_ENDED':   { exit: 'animate-[slowFadeToBlack_1s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_1.2s_ease-out]', duration: 1050 },
+  'TITLE→HUB':        FADE_MED,
+  'TITLE→LOADING':    FADE_MED,
+  'LOADING→HUB':      FADE_MED,
+  'LOADING→LOCATION': FADE_MED,
+  'HUB→LOCATION':     FADE_SHORT,
+  'LOCATION→HUB':     FADE_SHORT,
+  'LOCATION→COMBAT':  FADE_SHORT,
+  'HUB→COMBAT':       FADE_SHORT,
+  'COMBAT→LOCATION':  FADE_MED,
+  'COMBAT→HUB':       FADE_MED,
+  'HUB→RUN_ENDED':      FADE_LONG,
+  'LOCATION→RUN_ENDED': FADE_LONG,
+  'COMBAT→RUN_ENDED':   FADE_LONG,
 };
 
 const DEFAULT_TRANSITION = { exit: 'animate-[fadeToBlack_0.3s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_0.4s_ease-out]', duration: 320 };
