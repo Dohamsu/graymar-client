@@ -35,7 +35,12 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
 
   // 메시지 변경 시 스크롤 — 페이지 전환 직후에는 지연 실행
   useEffect(() => {
-    if (!scrollRef.current || isUserScrolledUp.current) return;
+    if (!scrollRef.current) return;
+    // 페이지 전환(장소 이동) 시 스크롤 상태 리셋 — 항상 하단으로
+    if (isPageTransitioning) {
+      isUserScrolledUp.current = false;
+    }
+    if (isUserScrolledUp.current) return;
     // 페이지 전환 중이면 전환 완료 후 스크롤 (1초 지연)
     if (isPageTransitioning) {
       const timer = setTimeout(() => {
