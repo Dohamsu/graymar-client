@@ -173,8 +173,8 @@ function cleanResidualMarkers(text: string): string {
   // 3. @NPC_ID raw 제거
   text = text.replace(/@NPC_[A-Z_0-9]+\s*/g, '');
 
-  // 4. /npc-portraits/ URL이 텍스트에 노출된 경우 제거
-  text = text.replace(/\/npc-portraits\/[^\s\]"]+/g, '');
+  // 4. /npc-portraits/ URL이 텍스트에 노출된 경우 제거 (마커 @[이름|URL] 안의 URL은 보존)
+  text = text.replace(/(?<!\|)\/npc-portraits\/[^\s\]"]+/g, '');
 
   // 5. 대사와 연결되지 않은 고립 @[이름] 또는 @[이름|URL] 마커 제거
   //    마커 뒤에 공백/줄바꿈 후 따옴표가 오면 대사 연결 → 유지
