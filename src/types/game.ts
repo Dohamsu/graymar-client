@@ -7,6 +7,8 @@ export interface StoryMessage {
   selectedChoiceId?: string;
   resolveOutcome?: ResolveOutcome;
   resolveBreakdown?: ResolveBreakdown;
+  /** 이벤트 태그 (POSTURE_CHANGE 등 특수 스타일링용) */
+  tags?: string[];
   /** 장소 진입 시 표시할 이미지 경로 */
   locationImage?: string;
   /** NPC 초상화 정보 (서버 ui.npcPortrait) */
