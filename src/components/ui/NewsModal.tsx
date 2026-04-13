@@ -8,22 +8,6 @@ interface Props {
   onClose: () => void;
 }
 
-const CHANNEL_ICON: Record<string, string> = {
-  RUMOR: "🗣",
-  SECURITY: "🛡",
-  NPC_BEHAVIOR: "👤",
-  ECONOMY: "💰",
-  VISUAL: "👁",
-};
-
-const SEVERITY_STYLE: Record<number, string> = {
-  1: "text-[var(--text-secondary)]",
-  2: "text-[var(--text-secondary)]",
-  3: "text-[var(--gold)]",
-  4: "text-[var(--orange)]",
-  5: "text-[var(--hp-red)]",
-};
-
 export default function NewsModal({ signals, onClose }: Props) {
   const [visible, setVisible] = useState(false);
 
@@ -43,71 +27,65 @@ export default function NewsModal({ signals, onClose }: Props) {
       }`}
       onClick={handleClose}
     >
-      {/* 배경 오버레이 */}
-      <div className="absolute inset-0 bg-black/70" />
+      <div className="absolute inset-0 bg-black/80" />
 
-      {/* 신문 카드 */}
       <div
         className={`relative mx-4 w-full max-w-sm transform transition-transform duration-300 ${
           visible ? "scale-100" : "scale-90"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="overflow-hidden rounded-lg border border-[var(--gold)]/50 bg-[#1a1714]">
-          {/* 헤더: 신문 타이틀 */}
-          <div className="border-b border-[var(--gold)]/30 px-5 py-4 text-center">
-            <div className="mb-1 text-[10px] tracking-[0.3em] text-[var(--text-muted)] uppercase">
+        <div
+          className="overflow-hidden rounded"
+          style={{
+            backgroundImage: "url('/textures/parchment.webp')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          {/* 헤더 */}
+          <div className="px-6 pt-6 pb-2 text-center">
+            <div
+              className="mb-1 text-[10px] tracking-[0.3em] uppercase"
+              style={{ color: "#5a4a35" }}
+            >
               GRAYMAR TIMES
             </div>
             <h2
-              className="font-serif text-xl font-bold tracking-wider text-[var(--gold)]"
-              style={{ fontFamily: "'Noto Serif KR', serif" }}
+              className="text-xl font-bold tracking-wider"
+              style={{ fontFamily: "'Noto Serif KR', serif", color: "#2a1f14" }}
             >
               그레이마르 호외
             </h2>
-            <div className="mt-1 h-px bg-[var(--gold)]/30" />
-            <div className="mt-1 h-px bg-[var(--gold)]/30" />
+            <div className="mx-auto mt-2 h-[2px] w-full" style={{ background: "#5a4a35" }} />
+            <div className="mx-auto mt-1 h-px w-3/4" style={{ background: "#5a4a35", opacity: 0.5 }} />
           </div>
 
-          {/* 기사 목록 */}
-          <div className="space-y-0 divide-y divide-[var(--border-primary)]/50 px-5 py-3">
+          {/* 기사 본문 */}
+          <div className="px-6 py-4 space-y-3">
             {signals.map((signal, i) => (
-              <div key={signal.id ?? i} className="py-3 first:pt-1 last:pb-1">
-                <div className="mb-1 flex items-center gap-1.5">
-                  <span className="text-xs">{CHANNEL_ICON[signal.channel] ?? "📰"}</span>
-                  <span
-                    className={`text-[10px] font-semibold uppercase tracking-wider ${
-                      SEVERITY_STYLE[signal.severity] ?? ""
-                    }`}
-                  >
-                    {signal.channel === "RUMOR" && "소문"}
-                    {signal.channel === "SECURITY" && "치안"}
-                    {signal.channel === "NPC_BEHAVIOR" && "인물 동향"}
-                    {signal.channel === "ECONOMY" && "경제"}
-                    {signal.channel === "VISUAL" && "목격담"}
-                  </span>
-                </div>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{
-                    color: signal.severity >= 4 ? "var(--gold)" : "var(--text-primary)",
-                    fontFamily: "'Noto Serif KR', serif",
-                  }}
-                >
-                  {signal.text}
-                </p>
-              </div>
+              <p
+                key={signal.id ?? i}
+                className="text-sm leading-relaxed"
+                style={{
+                  color: "#2a1f14",
+                  fontFamily: "'Noto Serif KR', serif",
+                }}
+              >
+                {signal.text}
+              </p>
             ))}
           </div>
 
-          {/* 푸터 */}
-          <div className="border-t border-[var(--gold)]/30 px-5 py-3 text-center">
+          {/* 하단 여백 */}
+          <div className="px-6 pb-5 text-center">
             <button
               type="button"
               onClick={handleClose}
-              className="text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--gold)]"
+              className="text-xs transition-opacity hover:opacity-70"
+              style={{ color: "#5a4a35" }}
             >
-              닫기
+              [ 닫기 ]
             </button>
           </div>
         </div>
