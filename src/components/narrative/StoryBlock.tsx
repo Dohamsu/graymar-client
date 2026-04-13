@@ -176,6 +176,10 @@ function cleanResidualMarkers(text: string): string {
   // 4. /npc-portraits/ URL이 텍스트에 노출된 경우 제거
   text = text.replace(/\/npc-portraits\/[^\s\]"]+/g, '');
 
+  // 5. 대사와 연결되지 않은 고립 @[이름] 또는 @[이름|URL] 마커 제거
+  //    parseNarrativeSegments에서 @[이름] "대사" 패턴으로 매칭되지 않은 잔여 마커
+  text = text.replace(/@\[[^\]]*\]\s*(?!["\u201C])/g, '');
+
   return text.trim();
 }
 
