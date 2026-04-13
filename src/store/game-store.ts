@@ -512,7 +512,21 @@ function processTurnResponse(
       const newImportant = sf.filter(s => !prevIds.has(s.id) && s.severity >= 3);
       set({ signalFeed: sf });
       if (newImportant.length > 0) {
-        set({ pendingNewsSignals: newImportant });
+        // nano 변환 헤드라인이 있으면 텍스트 교체
+        const headlines = uiBundle.newsHeadlines as string[] | undefined;
+        if (headlines && headlines.length > 0) {
+          // severity 3+ 시그널 전체에 대해 헤드라인 매핑
+          const allImportant = sf.filter(s => s.severity >= 3);
+          const newsItems = allImportant.map((s, i) => ({
+            ...s,
+            text: headlines[i] ?? s.text,
+          }));
+          // 새로 추가된 것만 필터
+          const newsNew = newsItems.filter(s => !prevIds.has(s.id));
+          set({ pendingNewsSignals: newsNew.length > 0 ? newsNew : newImportant });
+        } else {
+          set({ pendingNewsSignals: newImportant });
+        }
       }
     }
     if (ai) set({ activeIncidents: ai });
