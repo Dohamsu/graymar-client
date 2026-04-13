@@ -5,9 +5,10 @@ import { CharacterTab } from "./CharacterTab";
 import { InventoryTab } from "./InventoryTab";
 import { EquipmentTab } from "./EquipmentTab";
 import { QuestTab } from "./QuestTab";
+import { NpcDossierTab } from "./NpcDossierTab";
 import type { CharacterInfo, InventoryItem, InventoryChanges } from "@/types/game";
 
-const TABS = ["캐릭터", "장비", "소지품", "퀘스트"] as const;
+const TABS = ["캐릭터", "장비", "소지품", "인물", "퀘스트"] as const;
 
 interface SidePanelProps {
   character: CharacterInfo;
@@ -63,6 +64,7 @@ export function SidePanel({ character, inventory, gold, inventoryChanges, onClea
         {activeTab === "소지품" && (
           <InventoryTab inventory={inventory} gold={gold} changes={inventoryChanges} />
         )}
+        {activeTab === "인물" && <NpcDossierTab />}
         {activeTab === "퀘스트" && <QuestTab />}
       </div>
     </div>
