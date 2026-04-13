@@ -164,10 +164,17 @@ function cleanResidualMarkers(text: string): string {
     (_, q1, before, marker, q2) => `@[${marker}] ${q1}${before}${q2}`,
   );
 
-  // 2. 대사 끝 직후에 붙은 @마커 → 다음 대사 앞으로 이동 또는 제거
+  // 2. 대사 끝 직후에 붙은 @마커 → 제거
   text = text.replace(
     /(["\u201D])(\s*)@\[([^\]]+)\]\s*(?=[^"\u201C]|$)/g,
     (match, q, space, marker) => `${q}${space}`,
+  );
+
+  // 2b. 문장 끝에 닫힘 따옴표 없이 붙은 @마커 → 마커를 대사 앞으로 이동
+  //     "대사.@[마커|URL]" 또는 "대사.@[마커|URL]\n" 패턴
+  text = text.replace(
+    /([.!?。])@\[([^\]]+)\]\s*/g,
+    (_, punct, marker) => `${punct}\n@[${marker}] `,
   );
 
   // 3. @NPC_ID raw 제거
