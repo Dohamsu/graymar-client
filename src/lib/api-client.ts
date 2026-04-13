@@ -128,6 +128,7 @@ export async function getActiveRun(): Promise<{
     presetId: string;
     gender: string;
     characterName?: string;
+    bonusStats?: Record<string, number>;
     traitId?: string;
     portraitUrl?: string;
   };
