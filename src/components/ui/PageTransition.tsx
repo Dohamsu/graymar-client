@@ -8,13 +8,15 @@ const FADE_SHORT = { exit: 'animate-[fadeToBlack_0.3s_ease-in_forwards]', enter:
 const FADE_MED   = { exit: 'animate-[fadeToBlack_0.4s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_0.6s_ease-out]', duration: 450 };
 const FADE_LONG  = { exit: 'animate-[slowFadeToBlack_1s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_1.2s_ease-out]', duration: 1050 };
 
+const NONE = { exit: '', enter: '', duration: 0 };
+
 const TRANSITIONS: Record<string, { exit: string; enter: string; duration: number }> = {
   'TITLE→HUB':        FADE_MED,
   'TITLE→LOADING':    FADE_MED,
   'LOADING→HUB':      FADE_MED,
   'LOADING→LOCATION': FADE_MED,
-  'HUB→LOCATION':     FADE_SHORT,
-  'LOCATION→HUB':     FADE_SHORT,
+  'HUB→LOCATION':     NONE,
+  'LOCATION→HUB':     NONE,
   'LOCATION→COMBAT':  FADE_SHORT,
   'HUB→COMBAT':       FADE_SHORT,
   'COMBAT→LOCATION':  FADE_MED,
