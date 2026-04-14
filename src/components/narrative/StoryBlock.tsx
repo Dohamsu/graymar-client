@@ -160,11 +160,11 @@ function renderInlineText(text: string, keyBase: number): { nodes: React.ReactNo
 
 /** 잔여 @태그 클린업 + 마커 재배치 — 서버 후처리에서 미처리된 마커 방어 */
 function cleanResidualMarkers(text: string): string {
-  // 1. 대사 내부에 끼인 @마커를 대사 앞으로 재배치
+  // 1. 대사 내부에 끼인 @마커를 대사 앞으로 재배치 (같은 줄 내에서만)
   //    "대사 텍스트@[호칭] " → @[호칭] "대사 텍스트"
-  //    "대사.@[호칭|URL] " → @[호칭|URL] "대사."
+  //    줄바꿈이 포함되면 다른 대사 쌍과 혼동되므로 제외
   text = text.replace(
-    /(["\u201C])([^"\u201D]*?)@\[([^\]]+)\]\s*(["\u201D])/g,
+    /(["\u201C])([^"\u201D\n]*?)@\[([^\]]+)\]\s*(["\u201D])/g,
     (_, q1, before, marker, q2) => `@[${marker}] ${q1}${before}${q2}`,
   );
 
