@@ -130,8 +130,10 @@ function NarratorLoading() {
 
 /** 인라인 스타일링만 (홑따옴표 강조 + 일반 텍스트). 큰따옴표 대사는 포함하지 않음. */
 function renderInlineText(text: string, keyBase: number): { nodes: React.ReactNode[]; nextKey: number } {
-  // 타이핑 도중 narration에 잔류한 @[마커|URL] 제거
+  // 타이핑 도중 narration에 잔류한 @[마커|URL] 제거 + 불완전 @[ 패턴도 제거
   text = text.replace(/@\[[^\]]*\]/g, '');
+  text = text.replace(/@\[[^\]]*$/g, ''); // 타이핑 중 잘린 @[... 패턴
+  text = text.replace(/@마커/g, ''); // LLM이 출력한 @마커 리터럴
   const parts: React.ReactNode[] = [];
   const regex = /('[^']*'?|\u2018[^\u2019]*\u2019?)/g;
   let lastIndex = 0;
