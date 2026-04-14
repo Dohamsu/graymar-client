@@ -33,7 +33,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     return () => el.removeEventListener('scroll', handleScrollEvent);
   }, [handleScrollEvent]);
 
-  // 메시지 변경 시 스크롤 — 페이지 전환 직후에는 지연 실행
+  // 메시지 변경 시 스크롤 — 페이지 전환 직후에는 다단계 지연 실행
   useEffect(() => {
     if (!scrollRef.current) return;
     // 페이지 전환(장소 이동) 시 스크롤 상태 리셋 — 항상 하단으로
@@ -41,29 +41,36 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
       isUserScrolledUp.current = false;
     }
     if (isUserScrolledUp.current) return;
-    // 페이지 전환 중이면 전환 완료 후 스크롤 (1초 지연)
+    // 페이지 전환 중이면 전환 완료 후 다단계 스크롤 (콘텐츠 렌더링 보장)
     if (isPageTransitioning) {
-      const timer = setTimeout(() => {
+      const scrollToBottom = () => {
         if (scrollRef.current && !isUserScrolledUp.current) {
           scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'auto' });
         }
-      }, 1000);
-      return () => clearTimeout(timer);
+      };
+      // 1단계: 전환 직후 즉시 스크롤
+      const t1 = setTimeout(scrollToBottom, 800);
+      // 2단계: 콘텐츠 렌더링 후 보정 스크롤
+      const t2 = setTimeout(scrollToBottom, 1500);
+      // 3단계: 타이핑 시작 후 최종 보정
+      const t3 = setTimeout(scrollToBottom, 2500);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }
     // 일반 스크롤
     scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
-  // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (사용자 스크롤/페이지 전환 존중)
+  // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (사용자 스크롤 존중)
+  // 페이지 전환 완료 후에도 즉시 스크롤 추적 시작 (콘텐츠 높이 변화 감지)
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     let rafId: number | null = null;
     const observer = new MutationObserver(() => {
-      if (isUserScrolledUp.current || isPageTransitioning) return;
+      if (isUserScrolledUp.current) return;
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        el.scrollTo({ top: el.scrollHeight, behavior: isPageTransitioning ? 'auto' : 'smooth' });
       });
     });
     observer.observe(el, { childList: true, subtree: true, characterData: true });
