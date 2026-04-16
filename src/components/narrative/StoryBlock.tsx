@@ -191,10 +191,7 @@ function StreamTyper({ onComplete }: { onComplete?: () => void }) {
         />,
       );
     } else {
-      const { nodes } = renderInlineText(seg.text, i * 1000);
-      rendered.push(
-        <span key={`st-narr-${i}`} className="leading-relaxed">{nodes}</span>,
-      );
+      rendered.push(...renderNarrationLines(seg.text, `st-narr-${i}`));
     }
   }
 
@@ -241,6 +238,26 @@ function renderInlineText(text: string, keyBase: number): { nodes: React.ReactNo
     parts.push(<span key={key++}>{text.slice(lastIndex)}</span>);
   }
   return { nodes: parts, nextKey: key };
+}
+
+/** narration 텍스트를 \n 기준 block 래핑 — NarratorContent(완료 경로)와 동일한 레이아웃 */
+function renderNarrationLines(text: string, keyBase: string): React.ReactNode[] {
+  const lines = text.split("\n");
+  const out: React.ReactNode[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line === "") {
+      out.push(<span key={`${keyBase}-blank-${i}`} className="block h-3" aria-hidden="true" />);
+      continue;
+    }
+    const { nodes } = renderInlineText(line, i * 1000);
+    out.push(
+      <span key={`${keyBase}-line-${i}`} className="block">
+        {nodes}
+      </span>,
+    );
+  }
+  return out;
 }
 
 /** 잔여 @태그 클린업 + 마커 재배치 — 서버 후처리에서 미처리된 마커 방어 */
@@ -601,10 +618,7 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
     } else if (seg.type === 'narration') {
       const displayText = i < segIdx ? seg.text : seg.text.slice(0, charIdx);
       if (displayText) {
-        const { nodes } = renderInlineText(displayText, i * 1000);
-        rendered.push(
-          <span key={`tw-narr-${i}`} className="leading-relaxed">{nodes}</span>,
-        );
+        rendered.push(...renderNarrationLines(displayText, `tw-narr-${i}`));
       }
     }
   }
