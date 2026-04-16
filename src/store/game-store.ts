@@ -442,6 +442,12 @@ function streamNarrative(
   const speakingNpc = (narratorMsg as Record<string, unknown> | undefined)?.speakingNpc as
     { npcId?: string; displayName?: string; imageUrl?: string } | undefined;
 
+  // NPC 초상화 맵 빌드 (복수 NPC 대사 귀속용)
+  const npcPortraitMap = new Map<string, string>();
+  if (speakingNpc?.displayName && speakingNpc?.imageUrl) {
+    npcPortraitMap.set(speakingNpc.displayName, speakingNpc.imageUrl);
+  }
+
   set({
     isStreaming: true,
     streamSegments: [],
@@ -471,31 +477,29 @@ function streamNarrative(
 
   /**
    * 클라이언트 측 대사/문단 분석.
-   * 따옴표 패턴을 감지하여 @마커를 삽입하고, 문단 구조를 정리한다.
+   * "NPC별칭: "대사"" 줄 패턴을 감지하여 @[NPC|portrait] 마커로 변환하고, 문단 구조를 정리한다.
    */
   function analyzeText(text: string): string {
-    let result = text;
+    // NPC별칭: "대사" 패턴 → @[NPC별칭|portrait] "대사" 변환 (줄 단위)
+    const dialogueRe = /^([^":]{2,}):\s*"([^"]+)"?\s*$/;
 
-    // 1. 대사 감지: 따옴표 안의 텍스트 → @[NPC] 마커 삽입
-    if (speakingNpc?.displayName) {
-      const npcMarker = speakingNpc.imageUrl
-        ? `${speakingNpc.displayName}|${speakingNpc.imageUrl}`
-        : speakingNpc.displayName;
+    const lines = text.split('\n');
+    const result = lines.map(line => {
+      const m = line.match(dialogueRe);
+      if (m) {
+        const npcName = m[1].trim();
+        const portrait = npcPortraitMap.get(npcName);
+        const markerName = portrait ? `${npcName}|${portrait}` : npcName;
+        return `@[${markerName}] "${m[2]}"`;
+      }
+      return line;
+    }).join('\n');
 
-      // "대사" 또는 "대사" 패턴 (3글자 이상)
-      result = result.replace(
-        /(["\u201C])([^"\u201D]{3,}?)(["\u201D])/g,
-        (_, open, dialogue, close) => `@[${npcMarker}] ${open}${dialogue}${close}`,
-      );
-    }
-
-    // 2. 문단 정리: 연속 줄바꿈 보존, 단일 줄바꿈 → 문단 경계로 처리
-    result = result
+    // 문단 정리
+    return result
       .replace(/\n{3,}/g, '\n\n')     // 3+ 줄바꿈 → 2로 정규화
       .replace(/([.!?。])\s*\n(?!\n)/g, '$1\n\n')  // 문장 끝 + 단일 줄바꿈 → 문단 구분
       .trim();
-
-    return result;
   }
 
   // 300ms 간격으로 완성된 문장을 분석 → narrator 텍스트에 추가
