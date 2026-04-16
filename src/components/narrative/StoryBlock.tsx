@@ -724,6 +724,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   const [wasLoading, setWasLoading] = useState(!!message.loading);
   const fontSizeKey = useSettingsStore((s) => s.fontSize);
   const isStreaming = useGameStore((s) => s.isStreaming);
+  const streamSegments = useGameStore((s) => s.streamSegments);
   const fontSizes = FONT_SIZE_PRESETS[fontSizeKey];
 
   // RESOLVE 타입: 주사위 애니메이션 → 판정 결과 공개 (별도 블록)
@@ -773,7 +774,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
       </span>
 
       {message.loading ? (
-        <NarratorLoading />
+        isStreaming && streamSegments.length > 0 ? null : <NarratorLoading />
       ) : message.type === "CHOICE" && message.choices ? (
         <div className="flex flex-col gap-1">
           {message.selectedChoiceId ? (
