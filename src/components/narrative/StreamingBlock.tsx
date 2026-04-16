@@ -33,14 +33,7 @@ function StreamingBlockInner({ segments }: StreamingBlockProps) {
   useEffect(() => {
     if (!currentSeg) return;
 
-    // 대사(dialogue)는 타이핑 없이 즉시 표시
-    if (currentSeg.type === "dialogue") {
-      setTypedCount((c) => c + 1);
-      setCharIdx(0);
-      return;
-    }
-
-    // narration 타이핑
+    // narration/dialogue 모두 타이핑
     const text = currentSeg.text;
     if (charIdx >= text.length) {
       // 현재 세그먼트 타이핑 완료 → 다음으로
@@ -100,18 +93,26 @@ function StreamingBlockInner({ segments }: StreamingBlockProps) {
       })}
 
       {/* 현재 타이핑 중인 세그먼트 — 부분 표시 */}
-      {currentSeg && currentSeg.type === "narration" && charIdx > 0 && (
-        <span
-          className="font-narrative leading-relaxed whitespace-pre-wrap"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {currentSeg.text.slice(0, charIdx)}
-          {/* 커서 */}
+      {currentSeg && charIdx > 0 && (
+        currentSeg.type === "narration" ? (
           <span
-            className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
-            style={{ backgroundColor: "var(--gold)", opacity: 0.7 }}
+            className="font-narrative leading-relaxed whitespace-pre-wrap"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {currentSeg.text.slice(0, charIdx)}
+            <span
+              className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
+              style={{ backgroundColor: "var(--gold)", opacity: 0.7 }}
+            />
+          </span>
+        ) : (
+          <DialogueBubble
+            text={currentSeg.text.slice(0, charIdx)}
+            npcName={currentSeg.npcName ?? ""}
+            npcImageUrl={currentSeg.npcImage}
+            compact={(npcCounts.get(currentSeg.npcName ?? "") ?? 0) > 0}
           />
-        </span>
+        )
       )}
 
       {/* 타이핑 대기 중 (세그먼트 없을 때) 커서만 */}
