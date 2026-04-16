@@ -34,6 +34,10 @@ import { STAT_COLORS } from '@/data/stat-descriptions';
 import { mapResultToMessages, mapTurnHistoryToMessages, stripNarratorChoices, type TurnHistoryItem } from '@/lib/result-mapper';
 import { applyDiffToHud, applyEnemyDiffs, applyInventoryDiff } from '@/lib/hud-mapper';
 import { ApiError } from '@/lib/api-errors';
+import { StreamParser, type StreamOutput } from '@/lib/stream-parser';
+import { connectLlmStream } from '@/lib/llm-stream';
+
+const USE_STREAMING = process.env.NEXT_PUBLIC_LLM_STREAMING === 'true';
 
 // ---------------------------------------------------------------------------
 // State shape
@@ -106,6 +110,11 @@ export interface GameState {
   sceneImages: Record<number, string>;
   sceneImageRemaining: number;
   sceneImageLoading: Record<number, boolean>;
+
+  // LLM Streaming
+  isStreaming: boolean;
+  streamSegments: StreamOutput[];
+  streamDisconnect: (() => void) | null;
 
   // Campaign
   campaignId: string | null;
@@ -390,6 +399,112 @@ function pollForNarrative(
 }
 
 /**
+ * LLM 서술을 SSE 스트리밍으로 수신하여 실시간 렌더링.
+ * 실패 시 자동으로 pollForNarrative fallback.
+ */
+function streamNarrative(
+  runId: string,
+  turnNo: number,
+  fallbackText: string,
+  get: () => GameState,
+  set: (partial: Partial<GameState>) => void,
+) {
+  const token = useAuthStore.getState().token;
+  if (!token) {
+    // 토큰 없으면 폴링 fallback
+    pollForNarrative(runId, turnNo, fallbackText, get, set);
+    return;
+  }
+
+  const parser = new StreamParser();
+  let receivedDone = false;
+
+  set({
+    isStreaming: true,
+    streamSegments: [],
+  });
+
+  const disconnect = connectLlmStream(runId, turnNo, token, {
+    onToken(text) {
+      const newOutputs = parser.feed(text);
+      if (newOutputs.length > 0) {
+        set({ streamSegments: [...get().streamSegments, ...newOutputs] });
+      }
+    },
+
+    onDone(narrative, choices) {
+      receivedDone = true;
+      // 남은 버퍼 플러시
+      const flushed = parser.flush();
+      if (flushed.length > 0) {
+        set({ streamSegments: [...get().streamSegments, ...flushed] });
+      }
+
+      // LLM 맥락 선택지로 교체
+      if (choices && choices.length > 0) {
+        set({
+          pendingChoices: choices.map(c => ({
+            id: c.id,
+            label: c.label,
+            affordance: c.action?.payload?.affordance as string | undefined,
+          })),
+        });
+      }
+
+      // 스트리밍 종료 후 최종 서술로 narrator 메시지 교체
+      flushNarrator(stripNarratorChoices(narrative), turnNo, get, set);
+
+      // 스트리밍 상태 정리
+      set({
+        isStreaming: false,
+        streamSegments: [],
+        streamDisconnect: null,
+      });
+
+      // done 이벤트에서 tokenStats를 받으려면 턴 상세를 한 번 조회
+      getTurnDetail(runId, turnNo).then((detail) => {
+        if (detail.llm?.tokenStats) {
+          set({ llmStats: { ...detail.llm.tokenStats, model: detail.llm.modelUsed } });
+        }
+      }).catch(() => { /* 무시 */ });
+    },
+
+    onError(message) {
+      // 스트리밍 실패 — 상태 정리 후 폴링 fallback
+      const flushed = parser.flush();
+      set({
+        isStreaming: false,
+        streamSegments: [],
+        streamDisconnect: null,
+      });
+      // done을 이미 받았으면 fallback 불필요
+      if (!receivedDone) {
+        pollForNarrative(runId, turnNo, fallbackText, get, set);
+      }
+    },
+  });
+
+  set({ streamDisconnect: disconnect });
+}
+
+/**
+ * 스트리밍 또는 폴링을 환경변수에 따라 분기 호출하는 헬퍼.
+ */
+function requestNarrative(
+  runId: string,
+  turnNo: number,
+  fallbackText: string,
+  get: () => GameState,
+  set: (partial: Partial<GameState>) => void,
+) {
+  if (USE_STREAMING) {
+    streamNarrative(runId, turnNo, fallbackText, get, set);
+  } else {
+    pollForNarrative(runId, turnNo, fallbackText, get, set);
+  }
+}
+
+/**
  * Process a SubmitTurnResponse and apply its effects to the store.
  * Shared by both submitAction and submitChoice.
  */
@@ -466,7 +581,7 @@ function processTurnResponse(
 
     const runId = get().runId;
     if (runId) {
-      pollForNarrative(runId, turnRes.turnNo, result.summary?.display ?? result.summary?.short ?? '', get, set);
+      requestNarrative(runId, turnRes.turnNo, result.summary?.display ?? result.summary?.short ?? '', get, set);
     }
   } else {
     // LLM 없음 또는 노드 전이 — 모든 메시지 즉시 표시
@@ -605,7 +720,7 @@ function processTurnResponse(
 
       const runId = get().runId;
       if (runId) {
-        pollForNarrative(
+        requestNarrative(
           runId,
           enterTurnNo,
           t.enterResult.summary?.display ?? t.enterResult.summary?.short ?? '',
@@ -734,6 +849,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   sceneImages: {},
   sceneImageRemaining: 100,
   sceneImageLoading: {},
+  // LLM Streaming
+  isStreaming: false,
+  streamSegments: [],
+  streamDisconnect: null,
   // Campaign
   campaignId: null,
 
@@ -1029,9 +1148,9 @@ export const useGameStore = create<GameState>((set, get) => ({
         signalFeed: (wsObj?.signalFeed as SignalFeedItemUI[]) ?? [],
       });
 
-      // 첫 턴 LLM 폴링 시작
+      // 첫 턴 LLM 내러티브 요청 (스트리밍 또는 폴링)
       if (hasNarratorLoading) {
-        pollForNarrative(
+        requestNarrative(
           runId,
           serverResult!.turnNo,
           serverResult!.summary?.display ?? serverResult!.summary?.short ?? '',
@@ -1147,7 +1266,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
 
       if (hasNarratorLoading) {
-        pollForNarrative(
+        requestNarrative(
           runId,
           serverResult!.turnNo,
           serverResult!.summary?.display ?? serverResult!.summary?.short ?? '',
@@ -1333,8 +1452,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     try {
       await retryLlm(runId, turnNo);
-      // 재시도 성공 → 폴링 재시작
-      pollForNarrative(runId, turnNo, '', get, set);
+      // 재시도 성공 → 내러티브 재요청 (스트리밍 또는 폴링)
+      requestNarrative(runId, turnNo, '', get, set);
     } catch {
       set({
         llmFailure: {
@@ -1484,6 +1603,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   reset: () => {
+    // 스트리밍 연결 정리
+    const { streamDisconnect } = get();
+    if (streamDisconnect) streamDisconnect();
+
     set({
       phase: 'TITLE',
       runId: null,
@@ -1530,6 +1653,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       sceneImages: {},
       sceneImageRemaining: 100,
       sceneImageLoading: {},
+      isStreaming: false,
+      streamSegments: [],
+      streamDisconnect: null,
       campaignId: null,
     });
   },
