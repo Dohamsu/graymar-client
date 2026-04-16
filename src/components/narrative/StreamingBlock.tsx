@@ -6,6 +6,10 @@ import type { StreamOutput } from "@/lib/stream-parser";
 
 interface StreamingBlockProps {
   segments: StreamOutput[];
+  /** 모든 세그먼트 타이핑 완료 + done 수신 후 호출 */
+  onComplete?: () => void;
+  /** done 이벤트가 수신되었는지 (더 이상 세그먼트가 오지 않음) */
+  isDone?: boolean;
 }
 
 /** 타이핑 속도 (ms/글자) */
@@ -20,7 +24,7 @@ const PUNCT_DELAY = 80;
  * 각 세그먼트를 타이핑 효과로 한 글자씩 표시한다.
  * 대사(dialogue)는 타이핑 완료 후 말풍선으로 즉시 표시.
  */
-function StreamingBlockInner({ segments }: StreamingBlockProps) {
+function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockProps) {
   // 타이핑 완료된 세그먼트 수
   const [typedCount, setTypedCount] = useState(0);
   // 현재 타이핑 중인 세그먼트의 표시 글자 수
@@ -55,8 +59,16 @@ function StreamingBlockInner({ segments }: StreamingBlockProps) {
     };
   }, [currentSeg, charIdx, typedCount]);
 
-  // 새 세그먼트가 추가될 때 (segments 길이 변경) — 타이핑을 이어감
-  // typedCount/charIdx는 유지하므로 자연스럽게 큐 처리됨
+  // 모든 세그먼트 타이핑 완료 + done 수신 → onComplete 호출
+  const allTyped = typedCount >= segments.length && segments.length > 0;
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
+  useEffect(() => {
+    if (allTyped && isDone) {
+      onCompleteRef.current?.();
+    }
+  }, [allTyped, isDone]);
 
   if (segments.length === 0) return null;
 
