@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useEffect, useRef } from "react";
+import { memo, useState, useEffect, useRef, useMemo } from "react";
 import { DialogueBubble } from "./DialogueBubble";
 import type { StreamOutput } from "@/lib/stream-parser";
 
@@ -44,25 +44,36 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
   const [charIdx, setCharIdx] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 현재 타이핑 중인 세그먼트 (narration은 정제)
-  const rawCurrentSeg = segments[typedCount] as StreamOutput | undefined;
-  const currentSeg = rawCurrentSeg && rawCurrentSeg.type === 'narration'
-    ? { ...rawCurrentSeg, text: cleanStreamText(rawCurrentSeg.text) }
-    : rawCurrentSeg;
+  // 현재 타이핑 중인 세그먼트 텍스트 (정제 후, 메모이즈)
+  const currentText = useMemo(() => {
+    const raw = segments[typedCount] as StreamOutput | undefined;
+    if (!raw) return '';
+    if (raw.type === 'narration') return cleanStreamText(raw.text);
+    return raw.text;
+  }, [segments, typedCount]);
+
+  const currentSegType = (segments[typedCount] as StreamOutput | undefined)?.type;
+  const currentSegNpcName = (segments[typedCount] as StreamOutput | undefined)?.npcName;
+  const currentSegNpcImage = (segments[typedCount] as StreamOutput | undefined)?.npcImage;
 
   useEffect(() => {
-    if (!currentSeg) return;
+    if (!currentText) return;
 
-    // narration/dialogue 모두 타이핑
-    const text = currentSeg.text;
-    if (charIdx >= text.length) {
+    // 빈 텍스트(정제 후 빈 문자열) → 건너뜀
+    if (currentText.length === 0) {
+      setTypedCount((c) => c + 1);
+      setCharIdx(0);
+      return;
+    }
+
+    if (charIdx >= currentText.length) {
       // 현재 세그먼트 타이핑 완료 → 다음으로
       setTypedCount((c) => c + 1);
       setCharIdx(0);
       return;
     }
 
-    const char = text[charIdx];
+    const char = currentText[charIdx];
     const isPunct = /[.!?。,，;；]/.test(char);
     const delay = isPunct ? CHAR_SPEED + PUNCT_DELAY : CHAR_SPEED;
 
@@ -73,7 +84,7 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentSeg, charIdx, typedCount]);
+  }, [currentText, charIdx, typedCount]);
 
   // 모든 세그먼트 타이핑 완료 + done 수신 → onComplete 호출
   const allTyped = typedCount >= segments.length && segments.length > 0;
@@ -123,13 +134,13 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
       })}
 
       {/* 현재 타이핑 중인 세그먼트 — 부분 표시 */}
-      {currentSeg && charIdx > 0 && (
-        currentSeg.type === "narration" ? (
+      {currentText && charIdx > 0 && (
+        currentSegType === "narration" ? (
           <span
             className="font-narrative leading-relaxed whitespace-pre-wrap"
             style={{ color: "var(--text-primary)" }}
           >
-            {currentSeg.text.slice(0, charIdx)}
+            {currentText.slice(0, charIdx)}
             <span
               className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
               style={{ backgroundColor: "var(--gold)", opacity: 0.7 }}
@@ -137,16 +148,16 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
           </span>
         ) : (
           <DialogueBubble
-            text={currentSeg.text.slice(0, charIdx)}
-            npcName={currentSeg.npcName ?? ""}
-            npcImageUrl={currentSeg.npcImage}
-            compact={(npcCounts.get(currentSeg.npcName ?? "") ?? 0) > 0}
+            text={currentText.slice(0, charIdx)}
+            npcName={currentSegNpcName ?? ""}
+            npcImageUrl={currentSegNpcImage}
+            compact={(npcCounts.get(currentSegNpcName ?? "") ?? 0) > 0}
           />
         )
       )}
 
       {/* 타이핑 대기 중 (세그먼트 없을 때) 커서만 */}
-      {!currentSeg && typedCount >= segments.length && (
+      {!currentText && typedCount >= segments.length && (
         <span
           className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
           style={{ backgroundColor: "var(--gold)", opacity: 0.7 }}
