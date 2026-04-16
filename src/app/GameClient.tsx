@@ -52,6 +52,7 @@ export default function GameClient() {
   const characterInfo = useGameStore((s) => s.characterInfo);
   const battleState = useGameStore((s) => s.battleState);
   const isSubmitting = useGameStore((s) => s.isSubmitting);
+  const choicesLoading = useGameStore((s) => s.choicesLoading);
   const submitAction = useGameStore((s) => s.submitAction);
   const submitChoice = useGameStore((s) => s.submitChoice);
   const flushPending = useGameStore((s) => s.flushPending);
@@ -346,6 +347,12 @@ export default function GameClient() {
                 <PartyTurnStatus turnStatus={turnStatus} totalMembers={partyMembers.length} />
               </div>
             )}
+            {choicesLoading && (
+              <div className="flex items-center justify-center gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-3">
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--gold)] border-t-transparent" />
+                <span className="text-xs text-[var(--text-muted)]">선택지 생성 중...</span>
+              </div>
+            )}
             <InputSection
               onSubmit={handleSubmit}
               onQuickAction={handleQuickAction}
@@ -406,6 +413,12 @@ export default function GameClient() {
             {partyRunId && turnStatus && (
               <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2">
                 <PartyTurnStatus turnStatus={turnStatus} totalMembers={partyMembers.length} />
+              </div>
+            )}
+            {choicesLoading && (
+              <div className="flex items-center justify-center gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2">
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--gold)] border-t-transparent" />
+                <span className="text-xs text-[var(--text-muted)]">선택지 생성 중...</span>
               </div>
             )}
             <MobileInputSection
