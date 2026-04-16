@@ -96,10 +96,12 @@ export function BugReportModal({ onClose }: BugReportModalProps) {
 
     try {
       const recentTurns = collectRecentTurns(5);
+      const { getUiLogs } = await import("@/lib/ui-logger");
       await submitBugReport(runId, {
         category: selected,
         description: description.trim() || undefined,
         recentTurns,
+        uiDebugLog: getUiLogs(),
       });
       setStatus("done");
       // Auto-close after success

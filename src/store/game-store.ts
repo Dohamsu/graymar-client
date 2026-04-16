@@ -36,6 +36,7 @@ import { applyDiffToHud, applyEnemyDiffs, applyInventoryDiff } from '@/lib/hud-m
 import { ApiError } from '@/lib/api-errors';
 import { StreamParser, type StreamOutput } from '@/lib/stream-parser';
 import { connectLlmStream } from '@/lib/llm-stream';
+import { uiLog } from '@/lib/ui-logger';
 
 const USE_STREAMING = process.env.NEXT_PUBLIC_LLM_STREAMING === 'true';
 
@@ -327,6 +328,8 @@ function flushNarrator(
   skipTyping = false,
 ) {
   const targetId = `narrator-${turnNo}`;
+  const found = get().messages.some(m => m.id === targetId);
+  uiLog('narrator', 'flushNarrator', { targetId, textLen: text.length, skipTyping, found });
   const messages = get().messages.map((msg) =>
     msg.id === targetId ? { ...msg, text, loading: false, ...(skipTyping ? { typed: true } : {}) } : msg,
   );
@@ -456,6 +459,8 @@ function streamNarrative(
     streamBufferDone: false,
   });
 
+  uiLog('stream', 'streamNarrative 시작', { runId, turnNo });
+
   /**
    * 원본 버퍼에서 완성된 문장까지 추출 (나머지는 버퍼에 유지).
    */
@@ -501,6 +506,7 @@ function streamNarrative(
     if (!extracted) return;
     const analyzed = analyzeText(extracted);
     analyzedBuffer = analyzedBuffer ? analyzedBuffer + '\n' + analyzed : analyzed;
+    uiLog('stream', 'buffer flush', { bufLen: analyzedBuffer.length, extractedLen: extracted.length });
     set({ streamTextBuffer: analyzedBuffer });
   }, 300);
 
@@ -517,6 +523,7 @@ function streamNarrative(
     },
 
     onDone(narrative, choices) {
+      uiLog('stream', 'onDone', { narrativeLen: narrative?.length, choicesCount: choices?.length, analyzedBufLen: analyzedBuffer.length, rawBufLen: rawBuffer.length });
       receivedDone = true;
 
       // 타이머 정리
@@ -1552,6 +1559,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   // -----------------------------------------------------------------------
   flushPending: () => {
     const { pendingMessages, pendingChoices, messages } = get();
+    uiLog('flush', 'flushPending', {
+      pendingMsgCount: pendingMessages.length,
+      pendingChoiceCount: pendingChoices.length,
+      msgCount: messages.length,
+      msgIds: messages.map(m => m.id),
+      narratorTexts: messages.filter(m => m.type === 'NARRATOR').map(m => ({ id: m.id, len: m.text?.length ?? 0, loading: m.loading, typed: !!(m as { typed?: boolean }).typed })),
+    });
     if (pendingMessages.length === 0 && pendingChoices.length === 0) return;
     set({
       messages: [...messages, ...pendingMessages],

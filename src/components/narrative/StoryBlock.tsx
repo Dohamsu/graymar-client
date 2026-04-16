@@ -7,6 +7,7 @@ import { STAT_COLORS, STAT_KOREAN_NAMES } from "@/data/stat-descriptions";
 import { useGameStore } from "@/store/game-store";
 import { DialogueBubble } from "./DialogueBubble";
 import { StreamingBlock } from "./StreamingBlock";
+import { uiLog } from "@/lib/ui-logger";
 
 type SpeakingNpc = NonNullable<StoryMessage['speakingNpc']>;
 
@@ -144,6 +145,7 @@ function StreamTyper({ onComplete }: { onComplete?: () => void }) {
     if (typedLength >= buffer.length) {
       // 버퍼 끝 도달 + done이면 타이핑 완료
       if (isDone && buffer.length > 0) {
+        uiLog('typer', 'StreamTyper 완료', { typedLength, bufferLen: buffer.length });
         onCompleteRef.current?.();
       }
       return; // 버퍼에 더 쌓일 때까지 대기
@@ -836,6 +838,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
     } else if (wasLoading && isNarrator && message.text) {
       setWasLoading(false);
       setShouldAnimate(true);
+      uiLog('narrator', 'loading→false 전환 → shouldAnimate', { id: message.id, textLen: message.text.length, isStreaming, streamBufLen: streamTextBuffer.length });
     }
   }
 
@@ -863,6 +866,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
               // 타이핑 완료 → narrator 텍스트 교체 + pending flush
               const store = useGameStore.getState();
               const finalText = store.streamTextBuffer;
+              uiLog('typer', 'StreamTyper→onComplete', { msgId: message.id, finalTextLen: finalText.length, isStreaming: store.isStreaming });
               useGameStore.setState({
                 isStreaming: false,
                 streamSegments: [],
