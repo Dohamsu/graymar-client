@@ -432,14 +432,42 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
   const [segIdx, setSegIdx] = useState(0);       // 현재 세그먼트 인덱스
   const [charIdx, setCharIdx] = useState(0);      // 현재 세그먼트 내 글자 위치
   const [prevText, setPrevText] = useState(text);
+  const typedCharsRef = useRef(0); // 총 타이핑된 글자 수 (텍스트 성장 시 위치 복원용)
   const onCompleteRef = useRef(onComplete);
   useEffect(() => { onCompleteRef.current = onComplete; });
 
-  // text 변경 시 리셋
+  // text 변경 시 처리: 텍스트 성장(append)이면 리셋하지 않고 이어서 타이핑
   if (text !== prevText) {
+    const cleaned = cleanResidualMarkers(text);
+    const prevCleaned = cleanResidualMarkers(prevText);
+    const isExtension = cleaned.length > prevCleaned.length && cleaned.includes(prevCleaned.slice(0, Math.min(prevCleaned.length, 30)));
+
     setPrevText(text);
-    setSegIdx(0);
-    setCharIdx(0);
+
+    if (isExtension) {
+      // 텍스트 성장: 새 segments에서 typedCharsRef 기반 위치 복원
+      const newSegments = parseNarrativeSegments(cleaned);
+      let remaining = typedCharsRef.current;
+      let newSegIdx = 0;
+      let newCharIdx = 0;
+      for (let i = 0; i < newSegments.length; i++) {
+        if (remaining <= newSegments[i].text.length) {
+          newSegIdx = i;
+          newCharIdx = remaining;
+          break;
+        }
+        remaining -= newSegments[i].text.length;
+        newSegIdx = i + 1;
+        newCharIdx = 0;
+      }
+      setSegIdx(newSegIdx);
+      setCharIdx(newCharIdx);
+    } else {
+      // 완전 교체: 리셋
+      setSegIdx(0);
+      setCharIdx(0);
+      typedCharsRef.current = 0;
+    }
   }
 
   const isComplete = segIdx >= segments.length;
@@ -495,6 +523,16 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
     }, delay);
     return () => clearTimeout(timer);
   }, [segIdx, charIdx, segments, preset, isComplete]);
+
+  // 총 타이핑된 글자 수 추적 (텍스트 성장 시 위치 복원용)
+  useEffect(() => {
+    let total = 0;
+    for (let i = 0; i < segIdx && i < segments.length; i++) {
+      total += segments[i].text.length;
+    }
+    total += charIdx;
+    typedCharsRef.current = total;
+  }, [segIdx, charIdx, segments]);
 
   // 렌더링: 완료된 세그먼트 + 현재 타이핑 중인 세그먼트
   const rendered: React.ReactNode[] = [];
