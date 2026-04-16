@@ -402,6 +402,7 @@ export function submitBugReport(
       nodeType: string | null;
       messages: Array<{ type: string; text: string }>;
     }>;
+    uiDebugLog?: Array<{ t: number; tag: string; msg: string; data?: Record<string, unknown> }>;
   },
 ) {
   return request<{ success: boolean }>(`/v1/runs/${runId}/bug-report`, {
