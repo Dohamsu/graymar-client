@@ -19,6 +19,8 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
   const scrollRef = useRef<HTMLDivElement>(null);
   const isStreaming = useGameStore((s) => s.isStreaming);
   const streamSegments = useGameStore((s) => s.streamSegments);
+  const streamDoneNarrative = useGameStore((s) => s.streamDoneNarrative);
+  const finalizeStreaming = useGameStore((s) => s.finalizeStreaming);
 
   // 사용자가 위로 스크롤했는지 감지 (하단에서 100px 이상 떨어지면 "위로 스크롤" 판정)
   const isUserScrolledUp = useRef(false);
@@ -89,10 +91,15 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
       {messages.map((msg) => (
         <StoryBlock key={msg.id} message={msg} onChoiceSelect={onChoiceSelect} onNarrationComplete={onNarrationComplete} />
       ))}
-      {isStreaming && (
-        streamSegments.length > 0
-          ? <StreamingBlock segments={streamSegments} />
-          : null
+      {isStreaming && streamSegments.length > 0 && (
+        <StreamingBlock
+          segments={streamSegments}
+          isDone={!!streamDoneNarrative}
+          onComplete={() => {
+            finalizeStreaming();
+            onNarrationComplete?.();
+          }}
+        />
       )}
     </div>
   );

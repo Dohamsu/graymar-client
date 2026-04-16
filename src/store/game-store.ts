@@ -115,6 +115,10 @@ export interface GameState {
   isStreaming: boolean;
   streamSegments: StreamOutput[];
   streamDisconnect: (() => void) | null;
+  /** done 이벤트 후 최종 서술 (StreamingBlock 타이핑 완료 대기용) */
+  streamDoneNarrative: string | null;
+  /** StreamingBlock 타이핑 완료 후 호출 — 최종 서술 교체 + 선택지 표시 */
+  finalizeStreaming: () => void;
 
   // Campaign
   campaignId: string | null;
@@ -469,7 +473,7 @@ function streamNarrative(
         }
       }
 
-      // LLM 맥락 선택지로 교체
+      // LLM 맥락 선택지를 pending에 저장 (타이핑 완료 후 flushPending에서 표시)
       if (choices && choices.length > 0) {
         set({
           pendingChoices: choices.map(c => ({
@@ -480,16 +484,11 @@ function streamNarrative(
         });
       }
 
-      // 스트리밍 종료: 최종 서술 교체 + 상태 정리를 한 번에 수행 (깜빡임 방지)
-      const targetId = `narrator-${turnNo}`;
+      // 스트리밍 완료 표시 — doneNarrative를 store에 저장
+      // StreamingBlock 타이핑이 끝나면 finalizeStreaming()을 호출하여 최종 교체
       const finalNarrative = stripNarratorChoices(narrative);
-      const updatedMessages = get().messages.map((msg) =>
-        msg.id === targetId ? { ...msg, text: finalNarrative, loading: false, typed: true } : msg,
-      );
       set({
-        messages: updatedMessages,
-        isStreaming: false,
-        streamSegments: [],
+        streamDoneNarrative: finalNarrative,
         streamDisconnect: null,
       });
 
@@ -904,6 +903,22 @@ export const useGameStore = create<GameState>((set, get) => ({
   isStreaming: false,
   streamSegments: [],
   streamDisconnect: null,
+  streamDoneNarrative: null,
+  finalizeStreaming: () => {
+    const { streamDoneNarrative, currentTurnNo } = get();
+    if (!streamDoneNarrative) return;
+    const turnNo = (currentTurnNo ?? 1) - 1;
+    const targetId = `narrator-${turnNo}`;
+    const updatedMessages = get().messages.map((msg) =>
+      msg.id === targetId ? { ...msg, text: streamDoneNarrative, loading: false, typed: true } : msg,
+    );
+    set({
+      messages: updatedMessages,
+      isStreaming: false,
+      streamSegments: [],
+      streamDoneNarrative: null,
+    });
+  },
   // Campaign
   campaignId: null,
 
