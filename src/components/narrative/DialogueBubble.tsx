@@ -98,7 +98,7 @@ function DialogueBubbleInner({ text, npcName, npcImageUrl, compact }: DialogueBu
 
   return (
     <>
-      <div className="my-3 flex items-start gap-2 md:gap-3">
+      <div className="my-3 flex items-start gap-2 md:gap-3" data-dialogue-bubble>
         {/* Portrait column */}
         {!compact ? (
           <div

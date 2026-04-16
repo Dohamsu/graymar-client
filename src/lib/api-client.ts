@@ -1,5 +1,6 @@
 import { ApiError } from '@/lib/api-errors';
 import { useAuthStore } from '@/store/auth-store';
+import { logNetworkStart } from '@/lib/network-logger';
 import type { SubmitTurnResponse } from '@/types/game';
 import type {
   PartyInfo,
@@ -29,26 +30,41 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${getBaseUrl()}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-      ...init?.headers,
-    },
-  });
+  const method = (init?.method ?? 'GET').toUpperCase();
+  const finish = logNetworkStart(method, path);
+  let res: Response;
+  try {
+    res = await fetch(`${getBaseUrl()}${path}`, {
+      ...init,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+        ...init?.headers,
+      },
+    });
+  } catch (err) {
+    finish({ ok: false, errorCode: 'NETWORK', errorMsg: err instanceof Error ? err.message : String(err) });
+    throw err;
+  }
 
-  const json = await res.json();
+  const json = await res.json().catch(() => ({}));
 
   if (!res.ok) {
+    finish({
+      ok: false,
+      status: res.status,
+      errorCode: (json as { code?: string }).code ?? 'UNKNOWN',
+      errorMsg: (json as { message?: string }).message ?? res.statusText,
+    });
     throw new ApiError(
       res.status,
-      json.code ?? 'UNKNOWN',
-      json.message ?? res.statusText,
+      (json as { code?: string }).code ?? 'UNKNOWN',
+      (json as { message?: string }).message ?? res.statusText,
     );
   }
 
+  finish({ ok: true, status: res.status });
   return json as T;
 }
 
@@ -400,9 +416,11 @@ export function submitBugReport(
     recentTurns: Array<{
       turnNo: number;
       nodeType: string | null;
-      messages: Array<{ type: string; text: string }>;
+      messages: Array<Record<string, unknown>>;
     }>;
     uiDebugLog?: Array<{ t: number; tag: string; msg: string; data?: Record<string, unknown> }>;
+    clientSnapshot?: Record<string, unknown>;
+    networkLog?: unknown[];
   },
 ) {
   return request<{ success: boolean }>(`/v1/runs/${runId}/bug-report`, {
