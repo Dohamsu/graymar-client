@@ -484,13 +484,37 @@ function streamNarrative(
         });
       }
 
-      // 스트리밍 완료 표시 — doneNarrative를 store에 저장
-      // StreamingBlock 타이핑이 끝나면 finalizeStreaming()을 호출하여 최종 교체
+      // 스트리밍 완료: 최종 서술에서 대사 세그먼트를 추출하여 StreamingBlock 큐에 추가
+      // 스트리밍 중 narration만 표시했으므로, 후처리에서 추가된 대사를 타이핑 큐에 넣음
       const finalNarrative = stripNarratorChoices(narrative);
-      set({
-        streamDoneNarrative: finalNarrative,
-        streamDisconnect: null,
-      });
+
+      // 후처리본에서 @마커+대사 추출하여 dialogue 세그먼트로 추가
+      const dialogueRe = /@\[([^\]|]+)(?:\|([^\]]+))?\]\s*["\u201C]([^"\u201D]*)["\u201D]/g;
+      let dMatch: RegExpExecArray | null;
+      const newDialogueSegments: StreamOutput[] = [];
+      while ((dMatch = dialogueRe.exec(finalNarrative)) !== null) {
+        const npcName = dMatch[1].trim();
+        const npcImage = dMatch[2]?.trim() || undefined;
+        const dialogueText = dMatch[3].trim();
+        if (dialogueText) {
+          newDialogueSegments.push({ type: 'dialogue', text: dialogueText, npcName, npcImage });
+        }
+      }
+
+      if (newDialogueSegments.length > 0) {
+        // 대사 세그먼트를 StreamingBlock 큐에 추가 → 타이핑 후 finalizeStreaming
+        set({
+          streamSegments: [...get().streamSegments, ...newDialogueSegments],
+          streamDoneNarrative: finalNarrative,
+          streamDisconnect: null,
+        });
+      } else {
+        // 대사 없음 → 바로 finalizeStreaming 예약
+        set({
+          streamDoneNarrative: finalNarrative,
+          streamDisconnect: null,
+        });
+      }
 
       // done 이벤트에서 tokenStats 조회
       getTurnDetail(runId, turnNo).then((detail) => {
