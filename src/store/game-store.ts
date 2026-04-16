@@ -484,7 +484,7 @@ function streamNarrative(
     const dialogueRe = /^([^":]{2,}):\s*"([^"]+)"?\s*$/;
 
     const lines = text.split('\n');
-    const result = lines.map(line => {
+    let result = lines.map(line => {
       const m = line.match(dialogueRe);
       if (m) {
         const npcName = m[1].trim();
@@ -495,10 +495,14 @@ function streamNarrative(
       return line;
     }).join('\n');
 
+    // 문장 단위 줄바꿈: 마침표/느낌표/물음표 뒤 2자 이상 공백+텍스트 → 줄바꿈
+    result = result.replace(/([.!?])\s{1,}/g, (match, punct) => {
+      return punct + '\n';
+    });
+
     // 문단 정리
     return result
       .replace(/\n{3,}/g, '\n\n')     // 3+ 줄바꿈 → 2로 정규화
-      .replace(/([.!?。])\s*\n(?!\n)/g, '$1\n\n')  // 문장 끝 + 단일 줄바꿈 → 문단 구분
       .trim();
   }
 
@@ -511,7 +515,7 @@ function streamNarrative(
     if (!extracted) return;
 
     const analyzed = analyzeText(extracted);
-    displayText = displayText ? displayText + analyzed : analyzed;
+    displayText = displayText ? displayText + '\n' + analyzed : analyzed;
 
     if (firstFlush) {
       firstFlush = false;
@@ -543,6 +547,19 @@ function streamNarrative(
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
 
+      // 남은 버퍼 flush → displayText에 추가
+      const remaining = extractCompleteSentences();
+      if (remaining) {
+        const analyzed = analyzeText(remaining);
+        displayText = displayText ? displayText + '\n' + analyzed : analyzed;
+      }
+      // 버퍼에 남은 불완전 문장도 포함
+      if (rawBuffer.trim()) {
+        const analyzed = analyzeText(rawBuffer.trim());
+        displayText = displayText ? displayText + '\n' + analyzed : analyzed;
+        rawBuffer = '';
+      }
+
       // LLM 맥락 선택지를 pending에 저장 (타이핑 완료 후 flushPending에서 표시)
       if (choices && choices.length > 0) {
         set({
@@ -554,8 +571,6 @@ function streamNarrative(
         });
       }
 
-      const finalNarrative = stripNarratorChoices(narrative);
-
       // 스트리밍 종료
       set({
         isStreaming: false,
@@ -565,9 +580,24 @@ function streamNarrative(
         choicesLoading: false,
       });
 
-      // 최종 텍스트로 교체 (서버 @마커 포함)
-      // TypewriterText가 이미 타이핑한 부분은 위치 복원으로 이어서 타이핑
-      flushNarrator(finalNarrative, turnNo, get, set);
+      // 이미 타이핑이 시작된 경우: 클라이언트 분석 텍스트 유지 (재타이핑 방지)
+      // 타이핑 미시작 시: 서버 최종 텍스트 사용
+      if (displayText) {
+        // 최종 displayText로 narrator 갱신 (남은 버퍼 포함)
+        if (firstFlush) {
+          flushNarrator(displayText, turnNo, get, set);
+        } else {
+          const targetId = `narrator-${turnNo}`;
+          const messages = get().messages.map((msg) =>
+            msg.id === targetId ? { ...msg, text: displayText } : msg,
+          );
+          set({ messages });
+        }
+      } else {
+        // 타이핑 미시작 (버퍼링 중 done 도착) → 서버 최종 텍스트 사용
+        const finalNarrative = stripNarratorChoices(narrative);
+        flushNarrator(finalNarrative, turnNo, get, set);
+      }
 
       // done 이벤트에서 tokenStats 조회
       getTurnDetail(runId, turnNo).then((detail) => {
