@@ -1536,7 +1536,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                 /* eslint-disable-next-line @next/next/no-img-element -- AI-generated external URL */
                 <img src={displayPortrait} alt="캐릭터 초상화" className="h-full w-full object-cover object-top" />
               ) : (
-                <Image src={displayPortrait} alt="캐릭터 초상화" fill className="object-cover object-top" />
+                <Image src={displayPortrait} alt="캐릭터 초상화" fill sizes="288px" className="object-cover object-top" />
               )
             ) : (
               <div className="flex h-full w-full items-center justify-center">
@@ -1885,7 +1885,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                   /* eslint-disable-next-line @next/next/no-img-element -- AI-generated external URL */
                   <img src={displayPortrait} alt={displayName} className="h-full w-full object-cover object-top" />
                 ) : (
-                  <Image src={displayPortrait} alt={displayName} fill className="object-cover object-top" />
+                  <Image src={displayPortrait} alt={displayName} fill sizes="144px" className="object-cover object-top" />
                 )
               ) : (
                 <div className="flex h-full w-full items-center justify-center">

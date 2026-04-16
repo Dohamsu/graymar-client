@@ -64,28 +64,28 @@ const LOCATION_INFO: Record<
     description: "상인과 여행자가 북적이는 번화가. 소문과 거래가 오간다.",
     dangerLevel: 1,
     icon: MapPin,
-    imagePath: "/locations/market_day_safe.png",
+    imagePath: "/locations/market_day_safe.webp",
   },
   go_guard: {
     name: "경비대 지구",
     description: "엄격한 질서가 유지되는 구역. 협력하거나 경계를 살필 수 있다.",
     dangerLevel: 2,
     icon: Shield,
-    imagePath: "/locations/guard_day_safe.png",
+    imagePath: "/locations/guard_day_safe.webp",
   },
   go_harbor: {
     name: "항만 부두",
     description: "밤이면 위험해지는 부두. 밀수품과 정보가 은밀히 오간다.",
     dangerLevel: 3,
     icon: AlertTriangle,
-    imagePath: "/locations/harbor_day_safe.png",
+    imagePath: "/locations/harbor_day_safe.webp",
   },
   go_slums: {
     name: "빈민가",
     description: "법의 손길이 닿지 않는 골목. 암흑가의 심장부.",
     dangerLevel: 4,
     icon: Skull,
-    imagePath: "/locations/slums_day_safe.png",
+    imagePath: "/locations/slums_day_safe.webp",
   },
 };
 

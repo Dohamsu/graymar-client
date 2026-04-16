@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_CLIENT_VERSION: clientVersion,
   },
+  images: {
+    // 실제 사용 크기에 맞춘 imageSizes (40~320px 범위의 고정 크기 이미지)
+    imageSizes: [40, 56, 64, 80, 110, 144, 288, 320],
+    // 뷰포트 기반 이미지 (LocationImage 등)
+    deviceSizes: [640, 750, 828, 1080, 1200],
+  },
   // 외부 접속 시 /v1/* 요청을 백엔드 서버로 프록시
   async rewrites() {
     return [
@@ -35,10 +41,6 @@ const nextConfig: NextConfig = {
       {
         source: "/portraits/uploaded/:path*",
         destination: `${backendUrl}/portraits/uploaded/:path*`,
-      },
-      {
-        source: "/npc-portraits/:path*",
-        destination: `${backendUrl}/npc-portraits/:path*`,
       },
     ];
   },

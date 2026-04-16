@@ -8,7 +8,7 @@ export const PRESETS: CharacterPreset[] = [
     description:
       "그레이마르 항만에서 10년간 화물을 나른 노동자. 길드 간부의 횡령을 목격한 뒤 쫓겨났다.",
     playstyleHint: "최고 체력과 힘. 맞으면서 싸우는 순수 탱커.",
-    portraits: { male: "/dockworker_m.png", female: "/dockworker_f.png" },
+    portraits: { male: "/dockworker_m.webp", female: "/dockworker_f.webp" },
     stats: {
       MaxHP: 130,
       MaxStamina: 5,
@@ -29,7 +29,7 @@ export const PRESETS: CharacterPreset[] = [
     description:
       "왕국 남부 수비대 출신. 상관의 민간인 약탈 명령에 항명하여 탈영했다. 현재 수배 중.",
     playstyleHint: "균형 잡힌 스탯. 정석적인 전투와 탐험.",
-    portraits: { male: "/deserter_m.png", female: "/deserter_f.png" },
+    portraits: { male: "/deserter_m.webp", female: "/deserter_f.webp" },
     stats: {
       MaxHP: 100,
       MaxStamina: 5,
@@ -53,7 +53,7 @@ export const PRESETS: CharacterPreset[] = [
     description:
       "밀수 조직 '검은 조류'의 하급 운반책이었다. 조직 와해 후 제거 대상이 되었다.",
     playstyleHint: "극한 민첩과 카리스마. 은밀한 행동과 사회적 조종에 특화.",
-    portraits: { male: "/smuggler_m.png", female: "/smuggler_f.png" },
+    portraits: { male: "/smuggler_m.webp", female: "/smuggler_f.webp" },
     stats: {
       MaxHP: 80,
       MaxStamina: 6,
@@ -77,7 +77,7 @@ export const PRESETS: CharacterPreset[] = [
     description:
       "항만 뒷골목에서 합법 약재와 밀수 독초를 함께 취급하는 약사. 세 세력 모두와 거래해왔다.",
     playstyleHint: "극한 재치와 통찰. 조사와 관찰에 특화된 지식인.",
-    portraits: { male: "/herbalist_m.png", female: "/herbalist_f.png" },
+    portraits: { male: "/herbalist_m.webp", female: "/herbalist_f.webp" },
     stats: {
       MaxHP: 95,
       MaxStamina: 7,
@@ -102,7 +102,7 @@ export const PRESETS: CharacterPreset[] = [
     description:
       "한때 그레이마르에서 손꼽히던 가문의 마지막 후예. 정치적 모략에 가문이 몰락한 뒤, 이름과 재산을 잃었지만 귀족 사회의 인맥은 여전하다.",
     playstyleHint: "최고 카리스마와 초기 자금. 설득과 정치로 해결하는 사교가.",
-    portraits: { male: "/noble_m.png", female: "/noble_f.png" },
+    portraits: { male: "/noble_m.webp", female: "/noble_f.webp" },
     stats: {
       MaxHP: 85,
       MaxStamina: 6,
@@ -126,7 +126,7 @@ export const PRESETS: CharacterPreset[] = [
     description:
       "투기장에서 피로 이름을 새긴 전사. 관중이 없어도 싸우는 것만이 삶의 방식이다.",
     playstyleHint: "최고 전투력(힘+민첩). 싸움에서는 무적이지만 조사와 관찰은 약함.",
-    portraits: { male: "/gladiator_m.png", female: "/gladiator_f.png" },
+    portraits: { male: "/gladiator_m.webp", female: "/gladiator_f.webp" },
     stats: {
       MaxHP: 110,
       MaxStamina: 6,
