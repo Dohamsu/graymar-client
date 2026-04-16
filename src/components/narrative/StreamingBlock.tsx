@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState, useEffect, useRef } from "react";
 import { DialogueBubble } from "./DialogueBubble";
 import type { StreamOutput } from "@/lib/stream-parser";
 
@@ -8,75 +8,119 @@ interface StreamingBlockProps {
   segments: StreamOutput[];
 }
 
+/** 타이핑 속도 (ms/글자) */
+const CHAR_SPEED = 25;
+/** 구두점 후 추가 딜레이 */
+const PUNCT_DELAY = 80;
+
 /**
  * LLM 스트리밍 중 실시간 렌더링 블록.
- * StreamParser가 생산한 narration/dialogue 세그먼트를 순서대로 표시.
- * 스트리밍 완료 후 최종 서술(StoryBlock)로 교체된다.
+ *
+ * 서버에서 문장 단위로 세그먼트가 도착하면,
+ * 각 세그먼트를 타이핑 효과로 한 글자씩 표시한다.
+ * 대사(dialogue)는 타이핑 완료 후 말풍선으로 즉시 표시.
  */
 function StreamingBlockInner({ segments }: StreamingBlockProps) {
-  if (segments.length === 0) return null;
+  // 타이핑 완료된 세그먼트 수
+  const [typedCount, setTypedCount] = useState(0);
+  // 현재 타이핑 중인 세그먼트의 표시 글자 수
+  const [charIdx, setCharIdx] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 연속 narration 세그먼트를 하나의 텍스트로 병합
-  const merged: Array<
-    | { type: 'narration'; text: string }
-    | { type: 'dialogue'; text: string; npcName: string; npcImage?: string }
-  > = [];
+  // 현재 타이핑 중인 세그먼트
+  const currentSeg = segments[typedCount] as StreamOutput | undefined;
 
-  for (const seg of segments) {
-    if (seg.type === 'narration') {
-      const last = merged[merged.length - 1];
-      if (last && last.type === 'narration') {
-        last.text += seg.text;
-      } else {
-        merged.push({ type: 'narration', text: seg.text });
-      }
-    } else {
-      merged.push({
-        type: 'dialogue',
-        text: seg.text,
-        npcName: seg.npcName ?? '',
-        npcImage: seg.npcImage,
-      });
+  useEffect(() => {
+    if (!currentSeg) return;
+
+    // 대사(dialogue)는 타이핑 없이 즉시 표시
+    if (currentSeg.type === "dialogue") {
+      setTypedCount((c) => c + 1);
+      setCharIdx(0);
+      return;
     }
-  }
+
+    // narration 타이핑
+    const text = currentSeg.text;
+    if (charIdx >= text.length) {
+      // 현재 세그먼트 타이핑 완료 → 다음으로
+      setTypedCount((c) => c + 1);
+      setCharIdx(0);
+      return;
+    }
+
+    const char = text[charIdx];
+    const isPunct = /[.!?。,，;；]/.test(char);
+    const delay = isPunct ? CHAR_SPEED + PUNCT_DELAY : CHAR_SPEED;
+
+    timerRef.current = setTimeout(() => {
+      setCharIdx((c) => c + 1);
+    }, delay);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [currentSeg, charIdx, typedCount]);
+
+  // 새 세그먼트가 추가될 때 (segments 길이 변경) — 타이핑을 이어감
+  // typedCount/charIdx는 유지하므로 자연스럽게 큐 처리됨
+
+  if (segments.length === 0) return null;
 
   // 연속 dialogue의 같은 NPC 카운트 (compact 판단용)
   const npcCounts = new Map<string, number>();
 
   return (
     <div className="space-y-1">
-      {merged.map((item, idx) => {
-        if (item.type === 'narration') {
+      {/* 타이핑 완료된 세그먼트 — 전체 표시 */}
+      {segments.slice(0, typedCount).map((seg, idx) => {
+        if (seg.type === "narration") {
           return (
             <span
               key={`sn-${idx}`}
               className="font-narrative leading-relaxed whitespace-pre-wrap"
               style={{ color: "var(--text-primary)" }}
             >
-              {item.text}
+              {seg.text}
             </span>
           );
         }
 
-        // dialogue
-        const count = npcCounts.get(item.npcName) ?? 0;
-        npcCounts.set(item.npcName, count + 1);
-
+        const count = npcCounts.get(seg.npcName ?? "") ?? 0;
+        npcCounts.set(seg.npcName ?? "", count + 1);
         return (
           <DialogueBubble
             key={`sd-${idx}`}
-            text={item.text}
-            npcName={item.npcName}
-            npcImageUrl={item.npcImage}
+            text={seg.text}
+            npcName={seg.npcName ?? ""}
+            npcImageUrl={seg.npcImage}
             compact={count > 0}
           />
         );
       })}
-      {/* 커서 깜빡임 */}
-      <span
-        className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
-        style={{ backgroundColor: "var(--gold)", opacity: 0.7 }}
-      />
+
+      {/* 현재 타이핑 중인 세그먼트 — 부분 표시 */}
+      {currentSeg && currentSeg.type === "narration" && charIdx > 0 && (
+        <span
+          className="font-narrative leading-relaxed whitespace-pre-wrap"
+          style={{ color: "var(--text-primary)" }}
+        >
+          {currentSeg.text.slice(0, charIdx)}
+          {/* 커서 */}
+          <span
+            className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
+            style={{ backgroundColor: "var(--gold)", opacity: 0.7 }}
+          />
+        </span>
+      )}
+
+      {/* 타이핑 대기 중 (세그먼트 없을 때) 커서만 */}
+      {!currentSeg && typedCount >= segments.length && (
+        <span
+          className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
+          style={{ backgroundColor: "var(--gold)", opacity: 0.7 }}
+        />
+      )}
     </div>
   );
 }
