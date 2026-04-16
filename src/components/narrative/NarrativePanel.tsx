@@ -2,7 +2,9 @@
 
 import { useRef, useEffect, useCallback } from "react";
 import { StoryBlock } from "./StoryBlock";
+import { StreamingBlock } from "./StreamingBlock";
 import { isPageTransitioning } from "@/components/ui/PageTransition";
+import { useGameStore } from "@/store/game-store";
 import type { StoryMessage } from "@/types/game";
 
 interface NarrativePanelProps {
@@ -15,6 +17,8 @@ interface NarrativePanelProps {
 
 export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, scrollId }: NarrativePanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isStreaming = useGameStore((s) => s.isStreaming);
+  const streamSegments = useGameStore((s) => s.streamSegments);
 
   // 사용자가 위로 스크롤했는지 감지 (하단에서 100px 이상 떨어지면 "위로 스크롤" 판정)
   const isUserScrolledUp = useRef(false);
@@ -58,7 +62,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     }
     // 일반 스크롤
     scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamSegments]);
 
   // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (사용자 스크롤 존중)
   // 페이지 전환 완료 후에도 즉시 스크롤 추적 시작 (콘텐츠 높이 변화 감지)
@@ -85,6 +89,9 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
       {messages.map((msg) => (
         <StoryBlock key={msg.id} message={msg} onChoiceSelect={onChoiceSelect} onNarrationComplete={onNarrationComplete} />
       ))}
+      {isStreaming && streamSegments.length > 0 && (
+        <StreamingBlock segments={streamSegments} />
+      )}
     </div>
   );
 }
