@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { X, Send, Paperclip, CheckCircle, Loader2 } from "lucide-react";
 import { useGameStore } from "@/store/game-store";
 import { submitBugReport } from "@/lib/api-client";
+import type { StoryMessage } from "@/types/game";
 
 const CATEGORIES = [
   { id: "narrative", label: "서술이 이상해요" },
@@ -20,26 +21,58 @@ interface BugReportModalProps {
   onClose: () => void;
 }
 
+/** 메시지 상세 직렬화 (A) — 렌더 플래그/NPC/선택지/판정 포함 */
+function serializeMessage(msg: StoryMessage): Record<string, unknown> {
+  return {
+    id: msg.id,
+    type: msg.type,
+    text: msg.text,
+    tags: msg.tags,
+    loading: msg.loading,
+    typed: msg.typed,
+    selectedChoiceId: msg.selectedChoiceId,
+    resolveOutcome: msg.resolveOutcome,
+    resolveBreakdown: msg.resolveBreakdown,
+    speakingNpc: msg.speakingNpc
+      ? { npcId: msg.speakingNpc.npcId, displayName: msg.speakingNpc.displayName }
+      : undefined,
+    npcPortrait: msg.npcPortrait
+      ? {
+          npcId: msg.npcPortrait.npcId,
+          npcName: msg.npcPortrait.npcName,
+          isNewlyIntroduced: msg.npcPortrait.isNewlyIntroduced,
+        }
+      : undefined,
+    choices: msg.choices?.map((c) => ({
+      id: c.id,
+      label: c.label,
+      affordance: c.affordance,
+      modifier: c.modifier,
+      disabled: c.disabled,
+    })),
+    locationImage: msg.locationImage,
+  };
+}
+
 function collectRecentTurns(maxTurns = 5) {
   const state = useGameStore.getState();
   const messages = state.messages;
   const currentTurnNo = state.currentTurnNo;
   const nodeType = state.currentNodeType;
 
-  // Collect the last N meaningful message groups as "turns"
   const turns: Array<{
     turnNo: number;
     nodeType: string | null;
-    messages: Array<{ type: string; text: string }>;
+    messages: Array<Record<string, unknown>>;
   }> = [];
 
   // Group messages into pseudo-turns by PLAYER messages
-  let currentGroup: Array<{ type: string; text: string }> = [];
+  let currentGroup: Array<Record<string, unknown>> = [];
   let turnCounter = currentTurnNo;
 
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
-    currentGroup.unshift({ type: msg.type, text: msg.text });
+    currentGroup.unshift(serializeMessage(msg));
 
     if (msg.type === "PLAYER" || msg.type === "SYSTEM") {
       turns.unshift({
@@ -52,7 +85,6 @@ function collectRecentTurns(maxTurns = 5) {
     }
   }
 
-  // If remaining messages exist, include them
   if (currentGroup.length > 0 && turns.length < maxTurns) {
     turns.unshift({
       turnNo: turnCounter,
@@ -62,6 +94,79 @@ function collectRecentTurns(maxTurns = 5) {
   }
 
   return turns.slice(-maxTurns);
+}
+
+/** 클라이언트 스냅샷 (B) — 현재 게임/스트리밍/HUD/위치 상태 */
+function collectClientSnapshot(): Record<string, unknown> {
+  const s = useGameStore.getState();
+  const lastMessages = s.messages.slice(-10).map((m) => ({
+    id: m.id,
+    type: m.type,
+    loading: m.loading,
+    typed: m.typed,
+    hasSpeakingNpc: !!m.speakingNpc,
+    hasPortrait: !!m.npcPortrait,
+    textLen: m.text?.length ?? 0,
+  }));
+
+  return {
+    runId: s.runId,
+    phase: s.phase,
+    currentNodeType: s.currentNodeType,
+    currentNodeIndex: s.currentNodeIndex,
+    currentTurnNo: s.currentTurnNo,
+    locationName: s.locationName,
+    currentLocationId: s.worldState?.currentLocationId ?? null,
+    hubHeat: s.worldState?.hubHeat ?? null,
+    hubSafety: s.worldState?.hubSafety ?? null,
+    timePhase: s.worldState?.timePhase ?? null,
+    day: s.worldState?.day ?? null,
+    hud: s.hud,
+    equippedCount: Object.keys(s.characterInfo?.equipment ?? []).length,
+    inventoryCount: s.inventory.length,
+    equipmentBagCount: s.equipmentBag.length,
+    isSubmitting: s.isSubmitting,
+    isStreaming: s.isStreaming,
+    isNarrating: s.isNarrating,
+    choicesLoading: s.choicesLoading,
+    streamBufferLength: s.streamTextBuffer.length,
+    streamBufferDone: s.streamBufferDone,
+    streamDoneNarrativeLength: s.streamDoneNarrative?.length ?? 0,
+    streamSegmentsCount: s.streamSegments.length,
+    activeChoiceCount: s.choices.length,
+    pendingMessagesCount: s.pendingMessages.length,
+    pendingChoicesCount: s.pendingChoices.length,
+    messagesCount: s.messages.length,
+    lastMessages,
+    characterInfo: s.characterInfo
+      ? { name: s.characterInfo.name, class: s.characterInfo.class, level: s.characterInfo.level }
+      : null,
+    llmStats: s.llmStats
+      ? {
+          model: s.llmStats.model,
+          prompt: s.llmStats.prompt,
+          cached: s.llmStats.cached,
+          completion: s.llmStats.completion,
+          latencyMs: s.llmStats.latencyMs,
+        }
+      : null,
+    llmFailure: s.llmFailure,
+    error: s.error,
+  };
+}
+
+/** DOM 요약 (F) — 실제 렌더된 메시지/선택지 스캔 */
+function collectDomSummary(): Record<string, unknown> {
+  if (typeof document === "undefined") return {};
+  const choiceButtons = document.querySelectorAll(".choice-btn");
+  return {
+    renderedChoiceButtonCount: choiceButtons.length,
+    renderedDialogueBubbleCount: document.querySelectorAll("[data-dialogue-bubble]").length,
+    scrollY: typeof window !== "undefined" ? window.scrollY : null,
+    docScrollHeight: document.documentElement.scrollHeight,
+    viewportHeight: typeof window !== "undefined" ? window.innerHeight : null,
+    viewportWidth: typeof window !== "undefined" ? window.innerWidth : null,
+  };
 }
 
 export function BugReportModal({ onClose }: BugReportModalProps) {
@@ -96,12 +201,21 @@ export function BugReportModal({ onClose }: BugReportModalProps) {
 
     try {
       const recentTurns = collectRecentTurns(5);
-      const { getUiLogs } = await import("@/lib/ui-logger");
+      const [{ getUiLogs }, { getNetworkLog }] = await Promise.all([
+        import("@/lib/ui-logger"),
+        import("@/lib/network-logger"),
+      ]);
+      const clientSnapshot = {
+        ...collectClientSnapshot(),
+        dom: collectDomSummary(),
+      };
       await submitBugReport(runId, {
         category: selected,
         description: description.trim() || undefined,
         recentTurns,
         uiDebugLog: getUiLogs(),
+        clientSnapshot,
+        networkLog: getNetworkLog(),
       });
       setStatus("done");
       // Auto-close after success
