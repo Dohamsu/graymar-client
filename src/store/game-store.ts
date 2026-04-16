@@ -429,53 +429,105 @@ function streamNarrative(
     return;
   }
 
-  const parser = new StreamParser();
   let receivedDone = false;
   let flushTimer: ReturnType<typeof setInterval> | null = null;
-  let accumulatedText = ''; // 스트리밍 중 누적된 narrator 텍스트
-  let firstFlush = true;    // 첫 문장 도착 여부
+  let rawBuffer = '';           // 토큰 누적 원본 버퍼
+  let displayText = '';         // 분석 후 narrator에 표시할 텍스트
+  let firstFlush = true;
+  const bufferStartTime = Date.now();
+  const BUFFER_DELAY_MS = 1500; // 1.5초 초기 버퍼링 (대사/문단 분석용)
+
+  // speakingNpc 정보 (대사 귀속용)
+  const narratorMsg = get().messages.find(m => m.id === `narrator-${turnNo}`);
+  const speakingNpc = (narratorMsg as Record<string, unknown> | undefined)?.speakingNpc as
+    { npcId?: string; displayName?: string; imageUrl?: string } | undefined;
 
   set({
     isStreaming: true,
     streamSegments: [],
   });
 
-  // 300ms 간격으로 완성된 문장을 추출 → narrator 텍스트에 직접 추가
-  // TypewriterText가 성장하는 텍스트를 포맷된 상태로 타이핑
-  flushTimer = setInterval(() => {
-    if (parser.isStructured()) return;
-    const newOutputs = parser.flushSentences();
-    if (newOutputs.length > 0) {
-      const newText = newOutputs.map(o => o.text).join(' ');
-      accumulatedText = accumulatedText ? accumulatedText + ' ' + newText : newText;
-
-      if (firstFlush) {
-        // 첫 문장: narrator loading 해제 → TypewriterText 시작
-        firstFlush = false;
-        flushNarrator(accumulatedText, turnNo, get, set);
-      } else {
-        // 이후 문장: narrator 텍스트에 append (TypewriterText가 리셋 없이 이어서 타이핑)
-        const targetId = `narrator-${turnNo}`;
-        const messages = get().messages.map((msg) =>
-          msg.id === targetId ? { ...msg, text: accumulatedText } : msg,
-        );
-        set({ messages });
+  /**
+   * 원본 텍스트에서 완성된 문장까지 추출 (나머지는 버퍼에 유지).
+   * 줄바꿈과 문단 구조를 보존한다.
+   */
+  function extractCompleteSentences(): string | null {
+    // 마지막 문장 종결 위치 찾기 (. ! ? 뒤에 공백/줄바꿈, 또는 줄바꿈 자체)
+    let lastEnd = -1;
+    for (let i = rawBuffer.length - 1; i >= 0; i--) {
+      const ch = rawBuffer[i];
+      if (ch === '\n') { lastEnd = i + 1; break; }
+      if ('.!?。'.includes(ch) && i < rawBuffer.length - 1) {
+        const next = rawBuffer[i + 1];
+        if (next === ' ' || next === '\n') { lastEnd = i + 1; break; }
       }
+    }
+    if (lastEnd <= 0) return null;
+
+    const extracted = rawBuffer.slice(0, lastEnd);
+    rawBuffer = rawBuffer.slice(lastEnd);
+    return extracted;
+  }
+
+  /**
+   * 클라이언트 측 대사/문단 분석.
+   * 따옴표 패턴을 감지하여 @마커를 삽입하고, 문단 구조를 정리한다.
+   */
+  function analyzeText(text: string): string {
+    let result = text;
+
+    // 1. 대사 감지: 따옴표 안의 텍스트 → @[NPC] 마커 삽입
+    if (speakingNpc?.displayName) {
+      const npcMarker = speakingNpc.imageUrl
+        ? `${speakingNpc.displayName}|${speakingNpc.imageUrl}`
+        : speakingNpc.displayName;
+
+      // "대사" 또는 "대사" 패턴 (3글자 이상)
+      result = result.replace(
+        /(["\u201C])([^"\u201D]{3,}?)(["\u201D])/g,
+        (_, open, dialogue, close) => `@[${npcMarker}] ${open}${dialogue}${close}`,
+      );
+    }
+
+    // 2. 문단 정리: 연속 줄바꿈 보존, 단일 줄바꿈 → 문단 경계로 처리
+    result = result
+      .replace(/\n{3,}/g, '\n\n')     // 3+ 줄바꿈 → 2로 정규화
+      .replace(/([.!?。])\s*\n(?!\n)/g, '$1\n\n')  // 문장 끝 + 단일 줄바꿈 → 문단 구분
+      .trim();
+
+    return result;
+  }
+
+  // 300ms 간격으로 완성된 문장을 분석 → narrator 텍스트에 추가
+  flushTimer = setInterval(() => {
+    // 초기 버퍼링 대기 (1.5초)
+    if (Date.now() - bufferStartTime < BUFFER_DELAY_MS) return;
+
+    const extracted = extractCompleteSentences();
+    if (!extracted) return;
+
+    const analyzed = analyzeText(extracted);
+    displayText = displayText ? displayText + analyzed : analyzed;
+
+    if (firstFlush) {
+      firstFlush = false;
+      flushNarrator(displayText, turnNo, get, set);
+    } else {
+      const targetId = `narrator-${turnNo}`;
+      const messages = get().messages.map((msg) =>
+        msg.id === targetId ? { ...msg, text: displayText } : msg,
+      );
+      set({ messages });
     }
   }, 300);
 
   const disconnect = connectLlmStream(runId, turnNo, token, {
     onToken(text) {
-      parser.feed(text);
+      rawBuffer += text;
     },
 
-    onNarration(text) {
-      parser.addNarration(text);
-    },
-
-    onDialogue(text) {
-      parser.addNarration(text); // 스트리밍 중 대사도 narration으로 누적
-    },
+    onNarration() { /* 서버 구조화 이벤트 무시 — raw 토큰으로 처리 */ },
+    onDialogue() { /* 서버 구조화 이벤트 무시 — raw 토큰으로 처리 */ },
 
     onChoicesLoading() {
       set({ choicesLoading: true });
@@ -486,13 +538,6 @@ function streamNarrative(
 
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
-
-      // 남은 버퍼 플러시 → narrator에 추가
-      const remaining = parser.flush();
-      if (remaining.length > 0) {
-        const newText = remaining.map(o => o.text).join(' ');
-        accumulatedText = accumulatedText ? accumulatedText + ' ' + newText : newText;
-      }
 
       // LLM 맥락 선택지를 pending에 저장 (타이핑 완료 후 flushPending에서 표시)
       if (choices && choices.length > 0) {
@@ -516,7 +561,8 @@ function streamNarrative(
         choicesLoading: false,
       });
 
-      // 최종 텍스트로 교체 → TypewriterText가 이미 타이핑한 부분은 이어서, 새 부분만 타이핑
+      // 최종 텍스트로 교체 (서버 @마커 포함)
+      // TypewriterText가 이미 타이핑한 부분은 위치 복원으로 이어서 타이핑
       flushNarrator(finalNarrative, turnNo, get, set);
 
       // done 이벤트에서 tokenStats 조회
@@ -532,7 +578,7 @@ function streamNarrative(
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
 
       // 스트리밍 실패 — 상태 정리 후 폴링 fallback
-      parser.flush();
+      rawBuffer = '';
       set({
         isStreaming: false,
         streamSegments: [],
