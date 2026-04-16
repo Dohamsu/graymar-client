@@ -12,6 +12,19 @@ interface StreamingBlockProps {
   isDone?: boolean;
 }
 
+/** 스트리밍 원문에서 시스템 태그와 @마커를 제거 */
+function cleanStreamText(text: string): string {
+  return text
+    .replace(/@\[[^\]]*\]\s*/g, '')          // @[NPC이름|URL] 제거
+    .replace(/@[A-Z][A-Z_0-9]+\s*/g, '')     // @NPC_ID 제거
+    .replace(/\[CHOICES\][\s\S]*?\[\/CHOICES\]/g, '') // [CHOICES]...[/CHOICES] 블록 제거
+    .replace(/\[THREAD\][\s\S]*/g, '')        // [THREAD] 이후 전부 제거
+    .replace(/\[MEMORY\][\s\S]*?\[\/MEMORY\]/g, '')   // [MEMORY] 블록 제거
+    .replace(/\[[A-Z_]+\]/g, '')              // 기타 [TAG] 제거
+    .replace(/\n{3,}/g, '\n\n')              // 연속 빈 줄 정리
+    .trim();
+}
+
 /** 타이핑 속도 (ms/글자) */
 const CHAR_SPEED = 25;
 /** 구두점 후 추가 딜레이 */
@@ -31,8 +44,11 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
   const [charIdx, setCharIdx] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 현재 타이핑 중인 세그먼트
-  const currentSeg = segments[typedCount] as StreamOutput | undefined;
+  // 현재 타이핑 중인 세그먼트 (narration은 정제)
+  const rawCurrentSeg = segments[typedCount] as StreamOutput | undefined;
+  const currentSeg = rawCurrentSeg && rawCurrentSeg.type === 'narration'
+    ? { ...rawCurrentSeg, text: cleanStreamText(rawCurrentSeg.text) }
+    : rawCurrentSeg;
 
   useEffect(() => {
     if (!currentSeg) return;
@@ -80,13 +96,15 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
       {/* 타이핑 완료된 세그먼트 — 전체 표시 */}
       {segments.slice(0, typedCount).map((seg, idx) => {
         if (seg.type === "narration") {
+          const cleaned = cleanStreamText(seg.text);
+          if (!cleaned) return null;
           return (
             <span
               key={`sn-${idx}`}
               className="font-narrative leading-relaxed whitespace-pre-wrap"
               style={{ color: "var(--text-primary)" }}
             >
-              {seg.text}
+              {cleaned}
             </span>
           );
         }
