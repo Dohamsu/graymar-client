@@ -338,6 +338,14 @@ function NarratorContent({ text, speakingNpc }: { text: string; speakingNpc?: Sp
   );
 }
 
+/** NarratorContent + 렌더 후 onReady 콜백 (typed=true 경로에서 flushPending 트리거) */
+function NarratorContentWithFlush({ text, speakingNpc, onReady }: { text: string; speakingNpc?: SpeakingNpc; onReady?: () => void }) {
+  useEffect(() => {
+    onReady?.();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return <NarratorContent text={text} speakingNpc={speakingNpc} />;
+}
+
 // ---------------------------------------------------------------------------
 // TypewriterText — 세그먼트 기반 타이핑 + 대사 즉시 표시 + 리듬감
 // ---------------------------------------------------------------------------
@@ -850,7 +858,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
               }}
             />
           ) : (
-            <NarratorContent text={message.text} speakingNpc={message.speakingNpc} />
+            <NarratorContentWithFlush text={message.text} speakingNpc={message.speakingNpc} onReady={onNarrationComplete} />
           )}
           {/* 장면 그리기 버튼 — 비활성화 (고도화 후 복원) */}
         </div>
