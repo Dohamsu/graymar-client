@@ -121,6 +121,10 @@ export interface GameState {
   choicesLoading: boolean;
   /** 내레이터가 타이핑 애니메이션 진행 중 (선택지 표시 억제용) */
   isNarrating: boolean;
+  /** 스트리밍 텍스트 버퍼 — 분석 완료된 텍스트 누적, 컴포넌트가 한 글자씩 소비 */
+  streamTextBuffer: string;
+  /** 스트리밍 완료 여부 (done 수신 + 버퍼 최종 확정) */
+  streamBufferDone: boolean;
   /** StreamingBlock 타이핑 완료 후 호출 — 최종 서술 교체 + 선택지 표시 */
   finalizeStreaming: () => void;
 
@@ -432,17 +436,14 @@ function streamNarrative(
   let receivedDone = false;
   let flushTimer: ReturnType<typeof setInterval> | null = null;
   let rawBuffer = '';           // 토큰 누적 원본 버퍼
-  let displayText = '';         // 분석 후 narrator에 표시할 텍스트
-  let firstFlush = true;
-  const bufferStartTime = Date.now();
-  const BUFFER_DELAY_MS = 1500; // 1.5초 초기 버퍼링 (대사/문단 분석용)
+  let analyzedBuffer = '';      // 분석 완료 텍스트 (버퍼에 누적)
 
   // speakingNpc 정보 (대사 귀속용)
   const narratorMsg = get().messages.find(m => m.id === `narrator-${turnNo}`);
   const speakingNpc = (narratorMsg as Record<string, unknown> | undefined)?.speakingNpc as
     { npcId?: string; displayName?: string; imageUrl?: string } | undefined;
 
-  // NPC 초상화 맵 빌드 (복수 NPC 대사 귀속용)
+  // NPC 초상화 맵 빌드
   const npcPortraitMap = new Map<string, string>();
   if (speakingNpc?.displayName && speakingNpc?.imageUrl) {
     npcPortraitMap.set(speakingNpc.displayName, speakingNpc.imageUrl);
@@ -451,40 +452,36 @@ function streamNarrative(
   set({
     isStreaming: true,
     streamSegments: [],
+    streamTextBuffer: '',
+    streamBufferDone: false,
   });
 
   /**
-   * 원본 텍스트에서 완성된 문장까지 추출 (나머지는 버퍼에 유지).
-   * 줄바꿈과 문단 구조를 보존한다.
+   * 원본 버퍼에서 완성된 문장까지 추출 (나머지는 버퍼에 유지).
    */
   function extractCompleteSentences(): string | null {
-    // 마지막 문장 종결 위치 찾기 (. ! ? 뒤에 공백/줄바꿈, 또는 줄바꿈 자체)
     let lastEnd = -1;
     for (let i = rawBuffer.length - 1; i >= 0; i--) {
       const ch = rawBuffer[i];
       if (ch === '\n') { lastEnd = i + 1; break; }
-      if ('.!?。'.includes(ch) && i < rawBuffer.length - 1) {
+      if ('.!?'.includes(ch) && i < rawBuffer.length - 1) {
         const next = rawBuffer[i + 1];
         if (next === ' ' || next === '\n') { lastEnd = i + 1; break; }
       }
     }
     if (lastEnd <= 0) return null;
-
     const extracted = rawBuffer.slice(0, lastEnd);
     rawBuffer = rawBuffer.slice(lastEnd);
     return extracted;
   }
 
   /**
-   * 클라이언트 측 대사/문단 분석.
-   * "NPC별칭: "대사"" 줄 패턴을 감지하여 @[NPC|portrait] 마커로 변환하고, 문단 구조를 정리한다.
+   * 대사/문단 분석: "NPC별칭: "대사"" → @마커 변환, 문단 정리
    */
   function analyzeText(text: string): string {
-    // NPC별칭: "대사" 패턴 → @[NPC별칭|portrait] "대사" 변환 (줄 단위)
     const dialogueRe = /^([^":]{2,}):\s*"([^"]+)"?\s*$/;
-
     const lines = text.split('\n');
-    let result = lines.map(line => {
+    const result = lines.map(line => {
       const m = line.match(dialogueRe);
       if (m) {
         const npcName = m[1].trim();
@@ -494,34 +491,17 @@ function streamNarrative(
       }
       return line;
     }).join('\n');
-
-    // 문단 정리: 기존 줄바꿈 보존, 3+ 줄바꿈 정규화
-    return result
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+    return result.replace(/\n{3,}/g, '\n\n').trim();
   }
 
-  // 300ms 간격으로 완성된 문장을 분석 → narrator 텍스트에 추가
+  // 300ms 간격으로 완성된 문장을 분석 → streamTextBuffer에 누적
+  // 컴포넌트(StreamTyper)가 버퍼에서 한 글자씩 읽어 타이핑 렌더링
   flushTimer = setInterval(() => {
-    // 초기 버퍼링 대기 (1.5초)
-    if (Date.now() - bufferStartTime < BUFFER_DELAY_MS) return;
-
     const extracted = extractCompleteSentences();
     if (!extracted) return;
-
     const analyzed = analyzeText(extracted);
-    displayText = displayText ? displayText + '\n' + analyzed : analyzed;
-
-    if (firstFlush) {
-      firstFlush = false;
-      flushNarrator(displayText, turnNo, get, set);
-    } else {
-      const targetId = `narrator-${turnNo}`;
-      const messages = get().messages.map((msg) =>
-        msg.id === targetId ? { ...msg, text: displayText } : msg,
-      );
-      set({ messages });
-    }
+    analyzedBuffer = analyzedBuffer ? analyzedBuffer + '\n' + analyzed : analyzed;
+    set({ streamTextBuffer: analyzedBuffer });
   }, 300);
 
   const disconnect = connectLlmStream(runId, turnNo, token, {
@@ -529,8 +509,8 @@ function streamNarrative(
       rawBuffer += text;
     },
 
-    onNarration() { /* 서버 구조화 이벤트 무시 — raw 토큰으로 처리 */ },
-    onDialogue() { /* 서버 구조화 이벤트 무시 — raw 토큰으로 처리 */ },
+    onNarration() { /* raw 토큰으로 처리 */ },
+    onDialogue() { /* raw 토큰으로 처리 */ },
 
     onChoicesLoading() {
       set({ choicesLoading: true });
@@ -542,20 +522,19 @@ function streamNarrative(
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
 
-      // 남은 버퍼 flush → displayText에 추가
+      // 남은 버퍼 전부 flush → streamTextBuffer에 추가
       const remaining = extractCompleteSentences();
       if (remaining) {
         const analyzed = analyzeText(remaining);
-        displayText = displayText ? displayText + '\n' + analyzed : analyzed;
+        analyzedBuffer = analyzedBuffer ? analyzedBuffer + '\n' + analyzed : analyzed;
       }
-      // 버퍼에 남은 불완전 문장도 포함
       if (rawBuffer.trim()) {
         const analyzed = analyzeText(rawBuffer.trim());
-        displayText = displayText ? displayText + '\n' + analyzed : analyzed;
+        analyzedBuffer = analyzedBuffer ? analyzedBuffer + '\n' + analyzed : analyzed;
         rawBuffer = '';
       }
 
-      // LLM 맥락 선택지를 pending에 저장 (타이핑 완료 후 flushPending에서 표시)
+      // 선택지 pending
       if (choices && choices.length > 0) {
         set({
           pendingChoices: choices.map(c => ({
@@ -566,33 +545,13 @@ function streamNarrative(
         });
       }
 
-      // 스트리밍 종료
+      // 최종 버퍼 확정 + done 플래그
       set({
-        isStreaming: false,
-        streamSegments: [],
-        streamDoneNarrative: null,
+        streamTextBuffer: analyzedBuffer || stripNarratorChoices(narrative),
+        streamBufferDone: true,
         streamDisconnect: null,
         choicesLoading: false,
       });
-
-      // 이미 타이핑이 시작된 경우: 클라이언트 분석 텍스트 유지 (재타이핑 방지)
-      // 타이핑 미시작 시: 서버 최종 텍스트 사용
-      if (displayText) {
-        // 최종 displayText로 narrator 갱신 (남은 버퍼 포함)
-        if (firstFlush) {
-          flushNarrator(displayText, turnNo, get, set);
-        } else {
-          const targetId = `narrator-${turnNo}`;
-          const messages = get().messages.map((msg) =>
-            msg.id === targetId ? { ...msg, text: displayText } : msg,
-          );
-          set({ messages });
-        }
-      } else {
-        // 타이핑 미시작 (버퍼링 중 done 도착) → 서버 최종 텍스트 사용
-        const finalNarrative = stripNarratorChoices(narrative);
-        flushNarrator(finalNarrative, turnNo, get, set);
-      }
 
       // done 이벤트에서 tokenStats 조회
       getTurnDetail(runId, turnNo).then((detail) => {
@@ -1010,6 +969,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   streamDoneNarrative: null,
   choicesLoading: false,
   isNarrating: false,
+  streamTextBuffer: '',
+  streamBufferDone: false,
   finalizeStreaming: () => {
     const { streamDoneNarrative, currentTurnNo } = get();
     if (!streamDoneNarrative) return;

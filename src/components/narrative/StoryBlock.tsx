@@ -125,6 +125,88 @@ function NarratorLoading() {
 }
 
 // ---------------------------------------------------------------------------
+// StreamTyper — 버퍼에서 한 글자씩 읽어 타이핑 렌더링
+// 버퍼(streamTextBuffer)가 독립적으로 성장, 타이핑은 자체 속도로 진행
+// ---------------------------------------------------------------------------
+
+function StreamTyper({ onComplete }: { onComplete?: () => void }) {
+  const buffer = useGameStore((s) => s.streamTextBuffer);
+  const isDone = useGameStore((s) => s.streamBufferDone);
+  const textSpeed = useSettingsStore((s) => s.textSpeed);
+  const preset = TEXT_SPEED_PRESETS[textSpeed];
+
+  const [typedLength, setTypedLength] = useState(0);
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; });
+
+  // 타이핑 타이머: 버퍼에서 한 글자씩 소비
+  useEffect(() => {
+    if (typedLength >= buffer.length) {
+      // 버퍼 끝 도달 + done이면 타이핑 완료
+      if (isDone && buffer.length > 0) {
+        onCompleteRef.current?.();
+      }
+      return; // 버퍼에 더 쌓일 때까지 대기
+    }
+
+    // 즉시 모드
+    if (preset.charSpeed === 0) {
+      setTypedLength(buffer.length);
+      return;
+    }
+
+    // 구두점 딜레이
+    const ch = buffer[typedLength - 1];
+    let delay: number = preset.charSpeed;
+    if (ch && '.!?'.includes(ch)) delay = preset.charSpeed * 5;
+    else if (ch && ',;'.includes(ch)) delay = preset.charSpeed * 2;
+    else if (ch === '\n') delay = preset.paragraphPause;
+
+    const timer = setTimeout(() => {
+      setTypedLength((prev) => prev + 1);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [typedLength, buffer, isDone, preset]);
+
+  if (buffer.length === 0) return null;
+
+  // 버퍼의 typed 부분을 parseNarrativeSegments로 포맷팅
+  const visibleText = buffer.slice(0, typedLength);
+  const segments = parseNarrativeSegments(cleanResidualMarkers(visibleText));
+  const isTyping = typedLength < buffer.length || !isDone;
+
+  const rendered: React.ReactNode[] = [];
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    if (seg.type === 'dialogue') {
+      rendered.push(
+        <DialogueBubble
+          key={`st-bubble-${i}`}
+          text={seg.text}
+          npcName={seg.markerName ?? ''}
+          npcImageUrl={seg.markerImage ?? undefined}
+          compact={false}
+        />,
+      );
+    } else {
+      const { nodes } = renderInlineText(seg.text, i * 1000);
+      rendered.push(
+        <span key={`st-narr-${i}`} className="leading-relaxed">{nodes}</span>,
+      );
+    }
+  }
+
+  return (
+    <>
+      {rendered}
+      {isTyping && (
+        <span className="ml-0.5 inline-block h-[1em] w-[2px] animate-pulse bg-[var(--success-green)] align-text-bottom" />
+      )}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // 대사 스타일링 — "" / "" 안의 텍스트를 다른 색상·폰트로 렌더
 // speakingNpc가 있으면 큰따옴표 대사를 DialogueBubble로 변환
 // ---------------------------------------------------------------------------
@@ -432,42 +514,14 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
   const [segIdx, setSegIdx] = useState(0);       // 현재 세그먼트 인덱스
   const [charIdx, setCharIdx] = useState(0);      // 현재 세그먼트 내 글자 위치
   const [prevText, setPrevText] = useState(text);
-  const typedCharsRef = useRef(0); // 총 타이핑된 글자 수 (텍스트 성장 시 위치 복원용)
   const onCompleteRef = useRef(onComplete);
   useEffect(() => { onCompleteRef.current = onComplete; });
 
-  // text 변경 시 처리: 텍스트 성장(append)이면 리셋하지 않고 이어서 타이핑
+  // text 변경 시 리셋 (스트리밍은 StreamTyper가 처리, TypewriterText는 폴링/최종 텍스트용)
   if (text !== prevText) {
-    const cleaned = cleanResidualMarkers(text);
-    const prevCleaned = cleanResidualMarkers(prevText);
-    const isExtension = cleaned.length > prevCleaned.length && cleaned.includes(prevCleaned.slice(0, Math.min(prevCleaned.length, 30)));
-
     setPrevText(text);
-
-    if (isExtension) {
-      // 텍스트 성장: 새 segments에서 typedCharsRef 기반 위치 복원
-      const newSegments = parseNarrativeSegments(cleaned);
-      let remaining = typedCharsRef.current;
-      let newSegIdx = 0;
-      let newCharIdx = 0;
-      for (let i = 0; i < newSegments.length; i++) {
-        if (remaining <= newSegments[i].text.length) {
-          newSegIdx = i;
-          newCharIdx = remaining;
-          break;
-        }
-        remaining -= newSegments[i].text.length;
-        newSegIdx = i + 1;
-        newCharIdx = 0;
-      }
-      setSegIdx(newSegIdx);
-      setCharIdx(newCharIdx);
-    } else {
-      // 완전 교체: 리셋
-      setSegIdx(0);
-      setCharIdx(0);
-      typedCharsRef.current = 0;
-    }
+    setSegIdx(0);
+    setCharIdx(0);
   }
 
   const isComplete = segIdx >= segments.length;
@@ -523,16 +577,6 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
     }, delay);
     return () => clearTimeout(timer);
   }, [segIdx, charIdx, segments, preset, isComplete]);
-
-  // 총 타이핑된 글자 수 추적 (텍스트 성장 시 위치 복원용)
-  useEffect(() => {
-    let total = 0;
-    for (let i = 0; i < segIdx && i < segments.length; i++) {
-      total += segments[i].text.length;
-    }
-    total += charIdx;
-    typedCharsRef.current = total;
-  }, [segIdx, charIdx, segments]);
 
   // 렌더링: 완료된 세그먼트 + 현재 타이핑 중인 세그먼트
   const rendered: React.ReactNode[] = [];
@@ -762,6 +806,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   const isStreaming = useGameStore((s) => s.isStreaming);
   const streamSegments = useGameStore((s) => s.streamSegments);
   const streamDoneNarrative = useGameStore((s) => s.streamDoneNarrative);
+  const streamTextBuffer = useGameStore((s) => s.streamTextBuffer);
   const finalizeStreaming = useGameStore((s) => s.finalizeStreaming);
   const fontSizes = FONT_SIZE_PRESETS[fontSizeKey];
 
@@ -812,12 +857,24 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
       </span>
 
       {message.loading ? (
-        isStreaming && streamSegments.length > 0 ? (
-          <StreamingBlock
-            segments={streamSegments}
-            isDone={!!streamDoneNarrative}
+        isStreaming && streamTextBuffer.length > 0 ? (
+          <StreamTyper
             onComplete={() => {
-              finalizeStreaming();
+              // 타이핑 완료 → narrator 텍스트 교체 + pending flush
+              const store = useGameStore.getState();
+              const finalText = store.streamTextBuffer;
+              useGameStore.setState({
+                isStreaming: false,
+                streamSegments: [],
+                streamTextBuffer: '',
+                streamBufferDone: false,
+                streamDoneNarrative: null,
+              });
+              // narrator 메시지에 최종 텍스트 설정
+              const msgs = store.messages.map((msg) =>
+                msg.id === message.id ? { ...msg, text: finalText, loading: false, typed: true } : msg,
+              );
+              useGameStore.setState({ messages: msgs });
               onNarrationComplete?.();
             }}
           />
