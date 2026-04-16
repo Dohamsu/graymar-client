@@ -117,6 +117,8 @@ export interface GameState {
   streamDisconnect: (() => void) | null;
   /** done 이벤트 후 최종 서술 (StreamingBlock 타이핑 완료 대기용) */
   streamDoneNarrative: string | null;
+  /** Track 2 진행 중 (선택지 생성 대기) */
+  choicesLoading: boolean;
   /** StreamingBlock 타이핑 완료 후 호출 — 최종 서술 교체 + 선택지 표시 */
   finalizeStreaming: () => void;
 
@@ -459,8 +461,13 @@ function streamNarrative(
       set({ streamSegments: parser.getSegments() });
     },
 
+    onChoicesLoading() {
+      set({ choicesLoading: true });
+    },
+
     onDone(narrative, choices) {
       receivedDone = true;
+      set({ choicesLoading: false });
 
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
@@ -928,6 +935,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   streamSegments: [],
   streamDisconnect: null,
   streamDoneNarrative: null,
+  choicesLoading: false,
   finalizeStreaming: () => {
     const { streamDoneNarrative, currentTurnNo } = get();
     if (!streamDoneNarrative) return;
