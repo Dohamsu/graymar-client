@@ -64,6 +64,8 @@ export default function GameClient() {
   const notifications = useGameStore((s) => s.notifications);
   const endingResult = useGameStore((s) => s.endingResult);
   const pendingNewsSignals = useGameStore((s) => s.pendingNewsSignals);
+  const isStreaming = useGameStore((s) => s.isStreaming);
+  const isNarrating = useGameStore((s) => s.isNarrating);
 
   const [mobileTab, setMobileTab] = useState("story");
   const [showPartyScreen, setShowPartyScreen] = useState(false);
@@ -251,8 +253,10 @@ export default function GameClient() {
       : locationName ?? "그레이마르 항만";
 
   // Combine choices into the message feed if not already there
+  // 내레이터가 타이핑 중이면 선택지 표시를 억제 (내러티브 완료 후 표시)
   const displayMessages =
     choices.length > 0 &&
+    !isNarrating &&
     (messages.length === 0 || messages[messages.length - 1]?.type !== "CHOICE")
       ? [
           ...messages,

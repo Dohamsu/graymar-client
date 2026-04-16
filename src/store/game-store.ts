@@ -119,6 +119,8 @@ export interface GameState {
   streamDoneNarrative: string | null;
   /** Track 2 진행 중 (선택지 생성 대기) */
   choicesLoading: boolean;
+  /** 내레이터가 타이핑 애니메이션 진행 중 (선택지 표시 억제용) */
+  isNarrating: boolean;
   /** StreamingBlock 타이핑 완료 후 호출 — 최종 서술 교체 + 선택지 표시 */
   finalizeStreaming: () => void;
 
@@ -376,6 +378,7 @@ function pollForNarrative(
             provider,
             turnNo,
           },
+          isNarrating: false,
         });
         // 게임 정지: narrator를 로딩 상태로 유지, pending flush하지 않음
         return;
@@ -388,6 +391,7 @@ function pollForNarrative(
             message: 'AI 서술 응답 시간이 초과되었습니다.',
             turnNo,
           },
+          isNarrating: false,
         });
         return;
       }
@@ -400,6 +404,7 @@ function pollForNarrative(
             message: '서버와의 연결에 실패했습니다.',
             turnNo,
           },
+          isNarrating: false,
         });
       }
     }
@@ -433,15 +438,15 @@ function streamNarrative(
     streamSegments: [],
   });
 
-  // 레거시 모드용: 1초 간격으로 완성된 문장을 추출하여 UI에 반영
-  // 구조화 모드에서는 onNarration/onDialogue가 즉시 반영하므로 타이머 미사용
+  // 레거시 모드용: 300ms 간격으로 완성된 문장을 추출하여 UI에 반영
+  // 짧은 간격으로 문장을 하나씩 추출하여 뭉텅이 표시 방지
   flushTimer = setInterval(() => {
     if (parser.isStructured()) return; // 구조화 모드에서는 스킵
     const newOutputs = parser.flushSentences();
     if (newOutputs.length > 0) {
       set({ streamSegments: [...get().streamSegments, ...newOutputs] });
     }
-  }, 1000);
+  }, 300);
 
   const disconnect = connectLlmStream(runId, turnNo, token, {
     onToken(text) {
@@ -658,6 +663,7 @@ function processTurnResponse(
       pendingChoices: newChoices,
       currentTurnNo: turnRes.turnNo + 1,
       isSubmitting: false,
+      isNarrating: true,
     });
 
     const runId = get().runId;
@@ -797,6 +803,7 @@ function processTurnResponse(
         currentTurnNo: enterTurnNo + 1,
         ...(transWs ? { worldState: transWs } : {}),
         locationName: locName,
+        isNarrating: true,
       });
 
       const runId = get().runId;
@@ -936,6 +943,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   streamDisconnect: null,
   streamDoneNarrative: null,
   choicesLoading: false,
+  isNarrating: false,
   finalizeStreaming: () => {
     const { streamDoneNarrative, currentTurnNo } = get();
     if (!streamDoneNarrative) return;
@@ -1523,6 +1531,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       pendingMessages: [],
       choices: pendingChoices,
       pendingChoices: [],
+      isNarrating: false,
     });
   },
 
@@ -1567,10 +1576,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!llmFailure) return;
 
     const { turnNo } = llmFailure;
-    set({ llmFailure: null });
+    set({ llmFailure: null, isNarrating: false });
 
     // 로딩 중인 narrator를 fallback 텍스트로 교체하고 pending flush
     flushNarrator('...', turnNo, get, set);
+    get().flushPending();
   },
 
   // -----------------------------------------------------------------------
