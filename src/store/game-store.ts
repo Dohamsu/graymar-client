@@ -495,14 +495,9 @@ function streamNarrative(
       return line;
     }).join('\n');
 
-    // 문장 단위 줄바꿈: 마침표/느낌표/물음표 뒤 2자 이상 공백+텍스트 → 줄바꿈
-    result = result.replace(/([.!?])\s{1,}/g, (match, punct) => {
-      return punct + '\n';
-    });
-
-    // 문단 정리
+    // 문단 정리: 기존 줄바꿈 보존, 3+ 줄바꿈 정규화
     return result
-      .replace(/\n{3,}/g, '\n\n')     // 3+ 줄바꿈 → 2로 정규화
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
   }
 
