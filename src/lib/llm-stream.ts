@@ -38,12 +38,17 @@ export interface LlmErrorEvent {
   message: string;
 }
 
-export type LlmStreamEvent = LlmTokenEvent | LlmNarrationEvent | LlmDialogueEvent | LlmDoneEvent | LlmErrorEvent;
+export interface LlmChoicesLoadingEvent {
+  type: 'choices_loading';
+}
+
+export type LlmStreamEvent = LlmTokenEvent | LlmNarrationEvent | LlmDialogueEvent | LlmChoicesLoadingEvent | LlmDoneEvent | LlmErrorEvent;
 
 export interface LlmStreamCallbacks {
   onToken: (text: string) => void;
   onNarration?: (text: string) => void;
   onDialogue?: (text: string, npcName?: string, npcImage?: string) => void;
+  onChoicesLoading?: () => void;
   onDone: (narrative: string, choices?: LlmDoneEvent['choices']) => void;
   onError: (message: string) => void;
 }
@@ -87,6 +92,9 @@ export function connectLlmStream(
           break;
         case 'dialogue':
           callbacks.onDialogue?.(data.text, data.npcName, data.npcImage);
+          break;
+        case 'choices_loading':
+          callbacks.onChoicesLoading?.();
           break;
         case 'done':
           callbacks.onDone(data.narrative, data.choices);
