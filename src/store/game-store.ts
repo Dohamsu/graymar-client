@@ -425,8 +425,10 @@ function streamNarrative(
     streamSegments: [],
   });
 
-  // 1초 간격으로 완성된 문장을 추출하여 UI에 반영
+  // 레거시 모드용: 1초 간격으로 완성된 문장을 추출하여 UI에 반영
+  // 구조화 모드에서는 onNarration/onDialogue가 즉시 반영하므로 타이머 미사용
   flushTimer = setInterval(() => {
+    if (parser.isStructured()) return; // 구조화 모드에서는 스킵
     const newOutputs = parser.flushSentences();
     if (newOutputs.length > 0) {
       set({ streamSegments: [...get().streamSegments, ...newOutputs] });
@@ -435,8 +437,20 @@ function streamNarrative(
 
   const disconnect = connectLlmStream(runId, turnNo, token, {
     onToken(text) {
-      // 토큰을 버퍼에 누적만 (UI 업데이트는 flushTimer가 담당)
+      // 토큰을 버퍼에 누적 (레거시 fallback용)
       parser.feed(text);
+    },
+
+    onNarration(text) {
+      // 서버 구조화 이벤트 — 즉시 반영
+      parser.addNarration(text);
+      set({ streamSegments: parser.getSegments() });
+    },
+
+    onDialogue(text, npcName, npcImage) {
+      // 서버 구조화 이벤트 — 즉시 반영
+      parser.addDialogue(text, npcName, npcImage);
+      set({ streamSegments: parser.getSegments() });
     },
 
     onDone(narrative, choices) {
@@ -445,10 +459,12 @@ function streamNarrative(
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
 
-      // 남은 버퍼 플러시 (마지막 미완성 문장 포함)
-      const flushed = parser.flush();
-      if (flushed.length > 0) {
-        set({ streamSegments: [...get().streamSegments, ...flushed] });
+      // 레거시 모드: 남은 버퍼 플러시
+      if (!parser.isStructured()) {
+        const flushed = parser.flush();
+        if (flushed.length > 0) {
+          set({ streamSegments: [...get().streamSegments, ...flushed] });
+        }
       }
 
       // LLM 맥락 선택지로 교체

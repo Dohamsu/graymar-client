@@ -2,12 +2,29 @@
 // LLM SSE Stream Client
 // EventSource + query param token (AuthGuard 호환)
 // 서버 엔드포인트: GET /v1/runs/:runId/turns/:turnNo/stream?token=JWT
-// 이벤트 형식: { type: 'token', text: '...' } | { type: 'done', narrative, choices } | { type: 'error', message }
+// 이벤트 형식:
+//   { type: 'narration', text } — 서술 세그먼트
+//   { type: 'dialogue', text, npcName, npcImage } — NPC 대사 세그먼트
+//   { type: 'token', text } — raw 토큰 (하위 호환)
+//   { type: 'done', narrative, choices } — 후처리 완료
+//   { type: 'error', message }
 // ---------------------------------------------------------------------------
 
 export interface LlmTokenEvent {
   type: 'token';
   text: string;
+}
+
+export interface LlmNarrationEvent {
+  type: 'narration';
+  text: string;
+}
+
+export interface LlmDialogueEvent {
+  type: 'dialogue';
+  text: string;
+  npcName?: string;
+  npcImage?: string;
 }
 
 export interface LlmDoneEvent {
@@ -21,10 +38,12 @@ export interface LlmErrorEvent {
   message: string;
 }
 
-export type LlmStreamEvent = LlmTokenEvent | LlmDoneEvent | LlmErrorEvent;
+export type LlmStreamEvent = LlmTokenEvent | LlmNarrationEvent | LlmDialogueEvent | LlmDoneEvent | LlmErrorEvent;
 
 export interface LlmStreamCallbacks {
   onToken: (text: string) => void;
+  onNarration?: (text: string) => void;
+  onDialogue?: (text: string, npcName?: string, npcImage?: string) => void;
   onDone: (narrative: string, choices?: LlmDoneEvent['choices']) => void;
   onError: (message: string) => void;
 }
@@ -62,6 +81,12 @@ export function connectLlmStream(
       switch (data.type) {
         case 'token':
           callbacks.onToken(data.text);
+          break;
+        case 'narration':
+          callbacks.onNarration?.(data.text);
+          break;
+        case 'dialogue':
+          callbacks.onDialogue?.(data.text, data.npcName, data.npcImage);
           break;
         case 'done':
           callbacks.onDone(data.narrative, data.choices);
