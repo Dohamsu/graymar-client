@@ -432,38 +432,49 @@ function streamNarrative(
   const parser = new StreamParser();
   let receivedDone = false;
   let flushTimer: ReturnType<typeof setInterval> | null = null;
+  let accumulatedText = ''; // 스트리밍 중 누적된 narrator 텍스트
+  let firstFlush = true;    // 첫 문장 도착 여부
 
   set({
     isStreaming: true,
     streamSegments: [],
   });
 
-  // 레거시 모드용: 300ms 간격으로 완성된 문장을 추출하여 UI에 반영
-  // 짧은 간격으로 문장을 하나씩 추출하여 뭉텅이 표시 방지
+  // 300ms 간격으로 완성된 문장을 추출 → narrator 텍스트에 직접 추가
+  // TypewriterText가 성장하는 텍스트를 포맷된 상태로 타이핑
   flushTimer = setInterval(() => {
-    if (parser.isStructured()) return; // 구조화 모드에서는 스킵
+    if (parser.isStructured()) return;
     const newOutputs = parser.flushSentences();
     if (newOutputs.length > 0) {
-      set({ streamSegments: [...get().streamSegments, ...newOutputs] });
+      const newText = newOutputs.map(o => o.text).join(' ');
+      accumulatedText = accumulatedText ? accumulatedText + ' ' + newText : newText;
+
+      if (firstFlush) {
+        // 첫 문장: narrator loading 해제 → TypewriterText 시작
+        firstFlush = false;
+        flushNarrator(accumulatedText, turnNo, get, set);
+      } else {
+        // 이후 문장: narrator 텍스트에 append (TypewriterText가 리셋 없이 이어서 타이핑)
+        const targetId = `narrator-${turnNo}`;
+        const messages = get().messages.map((msg) =>
+          msg.id === targetId ? { ...msg, text: accumulatedText } : msg,
+        );
+        set({ messages });
+      }
     }
   }, 300);
 
   const disconnect = connectLlmStream(runId, turnNo, token, {
     onToken(text) {
-      // 토큰을 버퍼에 누적 (레거시 fallback용)
       parser.feed(text);
     },
 
     onNarration(text) {
-      // 서버 구조화 이벤트 — 즉시 반영
       parser.addNarration(text);
-      set({ streamSegments: parser.getSegments() });
     },
 
-    onDialogue(text, npcName, npcImage) {
-      // 서버 구조화 이벤트 — 즉시 반영
-      parser.addDialogue(text, npcName, npcImage);
-      set({ streamSegments: parser.getSegments() });
+    onDialogue(text) {
+      parser.addNarration(text); // 스트리밍 중 대사도 narration으로 누적
     },
 
     onChoicesLoading() {
@@ -475,7 +486,13 @@ function streamNarrative(
 
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
-      parser.flush(); // 버퍼 정리
+
+      // 남은 버퍼 플러시 → narrator에 추가
+      const remaining = parser.flush();
+      if (remaining.length > 0) {
+        const newText = remaining.map(o => o.text).join(' ');
+        accumulatedText = accumulatedText ? accumulatedText + ' ' + newText : newText;
+      }
 
       // LLM 맥락 선택지를 pending에 저장 (타이핑 완료 후 flushPending에서 표시)
       if (choices && choices.length > 0) {
@@ -490,9 +507,7 @@ function streamNarrative(
 
       const finalNarrative = stripNarratorChoices(narrative);
 
-      // 스트리밍 종료 → TypewriterText로 전환
-      // StreamingBlock을 거치지 않고 narrator에 직접 텍스트를 설정하여
-      // TypewriterText가 @마커+DialogueBubble 포맷으로 타이핑
+      // 스트리밍 종료
       set({
         isStreaming: false,
         streamSegments: [],
@@ -501,7 +516,7 @@ function streamNarrative(
         choicesLoading: false,
       });
 
-      // narrator에 최종 텍스트 설정 → TypewriterText가 포맷된 타이핑 수행
+      // 최종 텍스트로 교체 → TypewriterText가 이미 타이핑한 부분은 이어서, 새 부분만 타이핑
       flushNarrator(finalNarrative, turnNo, get, set);
 
       // done 이벤트에서 tokenStats 조회
