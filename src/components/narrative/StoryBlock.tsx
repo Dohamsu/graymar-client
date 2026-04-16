@@ -339,11 +339,8 @@ function NarratorContent({ text, speakingNpc }: { text: string; speakingNpc?: Sp
   );
 }
 
-/** NarratorContent + 렌더 후 onReady 콜백 (typed=true 경로에서 flushPending 트리거) */
-function NarratorContentWithFlush({ text, speakingNpc, onReady }: { text: string; speakingNpc?: SpeakingNpc; onReady?: () => void }) {
-  useEffect(() => {
-    onReady?.();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+/** NarratorContent 래퍼 — typed=true 경로에서 사용 (flushPending은 명시적 타이핑 완료 시만 호출) */
+function NarratorContentWithFlush({ text, speakingNpc }: { text: string; speakingNpc?: SpeakingNpc; onReady?: () => void }) {
   return <NarratorContent text={text} speakingNpc={speakingNpc} />;
 }
 
