@@ -21,36 +21,36 @@ const LOC_PREFIX: Record<string, string> = {
 // 전체 24 조합 이미지 (4장소 × 2시간 × 3안전도)
 const IMAGE_MAP: Record<string, string> = {
   // Market (시장)
-  'market_day_safe': '/locations/market_day_safe.png',
-  'market_day_alert': '/locations/market_day_alert.png',
-  'market_day_danger': '/locations/market_day_danger.png',
-  'market_night_safe': '/locations/market_night_safe.png',
-  'market_night_alert': '/locations/market_night_alert.png',
-  'market_night_danger': '/locations/market_night_danger.png',
+  'market_day_safe': '/locations/market_day_safe.webp',
+  'market_day_alert': '/locations/market_day_alert.webp',
+  'market_day_danger': '/locations/market_day_danger.webp',
+  'market_night_safe': '/locations/market_night_safe.webp',
+  'market_night_alert': '/locations/market_night_alert.webp',
+  'market_night_danger': '/locations/market_night_danger.webp',
   // Guard (경비대)
-  'guard_day_safe': '/locations/guard_day_safe.png',
-  'guard_day_alert': '/locations/guard_day_alert.png',
-  'guard_day_danger': '/locations/guard_day_danger.png',
-  'guard_night_safe': '/locations/guard_night_safe.png',
-  'guard_night_alert': '/locations/guard_night_alert.png',
-  'guard_night_danger': '/locations/guard_night_danger.png',
+  'guard_day_safe': '/locations/guard_day_safe.webp',
+  'guard_day_alert': '/locations/guard_day_alert.webp',
+  'guard_day_danger': '/locations/guard_day_danger.webp',
+  'guard_night_safe': '/locations/guard_night_safe.webp',
+  'guard_night_alert': '/locations/guard_night_alert.webp',
+  'guard_night_danger': '/locations/guard_night_danger.webp',
   // Harbor (항구)
-  'harbor_day_safe': '/locations/harbor_day_safe.png',
-  'harbor_day_alert': '/locations/harbor_day_alert.png',
-  'harbor_day_danger': '/locations/harbor_day_danger.png',
-  'harbor_night_safe': '/locations/harbor_night_safe.png',
-  'harbor_night_alert': '/locations/harbor_night_alert.png',
-  'harbor_night_danger': '/locations/harbor_night_danger.png',
+  'harbor_day_safe': '/locations/harbor_day_safe.webp',
+  'harbor_day_alert': '/locations/harbor_day_alert.webp',
+  'harbor_day_danger': '/locations/harbor_day_danger.webp',
+  'harbor_night_safe': '/locations/harbor_night_safe.webp',
+  'harbor_night_alert': '/locations/harbor_night_alert.webp',
+  'harbor_night_danger': '/locations/harbor_night_danger.webp',
   // Slums (빈민가)
-  'slums_day_safe': '/locations/slums_day_safe.png',
-  'slums_day_alert': '/locations/slums_day_alert.png',
-  'slums_day_danger': '/locations/slums_day_danger.png',
-  'slums_night_safe': '/locations/slums_night_safe.png',
-  'slums_night_alert': '/locations/slums_night_alert.png',
-  'slums_night_danger': '/locations/slums_night_danger.png',
+  'slums_day_safe': '/locations/slums_day_safe.webp',
+  'slums_day_alert': '/locations/slums_day_alert.webp',
+  'slums_day_danger': '/locations/slums_day_danger.webp',
+  'slums_night_safe': '/locations/slums_night_safe.webp',
+  'slums_night_alert': '/locations/slums_night_alert.webp',
+  'slums_night_danger': '/locations/slums_night_danger.webp',
 };
 
-const HUB_IMAGE = '/locations/graymar_overview.png';
+const HUB_IMAGE = '/locations/graymar_overview.webp';
 
 function normalizeTime(phaseV2?: string, timePhase?: string): TimeNorm {
   if (phaseV2) {
