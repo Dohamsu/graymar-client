@@ -418,23 +418,34 @@ function streamNarrative(
 
   const parser = new StreamParser();
   let receivedDone = false;
+  let flushTimer: ReturnType<typeof setInterval> | null = null;
 
   set({
     isStreaming: true,
     streamSegments: [],
   });
 
+  // 1초 간격으로 완성된 문장을 추출하여 UI에 반영
+  flushTimer = setInterval(() => {
+    const newOutputs = parser.flushSentences();
+    if (newOutputs.length > 0) {
+      set({ streamSegments: [...get().streamSegments, ...newOutputs] });
+    }
+  }, 1000);
+
   const disconnect = connectLlmStream(runId, turnNo, token, {
     onToken(text) {
-      const newOutputs = parser.feed(text);
-      if (newOutputs.length > 0) {
-        set({ streamSegments: [...get().streamSegments, ...newOutputs] });
-      }
+      // 토큰을 버퍼에 누적만 (UI 업데이트는 flushTimer가 담당)
+      parser.feed(text);
     },
 
     onDone(narrative, choices) {
       receivedDone = true;
-      // 남은 버퍼 플러시
+
+      // 타이머 정리
+      if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
+
+      // 남은 버퍼 플러시 (마지막 미완성 문장 포함)
       const flushed = parser.flush();
       if (flushed.length > 0) {
         set({ streamSegments: [...get().streamSegments, ...flushed] });
@@ -451,7 +462,7 @@ function streamNarrative(
         });
       }
 
-      // 스트리밍 종료 후 최종 서술로 narrator 메시지 교체
+      // 스트리밍 종료 후 최종 서술로 narrator 메시지 교체 (후처리 완료본)
       flushNarrator(stripNarratorChoices(narrative), turnNo, get, set);
 
       // 스트리밍 상태 정리
@@ -461,7 +472,7 @@ function streamNarrative(
         streamDisconnect: null,
       });
 
-      // done 이벤트에서 tokenStats를 받으려면 턴 상세를 한 번 조회
+      // done 이벤트에서 tokenStats 조회
       getTurnDetail(runId, turnNo).then((detail) => {
         if (detail.llm?.tokenStats) {
           set({ llmStats: { ...detail.llm.tokenStats, model: detail.llm.modelUsed } });
@@ -470,14 +481,16 @@ function streamNarrative(
     },
 
     onError(message) {
+      // 타이머 정리
+      if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
+
       // 스트리밍 실패 — 상태 정리 후 폴링 fallback
-      const flushed = parser.flush();
+      parser.flush();
       set({
         isStreaming: false,
         streamSegments: [],
         streamDisconnect: null,
       });
-      // done을 이미 받았으면 fallback 불필요
       if (!receivedDone) {
         pollForNarrative(runId, turnNo, fallbackText, get, set);
       }
