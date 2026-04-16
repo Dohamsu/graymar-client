@@ -498,7 +498,21 @@ function requestNarrative(
   set: (partial: Partial<GameState>) => void,
 ) {
   if (USE_STREAMING) {
-    streamNarrative(runId, turnNo, fallbackText, get, set);
+    // SKIPPED 턴(프롤로그 등 하드코딩)은 스트리밍 불필요 — 즉시 폴링으로 처리
+    // 먼저 턴 상태를 확인하여 SKIPPED/DONE이면 폴링 사용
+    getTurnDetail(runId, turnNo).then((detail) => {
+      const status = detail.llm?.status;
+      if (status === 'SKIPPED' || status === 'DONE') {
+        // 이미 완료 — 폴링으로 즉시 처리
+        pollForNarrative(runId, turnNo, fallbackText, get, set);
+      } else {
+        // PENDING/RUNNING — 스트리밍 시작
+        streamNarrative(runId, turnNo, fallbackText, get, set);
+      }
+    }).catch(() => {
+      // 조회 실패 — 스트리밍 시도
+      streamNarrative(runId, turnNo, fallbackText, get, set);
+    });
   } else {
     pollForNarrative(runId, turnNo, fallbackText, get, set);
   }
