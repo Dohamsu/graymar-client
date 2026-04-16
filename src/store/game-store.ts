@@ -480,11 +480,14 @@ function streamNarrative(
         });
       }
 
-      // 스트리밍 종료 후 최종 서술로 narrator 메시지 교체 (후처리 완료본, 타이핑 스킵)
-      flushNarrator(stripNarratorChoices(narrative), turnNo, get, set, true);
-
-      // 스트리밍 상태 정리
+      // 스트리밍 종료: 최종 서술 교체 + 상태 정리를 한 번에 수행 (깜빡임 방지)
+      const targetId = `narrator-${turnNo}`;
+      const finalNarrative = stripNarratorChoices(narrative);
+      const updatedMessages = get().messages.map((msg) =>
+        msg.id === targetId ? { ...msg, text: finalNarrative, loading: false, typed: true } : msg,
+      );
       set({
+        messages: updatedMessages,
         isStreaming: false,
         streamSegments: [],
         streamDisconnect: null,
