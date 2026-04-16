@@ -311,10 +311,12 @@ function flushNarrator(
   turnNo: number,
   get: () => GameState,
   set: (partial: Partial<GameState>) => void,
+  /** true면 타이핑 애니메이션 스킵 (스트리밍 후 교체 시) */
+  skipTyping = false,
 ) {
   const targetId = `narrator-${turnNo}`;
   const messages = get().messages.map((msg) =>
-    msg.id === targetId ? { ...msg, text, loading: false } : msg,
+    msg.id === targetId ? { ...msg, text, loading: false, ...(skipTyping ? { typed: true } : {}) } : msg,
   );
   set({ messages });
 }
@@ -478,8 +480,8 @@ function streamNarrative(
         });
       }
 
-      // 스트리밍 종료 후 최종 서술로 narrator 메시지 교체 (후처리 완료본)
-      flushNarrator(stripNarratorChoices(narrative), turnNo, get, set);
+      // 스트리밍 종료 후 최종 서술로 narrator 메시지 교체 (후처리 완료본, 타이핑 스킵)
+      flushNarrator(stripNarratorChoices(narrative), turnNo, get, set, true);
 
       // 스트리밍 상태 정리
       set({

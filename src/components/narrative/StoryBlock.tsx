@@ -747,7 +747,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
     }
   }
 
-  const isNarratorTypewriting = isNarrator && shouldAnimate && !message.loading;
+  const isNarratorTypewriting = isNarrator && shouldAnimate && !message.loading && !message.typed;
 
   return (
     <div

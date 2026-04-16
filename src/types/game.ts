@@ -24,6 +24,8 @@ export interface StoryMessage {
     displayName: string;
     imageUrl?: string;
   };
+  /** 타이핑 완료 상태 — true면 타이핑 애니메이션 스킵하고 즉시 전체 표시 */
+  typed?: boolean;
 }
 
 export interface Choice {
