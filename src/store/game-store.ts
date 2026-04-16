@@ -511,15 +511,18 @@ function requestNarrative(
   set: (partial: Partial<GameState>) => void,
 ) {
   if (USE_STREAMING) {
+    // 즉시 로딩 상태 표시 (턴 상태 조회 전에)
+    set({ isStreaming: true, streamSegments: [] });
+
     // SKIPPED 턴(프롤로그 등 하드코딩)은 스트리밍 불필요 — 즉시 폴링으로 처리
-    // 먼저 턴 상태를 확인하여 SKIPPED/DONE이면 폴링 사용
     getTurnDetail(runId, turnNo).then((detail) => {
       const status = detail.llm?.status;
       if (status === 'SKIPPED' || status === 'DONE') {
-        // 이미 완료 — 폴링으로 즉시 처리
+        // 이미 완료 — 스트리밍 해제 후 폴링으로 즉시 처리
+        set({ isStreaming: false, streamSegments: [] });
         pollForNarrative(runId, turnNo, fallbackText, get, set);
       } else {
-        // PENDING/RUNNING — 스트리밍 시작
+        // PENDING/RUNNING — 스트리밍 시작 (isStreaming은 이미 true)
         streamNarrative(runId, turnNo, fallbackText, get, set);
       }
     }).catch(() => {
