@@ -472,18 +472,10 @@ function streamNarrative(
 
     onDone(narrative, choices) {
       receivedDone = true;
-      set({ choicesLoading: false });
 
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
-
-      // 레거시 모드: 남은 버퍼 플러시
-      if (!parser.isStructured()) {
-        const flushed = parser.flush();
-        if (flushed.length > 0) {
-          set({ streamSegments: [...get().streamSegments, ...flushed] });
-        }
-      }
+      parser.flush(); // 버퍼 정리
 
       // LLM 맥락 선택지를 pending에 저장 (타이핑 완료 후 flushPending에서 표시)
       if (choices && choices.length > 0) {
@@ -496,37 +488,21 @@ function streamNarrative(
         });
       }
 
-      // 스트리밍 완료: 최종 서술에서 대사 세그먼트를 추출하여 StreamingBlock 큐에 추가
-      // 스트리밍 중 narration만 표시했으므로, 후처리에서 추가된 대사를 타이핑 큐에 넣음
       const finalNarrative = stripNarratorChoices(narrative);
 
-      // 후처리본에서 @마커+대사 추출하여 dialogue 세그먼트로 추가
-      const dialogueRe = /@\[([^\]|]+)(?:\|([^\]]+))?\]\s*["\u201C]([^"\u201D]*)["\u201D]/g;
-      let dMatch: RegExpExecArray | null;
-      const newDialogueSegments: StreamOutput[] = [];
-      while ((dMatch = dialogueRe.exec(finalNarrative)) !== null) {
-        const npcName = dMatch[1].trim();
-        const npcImage = dMatch[2]?.trim() || undefined;
-        const dialogueText = dMatch[3].trim();
-        if (dialogueText) {
-          newDialogueSegments.push({ type: 'dialogue', text: dialogueText, npcName, npcImage });
-        }
-      }
+      // 스트리밍 종료 → TypewriterText로 전환
+      // StreamingBlock을 거치지 않고 narrator에 직접 텍스트를 설정하여
+      // TypewriterText가 @마커+DialogueBubble 포맷으로 타이핑
+      set({
+        isStreaming: false,
+        streamSegments: [],
+        streamDoneNarrative: null,
+        streamDisconnect: null,
+        choicesLoading: false,
+      });
 
-      if (newDialogueSegments.length > 0) {
-        // 대사 세그먼트를 StreamingBlock 큐에 추가 → 타이핑 후 finalizeStreaming
-        set({
-          streamSegments: [...get().streamSegments, ...newDialogueSegments],
-          streamDoneNarrative: finalNarrative,
-          streamDisconnect: null,
-        });
-      } else {
-        // 대사 없음 → 바로 finalizeStreaming 예약
-        set({
-          streamDoneNarrative: finalNarrative,
-          streamDisconnect: null,
-        });
-      }
+      // narrator에 최종 텍스트 설정 → TypewriterText가 포맷된 타이핑 수행
+      flushNarrator(finalNarrative, turnNo, get, set);
 
       // done 이벤트에서 tokenStats 조회
       getTurnDetail(runId, turnNo).then((detail) => {
