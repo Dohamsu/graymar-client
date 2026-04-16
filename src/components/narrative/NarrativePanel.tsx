@@ -89,8 +89,10 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
       {messages.map((msg) => (
         <StoryBlock key={msg.id} message={msg} onChoiceSelect={onChoiceSelect} onNarrationComplete={onNarrationComplete} />
       ))}
-      {isStreaming && streamSegments.length > 0 && (
-        <StreamingBlock segments={streamSegments} />
+      {isStreaming && (
+        streamSegments.length > 0
+          ? <StreamingBlock segments={streamSegments} />
+          : null
       )}
     </div>
   );
