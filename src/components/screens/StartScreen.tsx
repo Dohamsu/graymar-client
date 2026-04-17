@@ -977,25 +977,30 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   // =========================================================================
   if (screenPhase === "AUTH") {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
+      <div className="flex h-full flex-col items-center justify-center bg-[var(--bg-primary)] px-4">
         <div className="flex flex-col items-center gap-2">
           <DimtaleLogoAnimated width={220} height={88} onReady={() => setLogoReady(true)} />
           <h1 className="sr-only">DimTale</h1>
         </div>
         <div
-          className="flex w-full flex-col items-center gap-8 transition-opacity duration-500"
+          className="w-full overflow-hidden"
           style={{
+            maxHeight: logoReady ? 600 : 0,
             opacity: logoReady ? 1 : 0,
             pointerEvents: logoReady ? "auto" : "none",
+            transition:
+              "max-height 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease 0.15s",
           }}
         >
-          <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
-          <button
-            onClick={() => setScreenPhase("TITLE")}
-            className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
-          >
-            &larr; 돌아가기
-          </button>
+          <div className="flex w-full flex-col items-center gap-8 pt-8">
+            <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
+            <button
+              onClick={() => setScreenPhase("TITLE")}
+              className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+            >
+              &larr; 돌아가기
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1009,7 +1014,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     const displayName = authUser?.nickname ?? authUser?.email ?? "";
 
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-12 bg-[var(--bg-primary)]">
+      <div className="flex h-full flex-col items-center justify-center bg-[var(--bg-primary)]">
         <div className="flex flex-col items-center gap-3">
           <DimtaleLogoAnimated width={320} height={128} onReady={() => setLogoReady(true)} />
           <h1 className="sr-only">DimTale</h1>
@@ -1024,12 +1029,16 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         </div>
 
         <div
-          className="flex w-full flex-col items-center gap-4 px-6 transition-opacity duration-500"
+          className="w-full overflow-hidden"
           style={{
+            maxHeight: logoReady ? 600 : 0,
             opacity: logoReady ? 1 : 0,
             pointerEvents: logoReady ? "auto" : "none",
+            transition:
+              "max-height 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease 0.15s",
           }}
         >
+          <div className="flex w-full flex-col items-center gap-4 px-6 pt-12">
           {isLoggedIn ? (
             checkingRun ? (
               <div className="flex gap-1.5 py-6">
@@ -1163,6 +1172,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             </button>
           )}
         </div>
+      </div>
       </div>
     );
   }
