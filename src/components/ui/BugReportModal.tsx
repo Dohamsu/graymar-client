@@ -216,6 +216,7 @@ export function BugReportModal({ onClose }: BugReportModalProps) {
         uiDebugLog: getUiLogs(),
         clientSnapshot,
         networkLog: getNetworkLog(),
+        clientVersion: process.env.NEXT_PUBLIC_CLIENT_VERSION,
       });
       setStatus("done");
       // Auto-close after success

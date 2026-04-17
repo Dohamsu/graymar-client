@@ -421,6 +421,7 @@ export function submitBugReport(
     uiDebugLog?: Array<{ t: number; tag: string; msg: string; data?: Record<string, unknown> }>;
     clientSnapshot?: Record<string, unknown>;
     networkLog?: unknown[];
+    clientVersion?: string;
   },
 ) {
   return request<{ success: boolean }>(`/v1/runs/${runId}/bug-report`, {
