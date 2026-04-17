@@ -23,6 +23,9 @@ importers:
       react-easy-crop:
         specifier: ^5.5.7
         version: 5.5.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      vivus:
+        specifier: ^0.4.6
+        version: 0.4.6
       zustand:
         specifier: ^5.0.11
         version: 5.0.11(@types/react@19.2.14)(react@19.2.3)
@@ -1921,6 +1924,9 @@ packages:
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
+
+  vivus@0.4.6:
+    resolution: {integrity: sha512-q6cDPTGqw/bq9sKF2h2T6GJ9PlwAFncHq7MdaK95WTSyd/7gz//UHTZbJ3B+r8f7AhcISPTC3sv9+u65BmmFbw==}
 
   which-boxed-primitive@1.1.1:
     resolution: {integrity: sha512-TbX3mj8n0odCBFVlY8AxkqcHASw3L60jIuF8jFP78az3C2YhmGvqbHBpAjTRH2/xqYunrJ9g1jSyjCjpoWzIAA==}
@@ -4039,6 +4045,8 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
+
+  vivus@0.4.6: {}
 
   which-boxed-primitive@1.1.1:
     dependencies:
