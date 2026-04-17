@@ -989,7 +989,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             opacity: logoReady ? 1 : 0,
             pointerEvents: logoReady ? "auto" : "none",
             transition:
-              "max-height 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease 0.15s",
+              "max-height 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease 0.15s",
           }}
         >
           <div className="flex w-full flex-col items-center gap-8 pt-8">
@@ -1035,7 +1035,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             opacity: logoReady ? 1 : 0,
             pointerEvents: logoReady ? "auto" : "none",
             transition:
-              "max-height 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease 0.15s",
+              "max-height 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease 0.15s",
           }}
         >
           <div className="flex w-full flex-col items-center gap-4 px-6 pt-12">
