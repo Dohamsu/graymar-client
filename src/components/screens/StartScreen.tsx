@@ -987,7 +987,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           style={{
             maxHeight: logoReady ? 600 : 0,
             pointerEvents: logoReady ? "auto" : "none",
-            transition: "max-height 2.5s cubic-bezier(0.22, 1, 0.36, 1)",
+            transition: "max-height 1.5s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
           <div
@@ -1037,7 +1037,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           style={{
             maxHeight: logoReady ? 600 : 0,
             pointerEvents: logoReady ? "auto" : "none",
-            transition: "max-height 2.5s cubic-bezier(0.22, 1, 0.36, 1)",
+            transition: "max-height 1.5s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
           <div
