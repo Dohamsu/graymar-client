@@ -969,11 +969,16 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   if (screenPhase === "AUTH") {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-[var(--gold)] bg-[var(--gold)]/5">
-            <span className="font-display text-3xl font-bold italic text-[var(--gold)]">D</span>
-          </div>
-          <h1 className="font-display text-2xl tracking-[4px] text-[var(--text-primary)]">DimTale</h1>
+        <div className="flex flex-col items-center gap-2">
+          <Image
+            src="/brand/dimtale-logo-gold.svg"
+            alt="DimTale"
+            width={220}
+            height={88}
+            priority
+            unoptimized
+          />
+          <h1 className="sr-only">DimTale</h1>
         </div>
         <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
         <button
@@ -995,11 +1000,16 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
     return (
       <div className="flex h-full flex-col items-center justify-center gap-12 bg-[var(--bg-primary)]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-[var(--gold)] bg-[var(--gold)]/5">
-            <span className="font-display text-4xl font-bold italic text-[var(--gold)]">D</span>
-          </div>
-          <h1 className="font-display text-4xl tracking-[6px] text-[var(--text-primary)]">DimTale</h1>
+        <div className="flex flex-col items-center gap-3">
+          <Image
+            src="/brand/dimtale-logo-gold.svg"
+            alt="DimTale"
+            width={320}
+            height={128}
+            priority
+            unoptimized
+          />
+          <h1 className="sr-only">DimTale</h1>
           <p className="max-w-sm text-center text-sm leading-relaxed text-[var(--text-muted)]">
             AI가 만들어내는 살아있는 판타지 세계.
             <br />
