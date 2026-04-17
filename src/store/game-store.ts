@@ -481,12 +481,15 @@ function streamNarrative(
   }
 
   /**
-   * 대사/문단 분석: "NPC별칭: "대사"" → @마커 변환, 문단 정리
+   * 대사/문단 분석: "NPC별칭: "대사"" → @마커 변환, 문단 재조합.
+   *
+   * LLM이 문장마다 개행을 넣어 스트림에 flush돼도, narration 라인은 공백으로
+   * 병합해 하나의 문단으로 만든다. 대사(@[...] "...")는 독립 줄로 유지.
+   * 문단 경계는 원본 빈 줄(`\n\n`)에서만 발생.
    */
   function analyzeText(text: string): string {
     const dialogueRe = /^([^":]{2,}):\s*"([^"]+)"?\s*$/;
-    const lines = text.split('\n');
-    const result = lines.map(line => {
+    const transformed = text.split('\n').map((line) => {
       const m = line.match(dialogueRe);
       if (m) {
         const npcName = m[1].trim();
@@ -495,8 +498,58 @@ function streamNarrative(
         return `@[${markerName}] "${m[2]}"`;
       }
       return line;
-    }).join('\n');
-    return result.replace(/\n{3,}/g, '\n\n').trim();
+    });
+
+    const paragraphs: string[] = [];
+    let paraLines: string[] = [];
+    const flushParagraph = () => {
+      if (paraLines.length === 0) return;
+      const parts: string[] = [];
+      let narrationBuf: string[] = [];
+      const flushNarr = () => {
+        if (narrationBuf.length === 0) return;
+        const merged = narrationBuf.join(' ').replace(/\s+/g, ' ').trim();
+        if (merged) parts.push(merged);
+        narrationBuf = [];
+      };
+      for (const line of paraLines) {
+        const t = line.trim();
+        if (!t) continue;
+        if (/^@\[[^\]]+\]/.test(t)) {
+          // 대사 마커 라인은 독립 유지
+          flushNarr();
+          parts.push(t);
+        } else {
+          narrationBuf.push(t);
+        }
+      }
+      flushNarr();
+      const joined = parts.join('\n').trim();
+      if (joined) paragraphs.push(joined);
+      paraLines = [];
+    };
+    for (const line of transformed) {
+      if (line.trim() === '') {
+        flushParagraph();
+      } else {
+        paraLines.push(line);
+      }
+    }
+    flushParagraph();
+
+    return paragraphs.join('\n\n');
+  }
+
+  /**
+   * extract 경계에서 잘린 두 analyzed 조각을 자연스럽게 이어 붙인다.
+   * 이전 버퍼가 개행으로 끝나면(문단/대사 경계) 그대로, 아니면 공백으로 연결.
+   * 이렇게 해야 LLM이 문장마다 flush되더라도 문장 줄바꿈이 추가되지 않는다.
+   */
+  function appendAnalyzed(current: string, next: string): string {
+    if (!current) return next;
+    if (!next) return current;
+    if (current.endsWith('\n') || next.startsWith('\n')) return current + next;
+    return current + ' ' + next;
   }
 
   // 300ms 간격으로 완성된 문장을 분석 → streamTextBuffer에 누적
@@ -505,7 +558,7 @@ function streamNarrative(
     const extracted = extractCompleteSentences();
     if (!extracted) return;
     const analyzed = analyzeText(extracted);
-    analyzedBuffer = analyzedBuffer ? analyzedBuffer + '\n' + analyzed : analyzed;
+    analyzedBuffer = appendAnalyzed(analyzedBuffer, analyzed);
     uiLog('stream', 'buffer flush', { bufLen: analyzedBuffer.length, extractedLen: extracted.length });
     set({ streamTextBuffer: analyzedBuffer });
   }, 300);
@@ -532,12 +585,10 @@ function streamNarrative(
       // 남은 버퍼 전부 flush → streamTextBuffer에 추가
       const remaining = extractCompleteSentences();
       if (remaining) {
-        const analyzed = analyzeText(remaining);
-        analyzedBuffer = analyzedBuffer ? analyzedBuffer + '\n' + analyzed : analyzed;
+        analyzedBuffer = appendAnalyzed(analyzedBuffer, analyzeText(remaining));
       }
       if (rawBuffer.trim()) {
-        const analyzed = analyzeText(rawBuffer.trim());
-        analyzedBuffer = analyzedBuffer ? analyzedBuffer + '\n' + analyzed : analyzed;
+        analyzedBuffer = appendAnalyzed(analyzedBuffer, analyzeText(rawBuffer.trim()));
         rawBuffer = '';
       }
 
