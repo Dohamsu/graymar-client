@@ -971,7 +971,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
         <div className="flex flex-col items-center gap-2">
-          <DimtaleLogoAnimated width={220} height={88} duration={2400} />
+          <DimtaleLogoAnimated width={220} height={88} />
           <h1 className="sr-only">DimTale</h1>
         </div>
         <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
@@ -995,7 +995,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-12 bg-[var(--bg-primary)]">
         <div className="flex flex-col items-center gap-3">
-          <DimtaleLogoAnimated width={320} height={128} duration={2800} />
+          <DimtaleLogoAnimated width={320} height={128} />
           <h1 className="sr-only">DimTale</h1>
           <p className="max-w-sm text-center text-sm leading-relaxed text-[var(--text-muted)]">
             AI가 만들어내는 살아있는 판타지 세계.
