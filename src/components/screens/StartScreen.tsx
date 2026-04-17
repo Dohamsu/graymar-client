@@ -971,7 +971,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
         <div className="flex flex-col items-center gap-2">
           <Image
-            src="/brand/dimtale-logo-gold.svg"
+            src="/brand/dimtale-logo-animated.svg"
             alt="DimTale"
             width={220}
             height={88}
@@ -1002,7 +1002,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       <div className="flex h-full flex-col items-center justify-center gap-12 bg-[var(--bg-primary)]">
         <div className="flex flex-col items-center gap-3">
           <Image
-            src="/brand/dimtale-logo-gold.svg"
+            src="/brand/dimtale-logo-animated.svg"
             alt="DimTale"
             width={320}
             height={128}
