@@ -16,6 +16,7 @@ const LOC_PREFIX: Record<string, string> = {
   LOC_GUARD: 'guard',
   LOC_HARBOR: 'harbor',
   LOC_SLUMS: 'slums',
+  LOC_TAVERN: 'tavern',
 };
 
 // 전체 24 조합 이미지 (4장소 × 2시간 × 3안전도)
@@ -48,6 +49,9 @@ const IMAGE_MAP: Record<string, string> = {
   'slums_night_safe': '/locations/slums_night_safe.webp',
   'slums_night_alert': '/locations/slums_night_alert.webp',
   'slums_night_danger': '/locations/slums_night_danger.webp',
+  // Tavern (잠긴 닻 선술집) — 프롤로그 전용, day/night 2종만 보유 (safety는 SAFE로 디그레이드됨)
+  'tavern_day_safe': '/locations/tavern_day_safe.webp',
+  'tavern_night_safe': '/locations/tavern_night_safe.webp',
 };
 
 const HUB_IMAGE = '/locations/graymar_overview.webp';
