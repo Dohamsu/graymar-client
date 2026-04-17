@@ -64,6 +64,12 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  // AdSense 자동 광고는 랜딩 페이지에서만 활성화한다. /play 등 게임 SPA의
+  // 로딩·전환·에러 화면에 광고가 실려 정책 "게시자 콘텐츠가 없는 화면" 위반
+  // 으로 반려된 이력이 있어 전역 layout 대신 이 페이지에서만 선언.
+  other: {
+    "google-adsense-account": "ca-pub-3400073425613266",
+  },
 };
 
 /* ─── JSON-LD Structured Data for AI SEO ─── */

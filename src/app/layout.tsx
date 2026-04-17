@@ -34,8 +34,10 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.json",
+  // NOTE: google-adsense-account 메타는 layout 전역이 아니라 랜딩 page.tsx 에만
+  // 선언한다. /play 등 게임 SPA 전환 화면에 자동 광고가 노출돼 AdSense 정책
+  // "게시자 콘텐츠가 없는 화면" 위반으로 반려된 이력이 있음.
   other: {
-    "google-adsense-account": "ca-pub-3400073425613266",
     "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
