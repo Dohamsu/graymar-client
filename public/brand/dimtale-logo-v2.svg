@@ -10,62 +10,62 @@
     stroke-linejoin: round;
     stroke-dasharray: 800;
     stroke-dashoffset: 800;
-    animation: draw 380ms ease-out forwards;
+    animation: draw 280ms ease-out forwards;
   }
   .fill-layer {
     fill: currentColor;
     fill-opacity: 0;
-    animation: fillIn 700ms ease-out forwards 3970ms;
+    animation: fillIn 380ms ease-out forwards 2528ms;
   }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @keyframes fillIn { to { fill-opacity: 1; } }
   .p0 { animation-delay: 0ms; }
-  .p1 { animation-delay: 45ms; }
-  .p2 { animation-delay: 90ms; }
-  .p3 { animation-delay: 135ms; }
-  .p4 { animation-delay: 180ms; }
-  .p5 { animation-delay: 225ms; }
-  .p6 { animation-delay: 270ms; }
-  .p7 { animation-delay: 315ms; }
-  .p8 { animation-delay: 360ms; }
-  .p9 { animation-delay: 405ms; }
-  .p10 { animation-delay: 500ms; }
-  .p11 { animation-delay: 545ms; }
-  .p12 { animation-delay: 590ms; }
-  .p13 { animation-delay: 900ms; }
-  .p14 { animation-delay: 945ms; }
-  .p15 { animation-delay: 990ms; }
-  .p16 { animation-delay: 1035ms; }
-  .p17 { animation-delay: 1080ms; }
-  .p18 { animation-delay: 1125ms; }
-  .p19 { animation-delay: 1170ms; }
-  .p20 { animation-delay: 1215ms; }
-  .p21 { animation-delay: 1700ms; }
-  .p22 { animation-delay: 1745ms; }
-  .p23 { animation-delay: 1790ms; }
-  .p24 { animation-delay: 2300ms; }
-  .p25 { animation-delay: 2345ms; }
-  .p26 { animation-delay: 2390ms; }
-  .p27 { animation-delay: 2435ms; }
-  .p28 { animation-delay: 2480ms; }
-  .p29 { animation-delay: 2525ms; }
-  .p30 { animation-delay: 2700ms; }
-  .p31 { animation-delay: 2745ms; }
-  .p32 { animation-delay: 2790ms; }
-  .p33 { animation-delay: 2835ms; }
-  .p34 { animation-delay: 2880ms; }
-  .p35 { animation-delay: 2925ms; }
-  .p36 { animation-delay: 2970ms; }
-  .p37 { animation-delay: 3015ms; }
-  .p38 { animation-delay: 3060ms; }
-  .p39 { animation-delay: 3105ms; }
-  .p40 { animation-delay: 3200ms; }
-  .p41 { animation-delay: 3245ms; }
-  .p42 { animation-delay: 3290ms; }
-  .p43 { animation-delay: 3335ms; }
-  .p44 { animation-delay: 3380ms; }
-  .p45 { animation-delay: 3425ms; }
-  .p46 { animation-delay: 3470ms; }
+  .p1 { animation-delay: 28ms; }
+  .p2 { animation-delay: 56ms; }
+  .p3 { animation-delay: 84ms; }
+  .p4 { animation-delay: 112ms; }
+  .p5 { animation-delay: 140ms; }
+  .p6 { animation-delay: 168ms; }
+  .p7 { animation-delay: 196ms; }
+  .p8 { animation-delay: 224ms; }
+  .p9 { animation-delay: 252ms; }
+  .p10 { animation-delay: 280ms; }
+  .p11 { animation-delay: 308ms; }
+  .p12 { animation-delay: 336ms; }
+  .p13 { animation-delay: 520ms; }
+  .p14 { animation-delay: 548ms; }
+  .p15 { animation-delay: 576ms; }
+  .p16 { animation-delay: 604ms; }
+  .p17 { animation-delay: 632ms; }
+  .p18 { animation-delay: 660ms; }
+  .p19 { animation-delay: 688ms; }
+  .p20 { animation-delay: 716ms; }
+  .p21 { animation-delay: 950ms; }
+  .p22 { animation-delay: 978ms; }
+  .p23 { animation-delay: 1006ms; }
+  .p24 { animation-delay: 1320ms; }
+  .p25 { animation-delay: 1348ms; }
+  .p26 { animation-delay: 1376ms; }
+  .p27 { animation-delay: 1404ms; }
+  .p28 { animation-delay: 1432ms; }
+  .p29 { animation-delay: 1460ms; }
+  .p30 { animation-delay: 1650ms; }
+  .p31 { animation-delay: 1678ms; }
+  .p32 { animation-delay: 1706ms; }
+  .p33 { animation-delay: 1734ms; }
+  .p34 { animation-delay: 1762ms; }
+  .p35 { animation-delay: 1790ms; }
+  .p36 { animation-delay: 1818ms; }
+  .p37 { animation-delay: 1846ms; }
+  .p38 { animation-delay: 1874ms; }
+  .p39 { animation-delay: 1902ms; }
+  .p40 { animation-delay: 2000ms; }
+  .p41 { animation-delay: 2028ms; }
+  .p42 { animation-delay: 2056ms; }
+  .p43 { animation-delay: 2084ms; }
+  .p44 { animation-delay: 2112ms; }
+  .p45 { animation-delay: 2140ms; }
+  .p46 { animation-delay: 2168ms; }
 </style>
 <g class="fill-layer">
   <path d="M29.1471 200.756C28.7471 201.656 27.8471 202.856 27.1471 203.256C26.4471 203.756 26.0471 204.456 26.3471 205.056C26.7471 205.556 26.2471 205.956 25.3471 205.956C24.1471 205.956 23.8471 206.556 24.3471 207.856C24.6471 208.956 24.4471 210.056 23.8471 210.456C23.2471 210.756 23.0471 211.556 23.3471 212.056C24.4471 213.756 25.5471 212.956 26.1471 210.156C26.4471 208.556 28.1471 205.856 29.7471 204.056C33.3471 200.256 33.3471 200.356 31.3471 199.556C30.3471 199.256 29.5471 199.656 29.1471 200.756Z"/>

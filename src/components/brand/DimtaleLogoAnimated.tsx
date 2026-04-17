@@ -1,17 +1,42 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 /**
- * DIMTALE 손글씨 로고 — path 47개를 x 좌표 순서로 개별 stagger 드로잉.
- * SVG 내부의 CSS @keyframes 가 브라우저에서 바로 재생되므로 별도 라이브러리 불필요.
- * 애니메이션 종료(~4.96s) 후 fill 이 채워지며 실루엣 로고로 자연스럽게 전환.
+ * DIMTALE 손글씨 로고 — SVG 내부 CSS @keyframes 로 path 순차 드로잉 + fill 전환.
+ * 약 2.9초 후 onReady 콜백으로 상위에 완료 신호를 보낸다.
  */
 interface Props {
   width: number;
   height: number;
   className?: string;
+  /** 애니메이션 완료 시 콜백 (기본 2900ms 후) */
+  onReady?: () => void;
+  /** 완료 감지 시간 (ms). SVG 타이밍과 맞춰 조정. */
+  readyAfterMs?: number;
 }
 
-export function DimtaleLogoAnimated({ width, height, className }: Props) {
+export function DimtaleLogoAnimated({
+  width,
+  height,
+  className,
+  onReady,
+  readyAfterMs = 2900,
+}: Props) {
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    if (!onReady) return;
+    firedRef.current = false;
+    const t = window.setTimeout(() => {
+      if (!firedRef.current) {
+        firedRef.current = true;
+        onReady();
+      }
+    }, readyAfterMs);
+    return () => window.clearTimeout(t);
+  }, [onReady, readyAfterMs]);
+
   return (
     <img
       src="/brand/dimtale-logo-v2.svg"
