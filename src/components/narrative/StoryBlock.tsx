@@ -295,6 +295,11 @@ function cleanResidualMarkers(text: string): string {
   //    마커 뒤에 공백/줄바꿈 후 따옴표가 오면 대사 연결 → 유지
   text = text.replace(/@\[[^\]]*\](?![\s\n]*["\u201C])/g, '');
 
+  // 6. 서버 이중 마커 잔해 방어 — @ 프리픽스 없이 대사 내부에 남은 [이름|URL] 패턴.
+  //    정상 @[이름|URL] 마커는 앞 문자가 @이므로 보호. npc-portraits 경로를 포함
+  //    하거나 pipe 형태 name|url 인 것만 제거해서 일반 대괄호 사용과 충돌 최소화.
+  text = text.replace(/(^|[^@])\[[^\]|]+\|\/npc-portraits\/[^\]]+\]\s*/g, '$1');
+
   return text.trim();
 }
 
