@@ -882,32 +882,39 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
 
       {message.loading ? (
         isStreaming && streamTextBuffer.length > 0 ? (
-          <StreamTyper
-            onComplete={() => {
-              // 타이핑 완료 → narrator 텍스트 교체 + pending flush
-              const store = useGameStore.getState();
-              const finalText = store.streamTextBuffer;
-              uiLog('typer', 'StreamTyper→onComplete', { msgId: message.id, finalTextLen: finalText.length, isStreaming: store.isStreaming });
-              // 멱등성 가드: 이미 완료 처리된 상태이거나 finalText가 비어 있으면 skip
-              // (StreamTyper가 같은 tick에 재호출되어도 narrator 텍스트를 ''로 덮어쓰지 않도록)
-              if (!store.isStreaming || finalText.length === 0) {
-                return;
-              }
-              useGameStore.setState({
-                isStreaming: false,
-                streamSegments: [],
-                streamTextBuffer: '',
-                streamBufferDone: false,
-                streamDoneNarrative: null,
-              });
-              // narrator 메시지에 최종 텍스트 설정
-              const msgs = store.messages.map((msg) =>
-                msg.id === message.id ? { ...msg, text: finalText, loading: false, typed: true } : msg,
-              );
-              useGameStore.setState({ messages: msgs });
-              onNarrationComplete?.();
-            }}
-          />
+          // 스트리밍 타이핑 중 — NARRATOR 완료 경로와 동일한 폰트/line-height/size 래퍼
+          // (타이핑 중→완료 전환 시 스타일 점프 제거)
+          <div
+            className="font-narrative leading-[1.75]"
+            style={{ color: "var(--text-primary)", fontSize: `${fontSizes.narrative}px` }}
+          >
+            <StreamTyper
+              onComplete={() => {
+                // 타이핑 완료 → narrator 텍스트 교체 + pending flush
+                const store = useGameStore.getState();
+                const finalText = store.streamTextBuffer;
+                uiLog('typer', 'StreamTyper→onComplete', { msgId: message.id, finalTextLen: finalText.length, isStreaming: store.isStreaming });
+                // 멱등성 가드: 이미 완료 처리된 상태이거나 finalText가 비어 있으면 skip
+                // (StreamTyper가 같은 tick에 재호출되어도 narrator 텍스트를 ''로 덮어쓰지 않도록)
+                if (!store.isStreaming || finalText.length === 0) {
+                  return;
+                }
+                useGameStore.setState({
+                  isStreaming: false,
+                  streamSegments: [],
+                  streamTextBuffer: '',
+                  streamBufferDone: false,
+                  streamDoneNarrative: null,
+                });
+                // narrator 메시지에 최종 텍스트 설정
+                const msgs = store.messages.map((msg) =>
+                  msg.id === message.id ? { ...msg, text: finalText, loading: false, typed: true } : msg,
+                );
+                useGameStore.setState({ messages: msgs });
+                onNarrationComplete?.();
+              }}
+            />
+          </div>
         ) : <NarratorLoading />
       ) : message.type === "CHOICE" && message.choices ? (
         <div className="flex flex-col gap-1">
