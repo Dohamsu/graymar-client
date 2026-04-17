@@ -720,6 +720,14 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const [screenPhase, setScreenPhase] = useState<ScreenPhase>("TITLE");
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [selectedGenderState, setSelectedGenderState] = useState<Gender | null>(null);
+  // DIMTALE 로고 드로잉 애니메이션 완료 여부 — 완료 전엔 메뉴/폼 비노출
+  const [logoReady, setLogoReady] = useState(false);
+  // screenPhase 가 TITLE/AUTH 로 전환될 때마다 로고 애니 재생을 위해 리셋
+  useEffect(() => {
+    if (screenPhase === "TITLE" || screenPhase === "AUTH") {
+      setLogoReady(false);
+    }
+  }, [screenPhase]);
 
   // Character creation state
   const [characterName, setCharacterName] = useState("");
@@ -971,16 +979,24 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
         <div className="flex flex-col items-center gap-2">
-          <DimtaleLogoAnimated width={220} height={88} />
+          <DimtaleLogoAnimated width={220} height={88} onReady={() => setLogoReady(true)} />
           <h1 className="sr-only">DimTale</h1>
         </div>
-        <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
-        <button
-          onClick={() => setScreenPhase("TITLE")}
-          className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+        <div
+          className="flex w-full flex-col items-center gap-8 transition-opacity duration-500"
+          style={{
+            opacity: logoReady ? 1 : 0,
+            pointerEvents: logoReady ? "auto" : "none",
+          }}
         >
-          &larr; 돌아가기
-        </button>
+          <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
+          <button
+            onClick={() => setScreenPhase("TITLE")}
+            className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+          >
+            &larr; 돌아가기
+          </button>
+        </div>
       </div>
     );
   }
@@ -995,16 +1011,25 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-12 bg-[var(--bg-primary)]">
         <div className="flex flex-col items-center gap-3">
-          <DimtaleLogoAnimated width={320} height={128} />
+          <DimtaleLogoAnimated width={320} height={128} onReady={() => setLogoReady(true)} />
           <h1 className="sr-only">DimTale</h1>
-          <p className="max-w-sm text-center text-sm leading-relaxed text-[var(--text-muted)]">
+          <p
+            className="max-w-sm text-center text-sm leading-relaxed text-[var(--text-muted)] transition-opacity duration-500"
+            style={{ opacity: logoReady ? 1 : 0 }}
+          >
             AI가 만들어내는 살아있는 판타지 세계.
             <br />
             당신의 선택이 이야기를 바꿉니다.
           </p>
         </div>
 
-        <div className="flex w-full flex-col items-center gap-4 px-6">
+        <div
+          className="flex w-full flex-col items-center gap-4 px-6 transition-opacity duration-500"
+          style={{
+            opacity: logoReady ? 1 : 0,
+            pointerEvents: logoReady ? "auto" : "none",
+          }}
+        >
           {isLoggedIn ? (
             checkingRun ? (
               <div className="flex gap-1.5 py-6">
