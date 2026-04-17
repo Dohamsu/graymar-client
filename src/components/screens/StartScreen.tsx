@@ -979,7 +979,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-[var(--bg-primary)] px-4">
         <div className="flex flex-col items-center gap-2">
-          <DimtaleLogoAnimated width={220} height={88} onReady={() => setLogoReady(true)} readyAfterMs={3000} />
+          <DimtaleLogoAnimated width={220} height={88} onReady={() => setLogoReady(true)} readyAfterMs={3200} />
           <h1 className="sr-only">DimTale</h1>
         </div>
         <div
@@ -1020,7 +1020,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-[var(--bg-primary)]">
         <div className="flex flex-col items-center gap-3">
-          <DimtaleLogoAnimated width={320} height={128} onReady={() => setLogoReady(true)} readyAfterMs={3000} />
+          <DimtaleLogoAnimated width={320} height={128} onReady={() => setLogoReady(true)} readyAfterMs={3200} />
           <h1 className="sr-only">DimTale</h1>
           <p
             className="max-w-sm text-center text-sm leading-relaxed text-[var(--text-muted)] transition-opacity duration-500"
