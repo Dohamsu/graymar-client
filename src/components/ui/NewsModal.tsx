@@ -49,7 +49,7 @@ export default function NewsModal({ signals, onClose }: Props) {
               className="mb-1 text-[10px] tracking-[0.3em] uppercase"
               style={{ color: "#5a4a35" }}
             >
-              GRAYMAR TIMES
+              DIMTALE TIMES
             </div>
             <h2
               className="text-xl font-bold tracking-wider"
