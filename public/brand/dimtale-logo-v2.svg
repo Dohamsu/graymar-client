@@ -12,13 +12,18 @@
     stroke-dashoffset: 800;
     animation: draw 200ms ease-out forwards;
   }
+  .stroke-layer {
+    opacity: 1;
+    animation: strokeFadeOut 700ms ease-in-out forwards 2420ms;
+  }
   .fill-layer {
     fill: currentColor;
     fill-opacity: 0;
-    animation: fillIn 380ms ease-out forwards 2600ms;
+    animation: fillIn 700ms cubic-bezier(0.4, 0, 0.2, 1) forwards 2420ms;
   }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @keyframes fillIn { to { fill-opacity: 1; } }
+  @keyframes strokeFadeOut { to { opacity: 0; } }
   .p0 { animation-delay: 0ms; }
   .p1 { animation-delay: 16ms; }
   .p2 { animation-delay: 32ms; }
