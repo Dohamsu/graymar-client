@@ -986,13 +986,19 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           className="w-full overflow-hidden"
           style={{
             maxHeight: logoReady ? 600 : 0,
-            opacity: logoReady ? 1 : 0,
             pointerEvents: logoReady ? "auto" : "none",
-            transition:
-              "max-height 2.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease 0.15s",
+            transition: "max-height 2.5s cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
-          <div className="flex w-full flex-col items-center gap-8 pt-8">
+          <div
+            className="flex w-full flex-col items-center gap-8 pt-8"
+            style={{
+              opacity: logoReady ? 1 : 0,
+              transform: logoReady ? "translateY(0)" : "translateY(80px)",
+              transition:
+                "transform 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, opacity 1.2s ease 0.15s",
+            }}
+          >
             <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
             <button
               onClick={() => setScreenPhase("TITLE")}
@@ -1032,13 +1038,19 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           className="w-full overflow-hidden"
           style={{
             maxHeight: logoReady ? 600 : 0,
-            opacity: logoReady ? 1 : 0,
             pointerEvents: logoReady ? "auto" : "none",
-            transition:
-              "max-height 2.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease 0.15s",
+            transition: "max-height 2.5s cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
-          <div className="flex w-full flex-col items-center gap-4 px-6 pt-12">
+          <div
+            className="flex w-full flex-col items-center gap-4 px-6 pt-12"
+            style={{
+              opacity: logoReady ? 1 : 0,
+              transform: logoReady ? "translateY(0)" : "translateY(80px)",
+              transition:
+                "transform 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, opacity 1.2s ease 0.15s",
+            }}
+          >
           {isLoggedIn ? (
             checkingRun ? (
               <div className="flex gap-1.5 py-6">
