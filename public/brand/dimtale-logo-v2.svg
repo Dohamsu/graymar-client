@@ -10,62 +10,62 @@
     stroke-linejoin: round;
     stroke-dasharray: 800;
     stroke-dashoffset: 800;
-    animation: draw 500ms ease-out forwards;
+    animation: draw 450ms ease-out forwards;
   }
   .fill-layer {
     fill: currentColor;
     fill-opacity: 0;
-    animation: fillIn 700ms ease-out forwards 4360ms;
+    animation: fillIn 700ms ease-out forwards 3840ms;
   }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @keyframes fillIn { to { fill-opacity: 1; } }
-  .p0 { animation-delay: 2480ms; }
-  .p1 { animation-delay: 2000ms; }
-  .p2 { animation-delay: 2560ms; }
-  .p3 { animation-delay: 2320ms; }
-  .p4 { animation-delay: 1760ms; }
-  .p5 { animation-delay: 240ms; }
-  .p6 { animation-delay: 160ms; }
-  .p7 { animation-delay: 3200ms; }
-  .p8 { animation-delay: 1840ms; }
-  .p9 { animation-delay: 1920ms; }
-  .p10 { animation-delay: 2400ms; }
-  .p11 { animation-delay: 3040ms; }
-  .p12 { animation-delay: 1120ms; }
-  .p13 { animation-delay: 880ms; }
-  .p14 { animation-delay: 1680ms; }
-  .p15 { animation-delay: 3440ms; }
-  .p16 { animation-delay: 960ms; }
-  .p17 { animation-delay: 2960ms; }
-  .p18 { animation-delay: 2800ms; }
-  .p19 { animation-delay: 2880ms; }
-  .p20 { animation-delay: 2640ms; }
-  .p21 { animation-delay: 1600ms; }
-  .p22 { animation-delay: 1280ms; }
-  .p23 { animation-delay: 1520ms; }
-  .p24 { animation-delay: 1440ms; }
-  .p25 { animation-delay: 2160ms; }
-  .p26 { animation-delay: 2080ms; }
-  .p27 { animation-delay: 80ms; }
-  .p28 { animation-delay: 400ms; }
-  .p29 { animation-delay: 720ms; }
-  .p30 { animation-delay: 1360ms; }
-  .p31 { animation-delay: 560ms; }
-  .p32 { animation-delay: 640ms; }
-  .p33 { animation-delay: 3600ms; }
-  .p34 { animation-delay: 3280ms; }
-  .p35 { animation-delay: 3360ms; }
-  .p36 { animation-delay: 3520ms; }
-  .p37 { animation-delay: 1040ms; }
-  .p38 { animation-delay: 480ms; }
-  .p39 { animation-delay: 3680ms; }
-  .p40 { animation-delay: 0ms; }
-  .p41 { animation-delay: 320ms; }
-  .p42 { animation-delay: 800ms; }
-  .p43 { animation-delay: 2720ms; }
-  .p44 { animation-delay: 3120ms; }
-  .p45 { animation-delay: 1200ms; }
-  .p46 { animation-delay: 2240ms; }
+  .p0 { animation-delay: 2170ms; }
+  .p1 { animation-delay: 1890ms; }
+  .p2 { animation-delay: 2240ms; }
+  .p3 { animation-delay: 1050ms; }
+  .p4 { animation-delay: 1610ms; }
+  .p5 { animation-delay: 0ms; }
+  .p6 { animation-delay: 210ms; }
+  .p7 { animation-delay: 2870ms; }
+  .p8 { animation-delay: 1680ms; }
+  .p9 { animation-delay: 1750ms; }
+  .p10 { animation-delay: 1820ms; }
+  .p11 { animation-delay: 2730ms; }
+  .p12 { animation-delay: 910ms; }
+  .p13 { animation-delay: 840ms; }
+  .p14 { animation-delay: 1540ms; }
+  .p15 { animation-delay: 2310ms; }
+  .p16 { animation-delay: 700ms; }
+  .p17 { animation-delay: 2660ms; }
+  .p18 { animation-delay: 2520ms; }
+  .p19 { animation-delay: 2590ms; }
+  .p20 { animation-delay: 2380ms; }
+  .p21 { animation-delay: 1470ms; }
+  .p22 { animation-delay: 1190ms; }
+  .p23 { animation-delay: 1400ms; }
+  .p24 { animation-delay: 1330ms; }
+  .p25 { animation-delay: 2030ms; }
+  .p26 { animation-delay: 1960ms; }
+  .p27 { animation-delay: 140ms; }
+  .p28 { animation-delay: 350ms; }
+  .p29 { animation-delay: 630ms; }
+  .p30 { animation-delay: 1260ms; }
+  .p31 { animation-delay: 490ms; }
+  .p32 { animation-delay: 560ms; }
+  .p33 { animation-delay: 3010ms; }
+  .p34 { animation-delay: 2940ms; }
+  .p35 { animation-delay: 3150ms; }
+  .p36 { animation-delay: 3220ms; }
+  .p37 { animation-delay: 980ms; }
+  .p38 { animation-delay: 420ms; }
+  .p39 { animation-delay: 3080ms; }
+  .p40 { animation-delay: 70ms; }
+  .p41 { animation-delay: 280ms; }
+  .p42 { animation-delay: 770ms; }
+  .p43 { animation-delay: 2450ms; }
+  .p44 { animation-delay: 2800ms; }
+  .p45 { animation-delay: 1120ms; }
+  .p46 { animation-delay: 2100ms; }
 </style>
 <g class="fill-layer">
   <path d="M545.847 1.45596C546.547 2.25596 547.547 2.65596 548.047 2.35596C548.647 1.95596 548.547 1.35596 547.747 0.855962C545.547 -0.544038 544.447 -0.144038 545.847 1.45596Z"/>
