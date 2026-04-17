@@ -21,6 +21,9 @@ export const NPC_PORTRAITS: Record<string, string> = {
   NPC_GUARD_FELIX: '/npc-portraits/felix.webp',
   // Quest NPC
   NPC_RONEN: '/npc-portraits/ronen.webp',
+  // BACKGROUND NPC (프롤로그/시장 조연)
+  NPC_BG_FRUIT_VENDOR: '/npc-portraits/fruit_vendor.webp',
+  NPC_BG_SHOE_SHINE: '/npc-portraits/shoe_shine.webp',
 };
 
 /** Get NPC portrait URL by npcId, returns undefined if no portrait exists */
