@@ -80,7 +80,7 @@ function JsonLd() {
     "@graph": [
       {
         "@type": "WebSite",
-        name: "GRAYMAR",
+        name: "DIMTALE",
         alternateName: "그레이마르",
         url: "https://www.dimtale.com",
         description:
@@ -89,7 +89,7 @@ function JsonLd() {
       },
       {
         "@type": "VideoGame",
-        name: "GRAYMAR — 잿빛 항구의 음모",
+        name: "DIMTALE — 잿빛 항구의 음모",
         alternateName: ["그레이마르", "Graymar RPG"],
         description:
           "왕국의 항만 도시 그레이마르에서 펼쳐지는 AI 기반 몰입형 텍스트 RPG. 42명의 NPC, 5개의 독립적 모험과 음모, 3가지 결말. 이름 없는 용병으로서 당신의 선택이 역사를 쓴다.",
@@ -121,23 +121,23 @@ function JsonLd() {
         mainEntity: [
           {
             "@type": "Question",
-            name: "GRAYMAR는 어떤 게임인가요?",
+            name: "DIMTALE는 어떤 게임인가요?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "GRAYMAR는 AI가 만들어내는 살아있는 세계에서 정치적 음모에 뛰어드는 텍스트 RPG입니다. 42명의 NPC, 5개의 독립적 모험과 음모, 3가지 결말이 있으며, 플레이어의 선택에 따라 이야기가 달라집니다.",
+              text: "DIMTALE는 AI가 만들어내는 살아있는 세계에서 정치적 음모에 뛰어드는 텍스트 RPG입니다. 42명의 NPC, 5개의 독립적 모험과 음모, 3가지 결말이 있으며, 플레이어의 선택에 따라 이야기가 달라집니다.",
             },
           },
           {
             "@type": "Question",
-            name: "GRAYMAR는 무료인가요?",
+            name: "DIMTALE는 무료인가요?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "네, GRAYMAR는 무료 웹 RPG입니다. 별도의 설치 없이 웹 브라우저에서 바로 플레이할 수 있습니다.",
+              text: "네, DIMTALE는 무료 웹 RPG입니다. 별도의 설치 없이 웹 브라우저에서 바로 플레이할 수 있습니다.",
             },
           },
           {
             "@type": "Question",
-            name: "GRAYMAR에서 AI는 어떤 역할을 하나요?",
+            name: "DIMTALE에서 AI는 어떤 역할을 하나요?",
             acceptedAnswer: {
               "@type": "Answer",
               text: "AI는 플레이어의 선택과 행동을 기억하고, 그에 맞춰 살아있는 내러티브를 생성합니다. 모든 게임 결과는 서버에서 결정론적으로 처리되며, AI는 풍부한 서사 텍스트를 만드는 역할을 합니다.",
@@ -202,9 +202,9 @@ export default function HomePage() {
             href="/"
             className="text-xl sm:text-2xl font-bold tracking-tighter uppercase"
             style={{ color: "#e9c176", fontFamily: "'Noto Serif KR', 'Noto Serif', serif" }}
-            aria-label="GRAYMAR 홈"
+            aria-label="DIMTALE 홈"
           >
-            GRAYMAR
+            DIMTALE
           </Link>
           <div
             className="hidden md:flex items-center gap-10 tracking-tight"
@@ -301,7 +301,7 @@ export default function HomePage() {
                 textShadow: "0 0 15px rgba(233, 193, 118, 0.4)",
               }}
             >
-              GRAYMAR
+              DIMTALE
             </h1>
             <p
               className="text-xl sm:text-2xl md:text-3xl mb-4 sm:mb-6"
@@ -589,7 +589,7 @@ export default function HomePage() {
                 />
                 <Image
                   src="/landing/screenshot-desktop.jpg"
-                  alt="GRAYMAR 데스크톱 플레이 화면 — NPC 대화, 선택지, 캐릭터 정보 패널"
+                  alt="DIMTALE 데스크톱 플레이 화면 — NPC 대화, 선택지, 캐릭터 정보 패널"
                   width={1200}
                   height={675}
                   className="relative z-10 w-full border"
@@ -608,7 +608,7 @@ export default function HomePage() {
                 />
                 <Image
                   src="/landing/screenshot-mobile.jpg"
-                  alt="GRAYMAR 모바일 플레이 화면 — 장면 이미지와 NPC 대화가 보이는 스마트폰 화면"
+                  alt="DIMTALE 모바일 플레이 화면 — 장면 이미지와 NPC 대화가 보이는 스마트폰 화면"
                   width={390}
                   height={844}
                   className="relative z-10 w-full rounded-xl border"
@@ -801,7 +801,7 @@ export default function HomePage() {
             className="text-lg tracking-widest uppercase"
             style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#9a8f80" }}
           >
-            GRAYMAR
+            DIMTALE
           </div>
           <div className="flex flex-wrap justify-center gap-6 sm:gap-8 italic text-sm">
             <Link href="/" className="hover:opacity-80 transition-opacity duration-300" style={{ color: "#9a8f80" }}>
@@ -821,7 +821,7 @@ export default function HomePage() {
             className="text-[10px] tracking-[0.2em] mt-6 sm:mt-8 uppercase opacity-50"
             style={{ fontFamily: "'Inter', sans-serif", color: "#9a8f80" }}
           >
-            &copy; 2026 GRAYMAR. AI-powered text RPG.
+            &copy; 2026 DIMTALE. AI-powered text RPG.
           </p>
         </div>
       </footer>
