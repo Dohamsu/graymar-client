@@ -138,13 +138,15 @@ function StreamTyper({ onComplete }: { onComplete?: () => void }) {
 
   const [typedLength, setTypedLength] = useState(0);
   const onCompleteRef = useRef(onComplete);
+  const completedRef = useRef(false);
   useEffect(() => { onCompleteRef.current = onComplete; });
 
   // 타이핑 타이머: 버퍼에서 한 글자씩 소비
   useEffect(() => {
     if (typedLength >= buffer.length) {
-      // 버퍼 끝 도달 + done이면 타이핑 완료
-      if (isDone && buffer.length > 0) {
+      // 버퍼 끝 도달 + done이면 타이핑 완료 (once-guard)
+      if (isDone && buffer.length > 0 && !completedRef.current) {
+        completedRef.current = true;
         uiLog('typer', 'StreamTyper 완료', { typedLength, bufferLen: buffer.length });
         onCompleteRef.current?.();
       }
@@ -881,6 +883,11 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
               const store = useGameStore.getState();
               const finalText = store.streamTextBuffer;
               uiLog('typer', 'StreamTyper→onComplete', { msgId: message.id, finalTextLen: finalText.length, isStreaming: store.isStreaming });
+              // 멱등성 가드: 이미 완료 처리된 상태이거나 finalText가 비어 있으면 skip
+              // (StreamTyper가 같은 tick에 재호출되어도 narrator 텍스트를 ''로 덮어쓰지 않도록)
+              if (!store.isStreaming || finalText.length === 0) {
+                return;
+              }
               useGameStore.setState({
                 isStreaming: false,
                 streamSegments: [],
