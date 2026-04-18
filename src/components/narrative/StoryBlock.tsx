@@ -310,6 +310,19 @@ function cleanResidualMarkers(text: string): string {
   //    하거나 pipe 형태 name|url 인 것만 제거해서 일반 대괄호 사용과 충돌 최소화.
   text = text.replace(/(^|[^@])\[[^\]|]+\|\/npc-portraits\/[^\]]+\]\s*/g, '$1');
 
+  // 7. 비대칭 ASCII 큰따옴표 정리 — 서버 5.10.7 실패 시 double safety (bug ca038140 / 862125fc)
+  //    " 개수가 홀수면 orphan 이 존재해 다음 서술까지 대사 범위로 확장되는 현상.
+  //    마지막 " 한 개를 제거해 쌍이 맞도록 조정.
+  {
+    const dqCount = (text.match(/"/g) || []).length;
+    if (dqCount % 2 === 1) {
+      const lastIdx = text.lastIndexOf('"');
+      if (lastIdx >= 0) {
+        text = text.slice(0, lastIdx) + text.slice(lastIdx + 1);
+      }
+    }
+  }
+
   return text.trim();
 }
 
