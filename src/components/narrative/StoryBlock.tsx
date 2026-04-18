@@ -264,6 +264,16 @@ function renderNarrationLines(text: string, keyBase: string): React.ReactNode[] 
 
 /** 잔여 @태그 클린업 + 마커 재배치 — 서버 후처리에서 미처리된 마커 방어 */
 function cleanResidualMarkers(text: string): string {
+  // 0. 중첩 @마커 해소 — `@[@[...]]` 형태 (bug ca038140)
+  //    서버가 제거하지 못한 경우 double safety.
+  {
+    let guard = 0;
+    while (text.includes("@[@[") && guard < 5) {
+      text = text.replace(/@\[@\[([^\]]+)\]\]/g, "@[$1]");
+      guard += 1;
+    }
+  }
+
   // 1. 대사 내부에 끼인 @마커를 대사 앞으로 재배치 (같은 줄 내에서만)
   //    "대사 텍스트@[호칭] " → @[호칭] "대사 텍스트"
   //    줄바꿈이 포함되면 다른 대사 쌍과 혼동되므로 제외
@@ -490,12 +500,23 @@ function parseNarrativeSegments(text: string): NarrSegment[] {
     const rawDialogue = match[2];
     const stripped = rawDialogue.replace(/^["\u201C]|["\u201D]$/g, '');
 
-    segments.push({
-      type: 'dialogue',
-      text: stripped,
-      markerName: markerName || undefined,
-      markerImage: markerImage || undefined,
-    });
+    // 길이 임계 200자 — LLM 의 비대칭 따옴표로 서술이 통째로 대사로 잡히는
+    // 오탐 방지 (bug ca038140). 200자 넘으면 dialogue 로 신뢰하지 않고
+    // narration 으로 downgrade. 실제 NPC 대사 최대 100자 내외.
+    const DIALOGUE_MAX = 200;
+    if (stripped.length > DIALOGUE_MAX) {
+      segments.push({
+        type: 'narration',
+        text: text.slice(actualStart, match.index + match[0].length),
+      });
+    } else {
+      segments.push({
+        type: 'dialogue',
+        text: stripped,
+        markerName: markerName || undefined,
+        markerImage: markerImage || undefined,
+      });
+    }
 
     lastIndex = match.index + match[0].length;
   }
