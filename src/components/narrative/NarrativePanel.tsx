@@ -3,7 +3,6 @@
 import { useRef, useEffect, useCallback } from "react";
 import { StoryBlock } from "./StoryBlock";
 // StreamingBlock은 StoryBlock 내부에서 렌더링됨
-import { isPageTransitioning } from "@/components/ui/PageTransition";
 import { useGameStore } from "@/store/game-store";
 import type { StoryMessage } from "@/types/game";
 
@@ -37,35 +36,21 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     return () => el.removeEventListener('scroll', handleScrollEvent);
   }, [handleScrollEvent]);
 
-  // 메시지 변경 시 스크롤 — 페이지 전환 직후에는 다단계 지연 실행
+  // 메시지 변경 시 하단 추적 (사용자 스크롤 존중)
+  //   bug 4749: 페이지 전환 시 3단계 강제 setTimeout 스크롤 제거.
+  //   사용자가 위로 스크롤 해서 읽는 중이면 방해하지 않음.
+  //   MutationObserver 가 타이핑 중 콘텐츠 변화에 따라 자연스럽게 추적.
   useEffect(() => {
     if (!scrollRef.current) return;
-    // 페이지 전환(장소 이동) 시 스크롤 상태 리셋 — 항상 하단으로
-    if (isPageTransitioning) {
-      isUserScrolledUp.current = false;
-    }
     if (isUserScrolledUp.current) return;
-    // 페이지 전환 중이면 전환 완료 후 다단계 스크롤 (콘텐츠 렌더링 보장)
-    if (isPageTransitioning) {
-      const scrollToBottom = () => {
-        if (scrollRef.current && !isUserScrolledUp.current) {
-          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'auto' });
-        }
-      };
-      // 1단계: 전환 직후 즉시 스크롤
-      const t1 = setTimeout(scrollToBottom, 800);
-      // 2단계: 콘텐츠 렌더링 후 보정 스크롤
-      const t2 = setTimeout(scrollToBottom, 1500);
-      // 3단계: 타이핑 시작 후 최종 보정
-      const t3 = setTimeout(scrollToBottom, 2500);
-      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-    }
-    // 일반 스크롤
-    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    scrollRef.current.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: 'smooth',
+    });
   }, [messages, streamSegments]);
 
   // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (사용자 스크롤 존중)
-  // 페이지 전환 완료 후에도 즉시 스크롤 추적 시작 (콘텐츠 높이 변화 감지)
+  //   bug 4749: 항상 smooth 로 통일. 페이지 전환 시 즉시 점프 제거.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -74,7 +59,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
       if (isUserScrolledUp.current) return;
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        el.scrollTo({ top: el.scrollHeight, behavior: isPageTransitioning ? 'auto' : 'smooth' });
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
       });
     });
     observer.observe(el, { childList: true, subtree: true, characterData: true });
