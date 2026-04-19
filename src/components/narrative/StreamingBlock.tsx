@@ -99,68 +99,110 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
 
   if (segments.length === 0) return null;
 
-  // 연속 dialogue의 같은 NPC 카운트 (compact 판단용)
+  // 문단 그룹화 (bug 4743): 연속 narration 은 하나의 문단으로 병합,
+  //   dialogue 는 독립 블록. Phase 1 과 Phase 2 (analyzeText) 동일 구조.
+  //
+  // segIdx 는 원본 segments 배열의 인덱스 (타이핑 진행도 판단용).
+  type ParaGroup =
+    | { type: 'narration'; parts: { segIdx: number; text: string }[] }
+    | { type: 'dialogue'; segIdx: number; text: string; npcName?: string; npcImage?: string };
+
+  const groups: ParaGroup[] = [];
+  let currentNarr: { segIdx: number; text: string }[] = [];
+  segments.forEach((seg, idx) => {
+    if (seg.type === 'dialogue') {
+      if (currentNarr.length > 0) {
+        groups.push({ type: 'narration', parts: currentNarr });
+        currentNarr = [];
+      }
+      groups.push({
+        type: 'dialogue',
+        segIdx: idx,
+        text: seg.text,
+        npcName: seg.npcName,
+        npcImage: seg.npcImage,
+      });
+    } else {
+      const cleaned = cleanStreamText(seg.text);
+      if (cleaned) currentNarr.push({ segIdx: idx, text: cleaned });
+    }
+  });
+  if (currentNarr.length > 0) {
+    groups.push({ type: 'narration', parts: currentNarr });
+  }
+
+  // 연속 dialogue 의 같은 NPC 카운트 (compact 판단용)
   const npcCounts = new Map<string, number>();
 
   return (
-    <div className="space-y-1">
-      {/* 타이핑 완료된 세그먼트 — 전체 표시 */}
-      {segments.slice(0, typedCount).map((seg, idx) => {
-        if (seg.type === "narration") {
-          const cleaned = cleanStreamText(seg.text);
-          if (!cleaned) return null;
+    <div className="space-y-3">
+      {groups.map((group, gIdx) => {
+        if (group.type === 'dialogue') {
+          const count = npcCounts.get(group.npcName ?? '') ?? 0;
+          npcCounts.set(group.npcName ?? '', count + 1);
+
+          // 타이핑 진행도
+          const isCompleted = group.segIdx < typedCount;
+          const isCurrent = group.segIdx === typedCount;
+          const displayText = isCompleted
+            ? group.text
+            : isCurrent
+              ? group.text.slice(0, charIdx)
+              : '';
+
+          // 아직 도달 안 한 dialogue 는 말풍선 프레임만 먼저 표시 (npcName 있으면)
+          if (!isCompleted && !isCurrent) {
+            // 도달 전 — 렌더 안 함 (프레임 미리 보여주면 이상할 수 있음)
+            return null;
+          }
+
           return (
-            <span
-              key={`sn-${idx}`}
-              className="font-narrative leading-relaxed whitespace-pre-wrap"
-              style={{ color: "var(--text-primary)" }}
-            >
-              {cleaned}
-            </span>
+            <DialogueBubble
+              key={`g-${gIdx}`}
+              text={displayText}
+              npcName={group.npcName ?? ''}
+              npcImageUrl={group.npcImage}
+              compact={count > 0}
+            />
           );
         }
 
-        const count = npcCounts.get(seg.npcName ?? "") ?? 0;
-        npcCounts.set(seg.npcName ?? "", count + 1);
+        // narration 그룹 — 연속 narration 을 한 문단으로 병합
+        const mergedParts = group.parts.map((p) => {
+          if (p.segIdx < typedCount) return p.text; // 완료
+          if (p.segIdx === typedCount) return p.text.slice(0, charIdx); // 타이핑 중
+          return ''; // 미도달
+        });
+        const merged = mergedParts.join(' ').replace(/\s+/g, ' ').trim();
+        if (!merged) return null;
+
+        // 타이핑 중인지 판단 (마지막 part 가 현재 segment 인 경우)
+        const lastPart = group.parts[group.parts.length - 1];
+        const isTyping = lastPart.segIdx === typedCount && charIdx < lastPart.text.length;
+        const hasInProgress = group.parts.some((p) => p.segIdx === typedCount);
+
         return (
-          <DialogueBubble
-            key={`sd-${idx}`}
-            text={seg.text}
-            npcName={seg.npcName ?? ""}
-            npcImageUrl={seg.npcImage}
-            compact={count > 0}
-          />
+          <p
+            key={`g-${gIdx}`}
+            className="font-narrative leading-relaxed whitespace-pre-wrap"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {merged}
+            {(isTyping || hasInProgress) && (
+              <span
+                className="ml-0.5 inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
+                style={{ backgroundColor: 'var(--gold)', opacity: 0.7 }}
+              />
+            )}
+          </p>
         );
       })}
 
-      {/* 현재 타이핑 중인 세그먼트 — 부분 표시 */}
-      {currentText && charIdx > 0 && (
-        currentSegType === "narration" ? (
-          <span
-            className="font-narrative leading-relaxed whitespace-pre-wrap"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {currentText.slice(0, charIdx)}
-            <span
-              className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
-              style={{ backgroundColor: "var(--gold)", opacity: 0.7 }}
-            />
-          </span>
-        ) : (
-          <DialogueBubble
-            text={currentText.slice(0, charIdx)}
-            npcName={currentSegNpcName ?? ""}
-            npcImageUrl={currentSegNpcImage}
-            compact={(npcCounts.get(currentSegNpcName ?? "") ?? 0) > 0}
-          />
-        )
-      )}
-
-      {/* 타이핑 대기 중 (세그먼트 없을 때) 커서만 */}
-      {!currentText && typedCount >= segments.length && (
+      {/* 타이핑 대기 중 (세그먼트 끝, 다음 기다리는 중) 커서만 */}
+      {typedCount >= segments.length && segments.length > 0 && !isDone && (
         <span
           className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
-          style={{ backgroundColor: "var(--gold)", opacity: 0.7 }}
+          style={{ backgroundColor: 'var(--gold)', opacity: 0.5 }}
         />
       )}
     </div>
