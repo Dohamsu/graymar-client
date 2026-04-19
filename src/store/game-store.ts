@@ -577,19 +577,20 @@ function streamNarrative(
     //   서버 스트리밍(~95자/s) vs 타이핑(~40자/s) 차이로 segments 가 자연스럽게
     //   앞서 쌓이고, 말풍선은 프레임부터 표시되며 내부에서만 타이핑.
     //   기존 analyzedBuffer 도 fallback/diagnostic 용도로 유지.
-    onNarration(text) {
-      const seg: StreamOutput = { type: 'narration', text };
+    onNarration(text, paragraphStart) {
+      const seg: StreamOutput = { type: 'narration', text, paragraphStart };
       set({ streamSegments: [...get().streamSegments, seg] });
       // fallback
       analyzedBuffer = appendAnalyzed(analyzedBuffer, text);
       set({ streamTextBuffer: analyzedBuffer });
     },
-    onDialogue(text, npcName, npcImage) {
+    onDialogue(text, npcName, npcImage, paragraphStart) {
       const seg: StreamOutput = {
         type: 'dialogue',
         text,
         npcName,
         npcImage,
+        paragraphStart,
       };
       set({ streamSegments: [...get().streamSegments, seg] });
       // fallback

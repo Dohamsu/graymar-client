@@ -110,6 +110,11 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
   const groups: ParaGroup[] = [];
   let currentNarr: { segIdx: number; text: string }[] = [];
   segments.forEach((seg, idx) => {
+    // 문단 경계 (bug 4751): paragraphStart=true 이면 현재 narr 그룹 flush
+    if (seg.paragraphStart && currentNarr.length > 0) {
+      groups.push({ type: 'narration', parts: currentNarr });
+      currentNarr = [];
+    }
     if (seg.type === 'dialogue') {
       if (currentNarr.length > 0) {
         groups.push({ type: 'narration', parts: currentNarr });
