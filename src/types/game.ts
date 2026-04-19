@@ -17,6 +17,13 @@ export interface StoryMessage {
     npcName: string;
     imageUrl: string;
     isNewlyIntroduced: boolean;
+    /** 복합 카드 — 한 턴에 여러 NPC 신규 등장 시 (bug 4737) */
+    npcs?: Array<{
+      npcId: string;
+      npcName: string;
+      imageUrl: string;
+      isNewlyIntroduced: boolean;
+    }>;
   };
   /** 대사 주체 NPC 정보 (primaryNpcId 기반, DialogueBubble용) */
   speakingNpc?: {
