@@ -21,6 +21,8 @@ export interface StreamOutput {
   text: string;
   npcName?: string;
   npcImage?: string;
+  /** 이 세그먼트가 새 문단의 시작인지 (bug 4751) */
+  paragraphStart?: boolean;
 }
 
 // 문장 구분 패턴 (레거시 모드용)

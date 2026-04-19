@@ -18,6 +18,7 @@ export interface LlmTokenEvent {
 export interface LlmNarrationEvent {
   type: 'narration';
   text: string;
+  paragraphStart?: boolean;
 }
 
 export interface LlmDialogueEvent {
@@ -25,6 +26,7 @@ export interface LlmDialogueEvent {
   text: string;
   npcName?: string;
   npcImage?: string;
+  paragraphStart?: boolean;
 }
 
 export interface LlmDoneEvent {
@@ -46,8 +48,13 @@ export type LlmStreamEvent = LlmTokenEvent | LlmNarrationEvent | LlmDialogueEven
 
 export interface LlmStreamCallbacks {
   onToken: (text: string) => void;
-  onNarration?: (text: string) => void;
-  onDialogue?: (text: string, npcName?: string, npcImage?: string) => void;
+  onNarration?: (text: string, paragraphStart?: boolean) => void;
+  onDialogue?: (
+    text: string,
+    npcName?: string,
+    npcImage?: string,
+    paragraphStart?: boolean,
+  ) => void;
   onChoicesLoading?: () => void;
   onDone: (narrative: string, choices?: LlmDoneEvent['choices']) => void;
   onError: (message: string) => void;
@@ -88,10 +95,10 @@ export function connectLlmStream(
           callbacks.onToken(data.text);
           break;
         case 'narration':
-          callbacks.onNarration?.(data.text);
+          callbacks.onNarration?.(data.text, data.paragraphStart);
           break;
         case 'dialogue':
-          callbacks.onDialogue?.(data.text, data.npcName, data.npcImage);
+          callbacks.onDialogue?.(data.text, data.npcName, data.npcImage, data.paragraphStart);
           break;
         case 'choices_loading':
           callbacks.onChoicesLoading?.();
