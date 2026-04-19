@@ -565,11 +565,27 @@ function streamNarrative(
 
   const disconnect = connectLlmStream(runId, turnNo, token, {
     onToken(text) {
+      // 레거시 경로 (LLM_STREAM_CLASSIFIER=false 시)
       rawBuffer += text;
     },
 
-    onNarration() { /* raw 토큰으로 처리 */ },
-    onDialogue() { /* raw 토큰으로 처리 */ },
+    // Dual-Track 경로 (bug 4687, architecture/35): 서버가 이미 narration/dialogue
+    //   로 분류한 세그먼트를 받아 바로 버퍼에 append. analyzeText 재파싱 불필요.
+    onNarration(text) {
+      analyzedBuffer = appendAnalyzed(analyzedBuffer, text);
+      set({ streamTextBuffer: analyzedBuffer });
+    },
+    onDialogue(text, npcName, npcImage) {
+      // @마커 형태로 변환하여 기존 렌더 파이프라인 활용
+      const marker = npcName
+        ? npcImage
+          ? `@[${npcName}|${npcImage}]`
+          : `@[${npcName}]`
+        : '';
+      const line = marker ? `${marker} "${text}"` : `"${text}"`;
+      analyzedBuffer = appendAnalyzed(analyzedBuffer, line);
+      set({ streamTextBuffer: analyzedBuffer });
+    },
 
     onChoicesLoading() {
       set({ choicesLoading: true });
