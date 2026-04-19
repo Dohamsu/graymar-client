@@ -915,21 +915,21 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
       </span>
 
       {message.loading ? (
-        isStreaming && streamTextBuffer.length > 0 ? (
-          // 스트리밍 타이핑 중 — NARRATOR 완료 경로와 동일한 폰트/line-height/size 래퍼
-          // (타이핑 중→완료 전환 시 스타일 점프 제거)
+        isStreaming && streamSegments.length > 0 ? (
+          // Queue-based Streaming (bug 4725, architecture/39 Phase B):
+          //   서버 분류된 segments 를 StreamingBlock 이 받아 말풍선 프레임 프리렌더 +
+          //   내부 타이핑. narration/dialogue 구분 즉시 적용 → Phase 1/2 일치.
           <div
             className="font-narrative leading-[1.75]"
             style={{ color: "var(--text-primary)", fontSize: `${fontSizes.narrative}px` }}
           >
-            <StreamTyper
+            <StreamingBlock
+              segments={streamSegments}
+              isDone={useGameStore.getState().streamBufferDone}
               onComplete={() => {
-                // 타이핑 완료 → narrator 텍스트 교체 + pending flush
                 const store = useGameStore.getState();
                 const finalText = store.streamTextBuffer;
-                uiLog('typer', 'StreamTyper→onComplete', { msgId: message.id, finalTextLen: finalText.length, isStreaming: store.isStreaming });
-                // 멱등성 가드: 이미 완료 처리된 상태이거나 finalText가 비어 있으면 skip
-                // (StreamTyper가 같은 tick에 재호출되어도 narrator 텍스트를 ''로 덮어쓰지 않도록)
+                uiLog('typer', 'StreamingBlock→onComplete', { msgId: message.id, segCount: streamSegments.length, finalTextLen: finalText.length });
                 if (!store.isStreaming || finalText.length === 0) {
                   return;
                 }
@@ -940,7 +940,32 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
                   streamBufferDone: false,
                   streamDoneNarrative: null,
                 });
-                // narrator 메시지에 최종 텍스트 설정
+                const msgs = store.messages.map((msg) =>
+                  msg.id === message.id ? { ...msg, text: finalText, loading: false, typed: true } : msg,
+                );
+                useGameStore.setState({ messages: msgs });
+                onNarrationComplete?.();
+              }}
+            />
+          </div>
+        ) : isStreaming && streamTextBuffer.length > 0 ? (
+          // Fallback: segments 아직 없지만 buffer 있을 때 (token 모드)
+          <div
+            className="font-narrative leading-[1.75]"
+            style={{ color: "var(--text-primary)", fontSize: `${fontSizes.narrative}px` }}
+          >
+            <StreamTyper
+              onComplete={() => {
+                const store = useGameStore.getState();
+                const finalText = store.streamTextBuffer;
+                if (!store.isStreaming || finalText.length === 0) return;
+                useGameStore.setState({
+                  isStreaming: false,
+                  streamSegments: [],
+                  streamTextBuffer: '',
+                  streamBufferDone: false,
+                  streamDoneNarrative: null,
+                });
                 const msgs = store.messages.map((msg) =>
                   msg.id === message.id ? { ...msg, text: finalText, loading: false, typed: true } : msg,
                 );
@@ -950,6 +975,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
             />
           </div>
         ) : <NarratorLoading />
+
       ) : message.type === "CHOICE" && message.choices ? (
         <div className="flex flex-col gap-1">
           {message.selectedChoiceId ? (
