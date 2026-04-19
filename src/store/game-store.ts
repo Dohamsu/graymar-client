@@ -619,9 +619,14 @@ function streamNarrative(
         });
       }
 
-      // 최종 버퍼 확정 + done 플래그
+      // Phase 2 최종 교체 (bug 4693):
+      //   Phase 1 (스트리밍 중) 의 analyzedBuffer 가 classifier 튀는 조각 (예:
+      //   "로넨:" 반복) 을 축적한 경우, 화면에 그대로 남는 문제 방지.
+      //   onDone 시 최종 narrative 로 강제 교체 → 타이핑 완료 시점에 정리.
+      const finalText = stripNarratorChoices(narrative);
+      const finalAnalyzed = analyzeText(finalText);
       set({
-        streamTextBuffer: analyzedBuffer || stripNarratorChoices(narrative),
+        streamTextBuffer: finalAnalyzed || finalText,
         streamBufferDone: true,
         streamDisconnect: null,
         choicesLoading: false,
