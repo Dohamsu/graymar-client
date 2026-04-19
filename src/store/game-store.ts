@@ -38,6 +38,27 @@ import { StreamParser, type StreamOutput } from '@/lib/stream-parser';
 import { connectLlmStream } from '@/lib/llm-stream';
 import { uiLog } from '@/lib/ui-logger';
 
+// Queue-based Streaming Renderer types (bug 4725, architecture/39)
+export type StreamSegment =
+  | { type: 'narration'; text: string }
+  | { type: 'dialogue'; text: string; npcName?: string; npcImage?: string };
+
+export type RenderedBlock =
+  | {
+      type: 'narration';
+      text: string;        // 현재까지 타이핑된 글자
+      fullText: string;    // 목표 전체 텍스트
+      typing: boolean;     // 타이핑 중
+    }
+  | {
+      type: 'dialogue';
+      npcName?: string;
+      npcImage?: string;
+      text: string;
+      fullText: string;
+      typing: boolean;
+    };
+
 const USE_STREAMING = process.env.NEXT_PUBLIC_LLM_STREAMING === 'true';
 
 // ---------------------------------------------------------------------------
@@ -128,6 +149,14 @@ export interface GameState {
   streamBufferDone: boolean;
   /** StreamingBlock 타이핑 완료 후 호출 — 최종 서술 교체 + 선택지 표시 */
   finalizeStreaming: () => void;
+
+  // ─── Queue-based Streaming Renderer (bug 4725, architecture/39 Phase B) ─────
+  /** 서버가 분류한 세그먼트 큐 — 타이퍼가 천천히 소비 */
+  streamQueue: StreamSegment[];
+  /** 현재 렌더 중/완료된 블록들 */
+  renderedBlocks: RenderedBlock[];
+  /** 타이퍼 활성 상태 */
+  isQueueTyping: boolean;
 
   // Campaign
   campaignId: string | null;
@@ -457,9 +486,81 @@ function streamNarrative(
     streamSegments: [],
     streamTextBuffer: '',
     streamBufferDone: false,
+    streamQueue: [],
+    renderedBlocks: [],
+    isQueueTyping: false,
   });
 
   uiLog('stream', 'streamNarrative 시작', { runId, turnNo });
+
+  // Queue-based Streaming Renderer (bug 4725, architecture/39 Phase B)
+  //   서버가 분류한 세그먼트를 큐에 push, 타이퍼가 30ms 간격으로 소비.
+  //   대사 세그먼트는 말풍선 프레임 즉시 표시 + 내부 글자 타이핑.
+  let typewriterTimer: ReturnType<typeof setTimeout> | null = null;
+  const TYPEWRITER_INTERVAL_BASE = 30; // ms per char
+  const queueRef = { queue: [] as StreamSegment[], blocks: [] as RenderedBlock[], currentIdx: -1 };
+
+  const scheduleTypewriter = () => {
+    if (typewriterTimer) return; // 이미 예약됨
+    const queueLen = queueRef.queue.length;
+    // 큐 쌓이면 가속 (사용자 지루함 방지)
+    const interval =
+      queueLen > 5 ? 10 : queueLen > 2 ? 20 : TYPEWRITER_INTERVAL_BASE;
+    typewriterTimer = setTimeout(tickTypewriter, interval);
+  };
+
+  const tickTypewriter = () => {
+    typewriterTimer = null;
+
+    // 현재 블록 없으면 큐에서 새 세그먼트 꺼내기
+    if (queueRef.currentIdx < 0 || !queueRef.blocks[queueRef.currentIdx] ||
+        !queueRef.blocks[queueRef.currentIdx].typing) {
+      if (queueRef.queue.length === 0) {
+        // 큐 비었음 — 타이퍼 쉬기
+        set({ isQueueTyping: false });
+        return;
+      }
+      const seg = queueRef.queue.shift()!;
+      const block: RenderedBlock =
+        seg.type === 'dialogue'
+          ? {
+              type: 'dialogue',
+              npcName: seg.npcName,
+              npcImage: seg.npcImage,
+              text: '',
+              fullText: seg.text,
+              typing: true,
+            }
+          : {
+              type: 'narration',
+              text: '',
+              fullText: seg.text,
+              typing: true,
+            };
+      queueRef.blocks.push(block);
+      queueRef.currentIdx = queueRef.blocks.length - 1;
+      set({ renderedBlocks: [...queueRef.blocks], isQueueTyping: true });
+    }
+
+    // 현재 블록 한 글자 추가
+    const block = queueRef.blocks[queueRef.currentIdx];
+    if (block && block.typing) {
+      if (block.text.length < block.fullText.length) {
+        block.text = block.fullText.slice(0, block.text.length + 1);
+        set({ renderedBlocks: [...queueRef.blocks] });
+      } else {
+        block.typing = false;
+        set({ renderedBlocks: [...queueRef.blocks] });
+      }
+    }
+
+    scheduleTypewriter();
+  };
+
+  const enqueueSegment = (seg: StreamSegment) => {
+    queueRef.queue.push(seg);
+    scheduleTypewriter();
+  };
 
   /**
    * 원본 버퍼에서 완성된 문장까지 추출 (나머지는 버퍼에 유지).
@@ -569,14 +670,19 @@ function streamNarrative(
       rawBuffer += text;
     },
 
-    // Dual-Track 경로 (bug 4687, architecture/35): 서버가 이미 narration/dialogue
-    //   로 분류한 세그먼트를 받아 바로 버퍼에 append. analyzeText 재파싱 불필요.
+    // Queue-based Renderer (bug 4725, architecture/39 Phase B):
+    //   서버가 분류한 세그먼트를 큐에 push. Typewriter 가 천천히 소비하며
+    //   말풍선 프레임 먼저 표시 + 안에서 글자 타이핑.
+    //   기존 analyzedBuffer 도 fallback 유지.
     onNarration(text) {
+      enqueueSegment({ type: 'narration', text });
+      // fallback: 기존 buffer 도 유지
       analyzedBuffer = appendAnalyzed(analyzedBuffer, text);
       set({ streamTextBuffer: analyzedBuffer });
     },
     onDialogue(text, npcName, npcImage) {
-      // @마커 형태로 변환하여 기존 렌더 파이프라인 활용
+      enqueueSegment({ type: 'dialogue', text, npcName, npcImage });
+      // fallback
       const marker = npcName
         ? npcImage
           ? `@[${npcName}|${npcImage}]`
@@ -597,6 +703,7 @@ function streamNarrative(
 
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
+      if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
 
       // 남은 버퍼 전부 flush → streamTextBuffer에 추가
       const remaining = extractCompleteSentences();
@@ -1050,6 +1157,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   isNarrating: false,
   streamTextBuffer: '',
   streamBufferDone: false,
+  // Queue-based Streaming Renderer (architecture/39 Phase B)
+  streamQueue: [],
+  renderedBlocks: [],
+  isQueueTyping: false,
   finalizeStreaming: () => {
     const { streamDoneNarrative, currentTurnNo } = get();
     if (!streamDoneNarrative) return;
