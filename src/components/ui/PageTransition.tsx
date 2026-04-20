@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
 
-type GamePhase = 'TITLE' | 'LOADING' | 'HUB' | 'LOCATION' | 'COMBAT' | 'NODE_TRANSITION' | 'RUN_ENDED' | 'ERROR';
+type GamePhase = 'TITLE' | 'LOADING' | 'HUB' | 'LOCATION' | 'COMBAT' | 'NODE_TRANSITION' | 'RUN_ENDED' | 'ERROR' | 'ENDINGS_LIST' | 'ENDINGS_DETAIL';
 
 const FADE_SHORT = { exit: 'animate-[fadeToBlack_0.3s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_0.4s_ease-out]', duration: 320 };
 const FADE_MED   = { exit: 'animate-[fadeToBlack_0.4s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_0.6s_ease-out]', duration: 450 };
@@ -24,6 +24,12 @@ const TRANSITIONS: Record<string, { exit: string; enter: string; duration: numbe
   'HUB→RUN_ENDED':      FADE_LONG,
   'LOCATION→RUN_ENDED': FADE_LONG,
   'COMBAT→RUN_ENDED':   FADE_LONG,
+  // Journey Archive
+  'TITLE→ENDINGS_LIST':            FADE_MED,
+  'ENDINGS_LIST→ENDINGS_DETAIL':   FADE_MED,
+  'ENDINGS_DETAIL→ENDINGS_LIST':   FADE_SHORT,
+  'ENDINGS_LIST→TITLE':            FADE_MED,
+  'ENDINGS_DETAIL→TITLE':          FADE_MED,
 };
 
 const DEFAULT_TRANSITION = { exit: 'animate-[fadeToBlack_0.3s_ease-in_forwards]', enter: 'animate-[fadeFromBlack_0.4s_ease-out]', duration: 320 };

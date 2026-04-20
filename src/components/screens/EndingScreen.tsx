@@ -72,6 +72,54 @@ export function EndingScreen() {
           {endingResult.closingLine}
         </p>
 
+        {/* Arc Route Epilogue — 루트별 분기 엔딩 */}
+        {endingResult.arcTitle && endingResult.arcEpilogue && (
+          <div className="border border-[var(--gold)]/50 rounded-lg p-5 bg-gradient-to-b from-[var(--gold)]/10 to-transparent">
+            <div className="text-center mb-3">
+              <div className="text-[10px] tracking-[3px] text-[var(--gold)]/70 mb-1">
+                ― 당신의 길 ―
+              </div>
+              <h2 className="font-display text-lg tracking-[2px] text-[var(--gold)]">
+                {endingResult.arcTitle}
+              </h2>
+            </div>
+            <p className="text-sm leading-relaxed text-[var(--text-primary)] whitespace-pre-line">
+              {endingResult.arcEpilogue}
+            </p>
+            {endingResult.arcRewards && (
+              <div className="mt-4 pt-3 border-t border-[var(--gold)]/20 flex flex-wrap gap-2 text-[10px] text-[var(--text-muted)]">
+                {endingResult.arcRewards.gold !== undefined && (
+                  <span className="px-2 py-0.5 rounded border border-[var(--gold)]/30 text-[var(--gold)]">
+                    금화 +{endingResult.arcRewards.gold}
+                  </span>
+                )}
+                {endingResult.arcRewards.reputation &&
+                  Object.entries(endingResult.arcRewards.reputation).map(([faction, delta]) => (
+                    <span
+                      key={faction}
+                      className={`px-2 py-0.5 rounded border ${
+                        delta >= 0
+                          ? 'border-[var(--success-green)]/30 text-[var(--success-green)]'
+                          : 'border-[var(--hp-red)]/30 text-[var(--hp-red)]'
+                      }`}
+                    >
+                      {faction} {delta >= 0 ? '+' : ''}{delta}
+                    </span>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Personal Closing — 플레이어 통계 기반 개인화 마지막 서술 */}
+        {endingResult.personalClosing && (
+          <div className="border-l-2 border-[var(--gold)]/40 pl-4 py-2">
+            <p className="text-sm leading-relaxed text-[var(--text-primary)] italic">
+              {endingResult.personalClosing}
+            </p>
+          </div>
+        )}
+
         {/* City Status */}
         <div className="border border-[var(--border-primary)] rounded-lg p-4 bg-[var(--bg-card)]">
           <h3 className="text-xs font-semibold tracking-[2px] text-[var(--text-muted)] mb-3">

@@ -1,7 +1,11 @@
 import { ApiError } from '@/lib/api-errors';
 import { useAuthStore } from '@/store/auth-store';
 import { logNetworkStart } from '@/lib/network-logger';
-import type { SubmitTurnResponse } from '@/types/game';
+import type {
+  SubmitTurnResponse,
+  EndingSummary,
+  EndingSummaryCard,
+} from '@/types/game';
 import type {
   PartyInfo,
   PartyMember,
@@ -140,6 +144,7 @@ export async function getActiveRun(): Promise<{
   currentTurnNo?: number;
   currentNodeIndex?: number;
   startedAt?: string;
+  endingsCount?: number;
   lastCharacter?: {
     presetId: string;
     gender: string;
@@ -403,6 +408,24 @@ export function useItem(runId: string, itemId: string) {
     method: 'POST',
     body: JSON.stringify({ itemId }),
   });
+}
+
+// --- Journey Archive (Endings) ---
+
+/** GET /v1/endings — list completed run endings (summary cards). */
+export function getEndings(cursor?: string, limit = 20) {
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  if (cursor) params.set('cursor', cursor);
+  return request<{
+    items: EndingSummaryCard[];
+    page: { hasMore: boolean; nextCursor?: string };
+  }>(`/v1/endings?${params.toString()}`);
+}
+
+/** GET /v1/endings/:runId — fetch full journey summary for a completed run. */
+export function getEndingDetail(runId: string) {
+  return request<EndingSummary>(`/v1/endings/${runId}`);
 }
 
 // --- Bug Report ---

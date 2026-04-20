@@ -700,6 +700,13 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const activeRunInfo = useGameStore((s) => s.activeRunInfo);
   const checkActiveRun = useGameStore((s) => s.checkActiveRun);
   const resumeRun = useGameStore((s) => s.resumeRun);
+  const endingsCount = useGameStore((s) => s.endingsCount);
+  const loadEndings = useGameStore((s) => s.loadEndings);
+
+  const handleOpenArchive = () => {
+    void loadEndings(false);
+    useGameStore.setState({ phase: "ENDINGS_LIST" });
+  };
 
   const authToken = useAuthStore((s) => s.token);
   const authUser = useAuthStore((s) => s.user);
@@ -1093,11 +1100,36 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                     </button>
                   </div>
                 )}
+                {endingsCount >= 1 && (
+                  <div
+                    className="w-full max-w-64"
+                    style={{
+                      animation: "fadeSlideIn 0.4s ease-out forwards",
+                      animationDelay: activeRunInfo ? "0.2s" : "0.1s",
+                      opacity: 0,
+                    }}
+                  >
+                    <button
+                      onClick={handleOpenArchive}
+                      disabled={isLoading}
+                      className="flex h-14 w-full items-center justify-center gap-2 border border-[var(--gold)]/60 bg-transparent font-display text-base tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
+                    >
+                      여정 기록
+                      <span className="text-xs opacity-70">({endingsCount})</span>
+                    </button>
+                  </div>
+                )}
                 <div
                   className="w-full max-w-64"
                   style={{
                     animation: "fadeSlideIn 0.4s ease-out forwards",
-                    animationDelay: activeRunInfo ? "0.2s" : "0.1s",
+                    animationDelay: activeRunInfo
+                      ? endingsCount >= 1
+                        ? "0.3s"
+                        : "0.2s"
+                      : endingsCount >= 1
+                        ? "0.2s"
+                        : "0.1s",
                     opacity: 0,
                   }}
                 >

@@ -25,8 +25,10 @@ import type {
   PlayerGoalUI,
   LocationDynamicStateUI,
   EquipmentBagItem,
+  EndingSummary,
+  EndingSummaryCard,
 } from '@/types/game';
-import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, equipItem as apiEquipItem, unequipItem as apiUnequipItem, useItem as apiUseItem, type LlmTokenStats } from '@/lib/api-client';
+import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, equipItem as apiEquipItem, unequipItem as apiUnequipItem, useItem as apiUseItem, getEndings, getEndingDetail, type LlmTokenStats } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { PRESETS } from '@/data/presets';
 import { ITEM_CATALOG } from '@/data/items';
@@ -54,7 +56,9 @@ export interface GameState {
     | 'COMBAT'
     | 'NODE_TRANSITION'
     | 'RUN_ENDED'
-    | 'ERROR';
+    | 'ERROR'
+    | 'ENDINGS_LIST'
+    | 'ENDINGS_DETAIL';
   runId: string | null;
   currentNodeType: string | null;
   currentNodeIndex: number;
@@ -99,6 +103,8 @@ export interface GameState {
   locationDynamicStates: Record<string, LocationDynamicStateUI>;
   // Equipment Bag (미장착 장비)
   equipmentBag: EquipmentBagItem[];
+  /** 이번 턴에 새로 획득한 장비 (토스트 배너용, 2~3초 후 clear) */
+  recentEquipmentDrops: EquipmentBagItem[];
   // Set Definitions (서버에서 수신)
   setDefinitions: Array<{
     setId: string;
@@ -134,6 +140,20 @@ export interface GameState {
   // Campaign
   campaignId: string | null;
 
+  // Journey Archive (엔딩 기록 열람)
+  archivedEndings: EndingSummaryCard[];
+  archiveCursor: string | null;
+  archiveTotal: number;
+  archiveLoading: boolean;
+  archiveError: string | null;
+  activeSummary: EndingSummary | null;
+  summaryLoading: boolean;
+  summaryError: string | null;
+  endingsCount: number;
+  loadEndings: (append?: boolean) => Promise<void>;
+  loadSummary: (runId: string) => Promise<void>;
+  clearSummary: () => void;
+
   // actions
   checkActiveRun: () => Promise<void>;
   resumeRun: () => Promise<void>;
@@ -147,6 +167,7 @@ export interface GameState {
   retryLlmNarrative: () => Promise<void>;
   skipLlmNarrative: () => void;
   clearInventoryChanges: () => void;
+  clearRecentEquipmentDrops: () => void;
   equipItem: (instanceId: string) => Promise<void>;
   unequipItem: (slot: string) => Promise<void>;
   useItem: (itemId: string) => Promise<void>;
@@ -312,9 +333,63 @@ const LLM_POLL_MAX_ATTEMPTS = 45; // 최대 90초 (Gemma4 + nano 후처리)
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * 서버에서 내려오는 영어/개발자 메시지를 사용자용 한국어 문구로 매핑.
+ * 매칭은 원문에 포함된 키워드 기반(부분 문자열). 매칭 없으면 원문을 그대로 반환.
+ */
+const ERROR_MESSAGE_I18N: Array<{ match: RegExp; text: string }> = [
+  {
+    match: /Cannot use items during combat/i,
+    text: '전투 중에는 소모품을 사용할 수 없습니다. 전투 턴의 USE_ITEM 액션으로 사용하세요.',
+  },
+  {
+    match: /Item not found in inventory/i,
+    text: '해당 아이템이 소지품에 없습니다.',
+  },
+  {
+    match: /quantity is 0/i,
+    text: '아이템 수량이 부족합니다.',
+  },
+  {
+    match: /Item is not a consumable/i,
+    text: '이 아이템은 사용할 수 없는 종류입니다.',
+  },
+  {
+    match: /cannot be used outside of combat/i,
+    text: '이 아이템은 전투 중에만 사용할 수 있습니다.',
+  },
+  {
+    match: /Cannot equip this item/i,
+    text: '이 아이템은 장착할 수 없습니다.',
+  },
+  {
+    match: /Item not found in equipment bag/i,
+    text: '장비 가방에서 해당 아이템을 찾을 수 없습니다.',
+  },
+  {
+    match: /No equipment in slot/i,
+    text: '이 슬롯에는 해제할 장비가 없습니다.',
+  },
+  {
+    match: /Run is not active/i,
+    text: '활성 상태의 플레이가 아닙니다.',
+  },
+  {
+    match: /Not your run/i,
+    text: '다른 플레이어의 플레이입니다.',
+  },
+];
+
+function translateApiMessage(raw: string): string {
+  for (const entry of ERROR_MESSAGE_I18N) {
+    if (entry.match.test(raw)) return entry.text;
+  }
+  return raw;
+}
+
 function extractErrorMessage(err: unknown): string {
-  if (err instanceof ApiError) return `[${err.code}] ${err.message}`;
-  if (err instanceof Error) return err.message;
+  if (err instanceof ApiError) return translateApiMessage(err.message);
+  if (err instanceof Error) return translateApiMessage(err.message);
   return String(err);
 }
 
@@ -743,8 +818,9 @@ function processTurnResponse(
 
   // Apply diff to equipment bag
   const newEquipment = result.diff?.equipmentAdded;
-  const updatedEquipmentBag = newEquipment && newEquipment.length > 0
-    ? [...get().equipmentBag, ...mapEquipmentBag(newEquipment)]
+  const newDropItems = newEquipment && newEquipment.length > 0 ? mapEquipmentBag(newEquipment) : [];
+  const updatedEquipmentBag = newDropItems.length > 0
+    ? [...get().equipmentBag, ...newDropItems]
     : get().equipmentBag;
 
   // Track inventory changes for UI feedback
@@ -779,6 +855,7 @@ function processTurnResponse(
       hud: updatedHud,
       inventory: updatedInventory,
       equipmentBag: updatedEquipmentBag,
+      recentEquipmentDrops: newDropItems.length > 0 ? newDropItems : get().recentEquipmentDrops,
       inventoryChanges: newInventoryChanges,
       choices: [],
       pendingChoices: newChoices,
@@ -799,6 +876,7 @@ function processTurnResponse(
       hud: updatedHud,
       inventory: updatedInventory,
       equipmentBag: updatedEquipmentBag,
+      recentEquipmentDrops: newDropItems.length > 0 ? newDropItems : get().recentEquipmentDrops,
       inventoryChanges: newInventoryChanges,
       choices: hasTransition ? [] : newChoices,
       pendingChoices: [],
@@ -1052,6 +1130,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   locationDynamicStates: {},
   // Equipment Bag
   equipmentBag: [],
+  recentEquipmentDrops: [],
   // Set Definitions
   setDefinitions: [],
   // Scene Image
@@ -1085,13 +1164,67 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Campaign
   campaignId: null,
 
+  // Journey Archive
+  archivedEndings: [],
+  archiveCursor: null,
+  archiveTotal: 0,
+  archiveLoading: false,
+  archiveError: null,
+  activeSummary: null,
+  summaryLoading: false,
+  summaryError: null,
+  endingsCount: 0,
+
+  loadEndings: async (append = false) => {
+    const { archiveCursor, archivedEndings, archiveLoading } = get();
+    if (archiveLoading) return;
+    set({ archiveLoading: true, archiveError: null });
+    try {
+      const cursor = append ? archiveCursor ?? undefined : undefined;
+      const data = await getEndings(cursor, 20);
+      const items = data.items;
+      set({
+        archivedEndings: append
+          ? [...archivedEndings, ...items]
+          : items,
+        archiveCursor: data.page?.nextCursor ?? null,
+        archiveTotal: append
+          ? archivedEndings.length + items.length
+          : items.length,
+        archiveLoading: false,
+      });
+    } catch (err) {
+      set({
+        archiveLoading: false,
+        archiveError: extractErrorMessage(err),
+      });
+    }
+  },
+
+  loadSummary: async (runId: string) => {
+    set({ summaryLoading: true, summaryError: null, activeSummary: null });
+    try {
+      const summary = await getEndingDetail(runId);
+      set({ activeSummary: summary, summaryLoading: false });
+    } catch (err) {
+      set({
+        summaryLoading: false,
+        summaryError: extractErrorMessage(err),
+      });
+    }
+  },
+
+  clearSummary: () => {
+    set({ activeSummary: null, summaryError: null });
+  },
+
   // -----------------------------------------------------------------------
   // checkActiveRun
   // -----------------------------------------------------------------------
   checkActiveRun: async () => {
     const token = useAuthStore.getState().token;
     if (!token) {
-      set({ activeRunInfo: null });
+      set({ activeRunInfo: null, endingsCount: 0 });
       return;
     }
     try {
@@ -1102,7 +1235,14 @@ export const useGameStore = create<GameState>((set, get) => ({
           localStorage.setItem('graymar_last_character', JSON.stringify(info.lastCharacter));
         } catch { /* ignore */ }
       }
-      set({ activeRunInfo: info?.runId ? info as any : null });
+      const endingsCount =
+        typeof (info as { endingsCount?: number } | null)?.endingsCount === 'number'
+          ? ((info as { endingsCount: number }).endingsCount)
+          : 0;
+      set({
+        activeRunInfo: info?.runId ? info as any : null,
+        endingsCount,
+      });
     } catch {
       set({ activeRunInfo: null });
     }
@@ -1840,6 +1980,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ inventoryChanges: null });
   },
 
+  clearRecentEquipmentDrops: () => {
+    set({ recentEquipmentDrops: [] });
+  },
+
   reset: () => {
     // 스트리밍 연결 정리
     const { streamDisconnect } = get();
@@ -1887,6 +2031,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerGoals: [],
       locationDynamicStates: {},
       equipmentBag: [],
+      recentEquipmentDrops: [],
       setDefinitions: [],
       sceneImages: {},
       sceneImageRemaining: 100,
@@ -1895,6 +2040,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       streamSegments: [],
       streamDisconnect: null,
       campaignId: null,
+      archivedEndings: [],
+      archiveCursor: null,
+      archiveTotal: 0,
+      archiveLoading: false,
+      archiveError: null,
+      activeSummary: null,
+      summaryLoading: false,
+      summaryError: null,
+      endingsCount: 0,
     });
   },
 }));
