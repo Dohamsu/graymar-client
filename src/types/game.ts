@@ -421,7 +421,7 @@ export interface CityStatus {
 }
 
 export interface EndingResult {
-  endingType: 'NATURAL' | 'DEADLINE' | 'PLAYER_CHOICE';
+  endingType: 'NATURAL' | 'DEADLINE' | 'PLAYER_CHOICE' | 'DEFEAT';
   npcEpilogues: NpcEpilogue[];
   cityStatus: CityStatus;
   narrativeMarks: Array<{ type: string; context: string }>;
@@ -437,6 +437,74 @@ export interface EndingResult {
   playstyleSummary?: string;
   dominantVectors?: string[];
   threadSummary?: string;
+  // Arc Route 분기 엔딩
+  arcRoute?: string | null;
+  arcTitle?: string;
+  arcEpilogue?: string;
+  arcRewards?: {
+    gold?: number;
+    reputation?: Record<string, number>;
+  };
+  // 플레이어 통계 기반 개인화 마지막 서술
+  personalClosing?: string;
+}
+
+// --- Journey Archive (엔딩 기록 열람) ---
+
+export type EndingSummaryStability = 'STABLE' | 'UNSTABLE' | 'COLLAPSED';
+
+export interface JourneyKeyEvent {
+  kind: 'INCIDENT' | 'MARK' | 'DISCOVERY';
+  day?: number;
+  text: string;
+  outcome?: 'CONTAINED' | 'ESCALATED' | 'EXPIRED';
+}
+
+export interface JourneyKeyNpc {
+  npcId: string;
+  npcName: string;
+  bondLabel: string;
+  oneLine: string;
+  posture: string;
+}
+
+export interface EndingSummary {
+  runId: string;
+  completedAt: string;
+  characterName: string;
+  presetId: string;
+  presetLabel: string;
+  gender: 'male' | 'female';
+  synopsis: string;
+  keyEvents: JourneyKeyEvent[];
+  keyNpcs: JourneyKeyNpc[];
+  finale: {
+    stability: EndingSummaryStability;
+    arcRoute: string;
+    arcTitle: string;
+    closingLine: string;
+    playstyleSummary?: string;
+  };
+  stats: {
+    daysSpent: number;
+    totalTurns: number;
+    incidentsContained: number;
+    incidentsEscalated: number;
+    incidentsExpired: number;
+  };
+}
+
+export interface EndingSummaryCard {
+  runId: string;
+  characterName: string;
+  presetId: string;
+  presetLabel: string;
+  gender: 'male' | 'female';
+  completedAt: string;
+  arcTitle: string;
+  stability: EndingSummaryStability;
+  daysSpent: number;
+  totalTurns: number;
 }
 
 export interface SubmitTurnResponse {

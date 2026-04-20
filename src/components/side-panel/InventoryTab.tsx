@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Coins, FlaskConical, Key, Search, Shield, TrendingUp, TrendingDown } from "lucide-react";
+import { Coins, FlaskConical, Key, Search, Shield, TrendingUp, TrendingDown, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { InventoryItem, InventoryChanges, EquipmentBagItem } from "@/types/game";
-import { ITEM_CATALOG, type ItemMeta, getItemImagePath } from "@/data/items";
+import type { InventoryItem, InventoryChanges, EquipmentBagItem, EquipmentItem } from "@/types/game";
+import { ITEM_CATALOG, type ItemMeta, getItemImagePath, isUsableInHub } from "@/data/items";
 import { useGameStore } from "@/store/game-store";
 import { STAT_COLORS, STAT_KOREAN_NAMES } from "@/data/stat-descriptions";
 
@@ -66,6 +66,137 @@ const SLOT_LABELS: Record<string, string> = {
   RELIC: "유물",
 };
 
+const STAT_SHORT_LABELS: Record<string, string> = {
+  atk: "ATK",
+  def: "DEF",
+  acc: "ACC",
+  eva: "EVA",
+  speed: "SPD",
+  crit: "CRIT",
+  critDmg: "CDMG",
+  resist: "RES",
+  maxHP: "HP",
+};
+
+interface EquipCompareItem {
+  displayName: string;
+  rarity?: string;
+  statBonus?: Record<string, number>;
+}
+
+function EquipCompareCard({
+  label,
+  item,
+  highlight,
+}: {
+  label: string;
+  item: EquipCompareItem;
+  highlight?: 'in' | 'out';
+}) {
+  const rarityColor = item.rarity ? RARITY_COLORS[item.rarity] ?? "var(--text-muted)" : "var(--text-muted)";
+  const borderColor = highlight === 'in' ? 'var(--success-green)' : 'var(--hp-red)';
+  return (
+    <div
+      className="flex flex-col gap-1.5 rounded border p-3"
+      style={{ borderColor: `${borderColor}55`, backgroundColor: `color-mix(in srgb, ${borderColor} 5%, transparent)` }}
+    >
+      <span className="text-[9px] font-semibold tracking-wider" style={{ color: borderColor }}>
+        {label}
+      </span>
+      <span className="text-[11px] font-medium" style={{ color: rarityColor }}>
+        {item.displayName}
+      </span>
+      {item.rarity && (
+        <span className="text-[9px]" style={{ color: rarityColor }}>
+          {item.rarity}
+        </span>
+      )}
+      {item.statBonus && Object.keys(item.statBonus).length > 0 && (
+        <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+          {Object.entries(item.statBonus).map(([stat, val]) => (
+            <span key={stat} className="text-[9px] text-[var(--text-muted)]">
+              {STAT_SHORT_LABELS[stat] ?? STAT_SHORT_LABELS[stat.toLowerCase()] ?? stat}{' '}
+              <span className="text-[var(--success-green)]">+{val}</span>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EquipReplaceModal({
+  incoming,
+  outgoing,
+  onConfirm,
+  onCancel,
+}: {
+  incoming: EquipmentBagItem;
+  outgoing: EquipmentItem;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 animate-fade-in"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-sm rounded-lg border border-[var(--gold)]/40 bg-[var(--bg-card)] p-5 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-start justify-between">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] tracking-[2px] text-[var(--text-muted)]">장비 교체 확인</span>
+            <h3 className="text-[13px] font-semibold text-[var(--gold)]">
+              {SLOT_LABELS[outgoing.slot] ?? outgoing.slot} 슬롯을 교체하시겠습니까?
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            aria-label="닫기"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <EquipCompareCard
+            label="해제될 장비"
+            item={{ displayName: outgoing.name, rarity: outgoing.rarity, statBonus: outgoing.statBonus }}
+            highlight="out"
+          />
+          <div className="flex justify-center text-[var(--text-muted)]">↓</div>
+          <EquipCompareCard
+            label="장착할 장비"
+            item={{ displayName: incoming.displayName, rarity: incoming.rarity, statBonus: incoming.statBonus }}
+            highlight="in"
+          />
+        </div>
+
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-[11px] text-[var(--text-secondary)] hover:border-[var(--text-muted)]"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 rounded border border-[var(--gold)]/60 bg-[var(--gold)]/10 px-3 py-2 text-[11px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/20"
+          >
+            교체
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface InventoryTabProps {
   inventory: InventoryItem[];
   gold: number;
@@ -77,6 +208,14 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
   const equipItem = useGameStore((s) => s.equipItem);
   const consumeItem = useGameStore((s) => s.useItem);
   const isSubmitting = useGameStore((s) => s.isSubmitting);
+  const characterInfo = useGameStore((s) => s.characterInfo);
+  const currentNodeType = useGameStore((s) => s.currentNodeType);
+
+  // 교체 확인 다이얼로그 상태
+  const [equipConfirm, setEquipConfirm] = useState<{
+    incoming: EquipmentBagItem;
+    outgoing: EquipmentItem;
+  } | null>(null);
 
   // 변경된 아이템 ID 추적
   const addedMap = new Map<string, number>();
@@ -104,23 +243,39 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
 
   const handleEquip = (bagItem: EquipmentBagItem) => {
     if (isSubmitting) return;
+    const slotOccupant = characterInfo?.equipment?.find((e) => e.slot === bagItem.slot);
+    if (slotOccupant) {
+      setEquipConfirm({ incoming: bagItem, outgoing: slotOccupant });
+      return;
+    }
     equipItem(bagItem.instanceId);
   };
 
+  const confirmEquipReplace = () => {
+    if (!equipConfirm) return;
+    equipItem(equipConfirm.incoming.instanceId);
+    setEquipConfirm(null);
+  };
+
+  const isInCombat = currentNodeType === 'COMBAT';
+
   const handleUseItem = (itemId: string) => {
-    if (isSubmitting) return;
+    if (isSubmitting || isInCombat) return;
     consumeItem(itemId);
   };
 
-  // 소모품 중 사용 가능한 아이템 (치료/기력 회복)
-  const USABLE_ITEMS = new Set([
-    'ITEM_MINOR_HEALING',
-    'ITEM_SUPERIOR_HEALING',
-    'ITEM_STAMINA_TONIC',
-  ]);
-
   return (
     <div className="flex flex-col gap-5">
+      {/* 장비 교체 확인 모달 */}
+      {equipConfirm && (
+        <EquipReplaceModal
+          incoming={equipConfirm.incoming}
+          outgoing={equipConfirm.outgoing}
+          onConfirm={confirmEquipReplace}
+          onCancel={() => setEquipConfirm(null)}
+        />
+      )}
+
       {/* Gold */}
       <div
         className={`flex items-center gap-3 rounded border p-3 transition-all duration-700 ${
@@ -337,13 +492,14 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
                         )}
                       </div>
 
-                      {/* 소모품 사용 버튼 */}
-                      {meta.type === 'CONSUMABLE' && USABLE_ITEMS.has(itemId) && (
+                      {/* 소모품 사용 버튼 — CONSUMABLE 중 hub에서 사용 가능한 것 (HEAL_HP/RESTORE_STAMINA) */}
+                      {meta.type === 'CONSUMABLE' && isUsableInHub(itemId) && (
                         <button
                           type="button"
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || isInCombat}
+                          title={isInCombat ? '전투 중에는 사용할 수 없습니다' : undefined}
                           onClick={() => handleUseItem(itemId)}
-                          className="shrink-0 rounded border border-[var(--success-green)]/30 bg-[var(--success-green)]/8 px-2.5 py-1.5 text-[10px] font-medium text-[var(--success-green)] transition-colors hover:bg-[var(--success-green)]/15 disabled:opacity-50"
+                          className="shrink-0 rounded border border-[var(--success-green)]/30 bg-[var(--success-green)]/8 px-2.5 py-1.5 text-[10px] font-medium text-[var(--success-green)] transition-colors hover:bg-[var(--success-green)]/15 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           사용
                         </button>

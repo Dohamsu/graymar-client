@@ -24,6 +24,8 @@ import { usePartyStore } from "@/store/party-store";
 
 import { RunEndScreen } from "@/components/screens/RunEndScreen";
 import { EndingScreen } from "@/components/screens/EndingScreen";
+import { EndingsListScreen } from "@/components/screens/EndingsListScreen";
+import { JourneySummaryScreen } from "@/components/screens/JourneySummaryScreen";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { LlmFailureModal } from "@/components/ui/LlmFailureModal";
 import { BugReportButton } from "@/components/ui/BugReportButton";
@@ -31,6 +33,8 @@ import { QuestTab } from "@/components/side-panel/QuestTab";
 import { LocationHeader } from "@/components/hub/LocationHeader";
 import { TurnResultBanner } from "@/components/location/TurnResultBanner";
 import { LocationToastLayer } from "@/components/location/LocationToastLayer";
+import { DeadlineBanner } from "@/components/location/DeadlineBanner";
+import { EquipmentDropToast } from "@/components/location/EquipmentDropToast";
 import type { BattleEnemy } from "@/types/game";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { TimePhaseTransition } from "@/components/hub/TimePhaseTransition";
@@ -233,6 +237,20 @@ export default function GameClient() {
     }
     return <StartScreen onParty={() => setShowPartyScreen(true)} />;
   }
+  if (phase === "ENDINGS_LIST") {
+    return (
+      <PageTransition phase={phase as "ENDINGS_LIST"}>
+        <EndingsListScreen />
+      </PageTransition>
+    );
+  }
+  if (phase === "ENDINGS_DETAIL") {
+    return (
+      <PageTransition phase={phase as "ENDINGS_DETAIL"}>
+        <JourneySummaryScreen />
+      </PageTransition>
+    );
+  }
   if (phase === "RUN_ENDED") {
     return (
       <PageTransition phase="RUN_ENDED">
@@ -325,6 +343,9 @@ export default function GameClient() {
       <div className="hidden h-full flex-col lg:flex animate-phase-fade" key={`desktop-${phaseKey}`}>
         <Header location={location} hud={hud} worldState={worldState} llmStats={llmStats} />
 
+        {/* 데드라인 임박/초과 배너 — 조건 충족 시에만 렌더 */}
+        <DeadlineBanner />
+
         {/* LOCATION 헤더 (LOCATION phase) */}
         {phase === "LOCATION" && (
           <>
@@ -375,6 +396,9 @@ export default function GameClient() {
         <MobileHeader location={location} visible={mobileHeaderVisible} activeTab={mobileTab} onTabChange={setMobileTab} />
         {/* 이야기 탭 외에서는 헤더 고정 → 콘텐츠 시작 위치 확보 */}
         {mobileTab !== "story" && <div className="h-12 shrink-0" />}
+
+        {/* 데드라인 임박/초과 배너 (모바일) */}
+        <DeadlineBanner />
 
         <div className="animate-phase-fade flex flex-1 flex-col overflow-hidden">
           {mobileTab === "story" && (
@@ -440,6 +464,11 @@ export default function GameClient() {
       {/* LOCATION Toast Layer (floating, both desktop & mobile) */}
       {phase === "LOCATION" && (
         <LocationToastLayer notifications={notifications} />
+      )}
+
+      {/* 장비 획득 배너 — HUB/LOCATION/COMBAT 어디서든 drop 발생 시 표시 */}
+      {(phase === "HUB" || phase === "LOCATION" || phase === "COMBAT") && (
+        <EquipmentDropToast />
       )}
 
       {/* Bug Report floating button */}

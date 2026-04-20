@@ -10,6 +10,9 @@ export interface ItemMeta {
   image?: string;
   statBonus?: Record<string, number>;
   setId?: string;
+  /** 전투 밖(HUB/LOCATION)에서 사용 버튼 노출 여부.
+   *  서버 items.json의 combat.effect가 HEAL_HP/RESTORE_STAMINA일 때만 true. */
+  usableInHub?: boolean;
 }
 
 /** 아이템 ID → 이미지 경로 매핑 */
@@ -18,17 +21,24 @@ export function getItemImagePath(itemId: string): string | undefined {
   return `/items/${id}.webp`;
 }
 
+/** 전투 밖 사용 가능 여부 — ITEM_CATALOG meta.usableInHub 플래그 참조. */
+export function isUsableInHub(itemId: string): boolean {
+  return ITEM_CATALOG[itemId]?.usableInHub === true;
+}
+
 export const ITEM_CATALOG: Record<string, ItemMeta> = {
   // --- CONSUMABLE ---
   ITEM_MINOR_HEALING: {
     name: '하급 치료제',
     type: 'CONSUMABLE',
     description: '항구 약초상에서 구할 수 있는 기본 치료약.',
+    usableInHub: true,
   },
   ITEM_STAMINA_TONIC: {
     name: '체력 강장제',
     type: 'CONSUMABLE',
     description: '쓴맛이 강한 허브 음료. 기력을 일시적으로 회복한다.',
+    usableInHub: true,
   },
   ITEM_SMOKE_BOMB: {
     name: '연막탄',
@@ -44,6 +54,7 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     name: '상급 치료제',
     type: 'CONSUMABLE',
     description: '암시장에서 거래되는 고급 약재. 회복량이 크지만 비싸다.',
+    usableInHub: true,
   },
 
   // --- KEY_ITEM ---
