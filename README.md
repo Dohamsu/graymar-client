@@ -41,73 +41,87 @@ pnpm lint                     # ESLint
 
 ```
 app/
-├── page.tsx             → 랜딩 페이지 (SEO)
+├── page.tsx             → 랜딩 페이지 (SEO, 잿빛 항구 톤 최신 카피)
+├── landing/             → 랜딩 subcomponents (FeatureCard, MobileNav, AuthRedirect)
 ├── play/page.tsx        → GamePage (메인 SPA, phase 라우팅)
-├── components/
-│   ├── narrative/       NarrativePanel (메시지 스크롤), StoryBlock, DialogueBubble
-│   ├── input/           InputSection (텍스트 입력 + 퀵 액션, LOCATION 전용)
-│   ├── battle/          BattlePanel (적 카드 표시)
-│   ├── layout/          Header (자동 숨김 HP/Stamina), MobileBottomNav (햄버거)
-│   ├── hub/             HubScreen, HeatGauge, TimePhaseIndicator,
-│   │                    LocationHeader, ResolveOutcomeBanner,
-│   │                    SignalFeedPanel, IncidentTracker, NpcRelationshipCard,
-│   │                    HubNotificationList, PinnedAlertStack, WorldDeltaSummaryCard,
-│   │                    CollapsibleSection
-│   ├── location/        TurnResultBanner, LocationToastLayer
-│   ├── screens/         StartScreen (캐릭터 생성 6단계), RunEndScreen, EndingScreen,
-│   │                    NodeTransitionScreen
-│   ├── side-panel/      SidePanel (Character/Inventory/Quest 탭), SetBonusDisplay
-│   └── ui/              ErrorBanner, LlmSettingsModal, LlmFailureModal,
-│                        BugReportButton, BugReportModal, StatTooltip
-├── store/
-│   ├── game-store.ts    Zustand store (전체 게임 상태 + derivePhase)
-│   ├── auth-store.ts    JWT 인증 상태 (login/register/hydrate)
-│   ├── settings-store.ts 텍스트 속도 설정 (localStorage)
-│   └── game-selectors.ts Notification 쿼리 셀렉터
-├── lib/
-│   ├── api-client.ts    서버 API 래퍼 (retryLlm, portrait generate 포함)
-│   ├── result-mapper.ts ServerResultV1 → StoryMessage[] 변환
-│   ├── hud-mapper.ts    Diff → PlayerHud 업데이트
-│   ├── api-errors.ts    ApiError 클래스
-│   └── notification-utils.ts 알림 중복 제거, 정렬, 만료 필터링
-├── data/
-│   ├── presets.ts       6 캐릭터 프리셋 (클라이언트 표시용)
-│   ├── items.ts         아이템 표시 메타데이터 (ITEM_CATALOG)
-│   └── stat-descriptions.ts 스탯 설명 텍스트
-└── types/
-    └── game.ts          프론트엔드 타입 정의
+├── GameClient.tsx       → 게임 루트 (데스크톱/모바일 분기, phase별 스크린 mount)
+components/
+├── narrative/           NarrativePanel, StoryBlock, StreamingBlock (Dual-Track), DialogueBubble
+├── input/               InputSection, QuickActionButton
+├── battle/              BattlePanel (적 카드)
+├── layout/              Header (자동 숨김 HUD), MobileBottomNav (햄버거)
+├── hub/                 HubScreen, SignalFeed, Incident, NPC, Notifications,
+│                        CollapsibleSection, TimePhaseTransition, DiceFace
+├── location/            TurnResultBanner, LocationToastLayer, DeadlineBanner (D-3/2/1/0/초과),
+│                        EquipmentDropToast (rarity별 5초 페이드), LocationImage
+├── screens/             StartScreen (캐릭터 생성 6단계), RunEndScreen, EndingScreen,
+│                        EndingsListScreen (여정 기록 리스트), JourneySummaryScreen (양피지 요약),
+│                        NodeTransitionScreen
+├── side-panel/          SidePanel, CharacterTab, InventoryTab (교체 확인 모달 내장),
+│                        EquipmentTab, SetBonusDisplay, NpcDossierTab, QuestTab
+├── party/               PartyHUD, PartyLobby, PartyChatWindow, PartyTurnStatus,
+│                        VoteModal, LootDistribution 등 11종
+├── ui/                  PageTransition (phase fade), ErrorBanner, LlmFailureModal,
+│                        BugReportButton, BugReportModal, NetworkStatus, SplashScreen,
+│                        InstallPrompt, NewsModal (그레이마르 호외), PortraitCropModal
+└── brand/               DimtaleLogoAnimated
+store/
+├── game-store.ts        Zustand store (전체 게임 상태 + archivedEndings + recentEquipmentDrops)
+├── auth-store.ts        JWT 인증 상태 (login/register/hydrate)
+├── settings-store.ts    텍스트 속도 설정 (localStorage)
+├── game-selectors.ts    Notification 쿼리 셀렉터
+└── party-store.ts       파티 멀티플레이 상태
+lib/
+├── api-client.ts        서버 API 래퍼 (+ getEndings/getEndingDetail)
+├── result-mapper.ts     ServerResultV1 → StoryMessage[] 변환
+├── hud-mapper.ts        Diff → PlayerHud 업데이트
+├── stream-parser.ts     SSE 세그먼트 축적 + 문장 단위 flush
+├── llm-stream.ts        EventSource 래퍼 (token/narration/dialogue/done/error)
+├── network-logger.ts    자동 네트워크 타임라인 (버그 리포트용)
+├── api-errors.ts        ApiError 클래스 + 한국어 매핑 10종
+└── notification-utils.ts 알림 중복 제거, 정렬, 만료 필터링
+data/
+├── presets.ts           6 캐릭터 프리셋
+├── items.ts             ITEM_CATALOG + isUsableInHub 헬퍼 (usableInHub flag)
+└── stat-descriptions.ts 스탯 설명
+types/
+└── game.ts              프론트엔드 타입 정의 (EndingResult, EndingSummary, EquipmentBagItem 등)
 ```
 
-### 이미지 에셋 (public/)
+### Phase 라우팅 (state machine)
 
-| 폴더 | 파일 수 | 내용 |
-|------|---------|------|
-| `/npc-portraits/` | 18 | NPC 초상화 (CORE 6 + SUB 12) |
-| `/locations/` | 25 | 장소 이미지 (7 장소 x 다중 시간대) |
-| `/items/` | 26 | 아이템 아이콘 |
-| `/` (root) | 15+ | 프리셋 초상화 (6종 x 남/여) + 랜딩 이미지 |
+```
+TITLE → LOADING → HUB → LOCATION ⇄ COMBAT → RUN_ENDED → EndingScreen
+                   ↕       ↕         ↕                 ↓
+                 ERROR  ENDINGS_LIST ⇄ ENDINGS_DETAIL (여정 아카이브)
+```
+
+### 이미지 에셋 (public/, WebP 최적화 98% 절감)
+
+| 폴더 | 내용 |
+|------|------|
+| `/npc-portraits/` | NPC 초상화 (CORE 6 + SUB 12, WebP) |
+| `/locations/` | 장소 이미지 (7 장소 × 다중 시간대, WebP) |
+| `/items/` | 아이템 아이콘 (WebP, 26종) |
+| `/` (root) | 프리셋 초상화 (6종 × 남/여) + 랜딩 이미지 + OG 이미지 |
 
 ---
 
-## State Machine
-
-```
-TITLE → LOADING → HUB → LOCATION ⇄ COMBAT → HUB (순환)
-                   ↕         ↕
-                 ERROR    RUN_ENDED → EndingScreen
-```
+## Phase 상세
 
 Phase는 `derivePhase(nodeType, result)` 함수로 도출:
 
 | Phase | 조건 | 화면 |
 |-------|------|------|
-| `TITLE` | 런 미생성 | StartScreen (캐릭터 생성 6단계) |
-| `LOADING` | 런 생성 중 | 로딩 스피너 |
+| `TITLE` | 런 미생성 | StartScreen (캐릭터 생성 6단계) + "여정 기록 (N)" 조건부 버튼 |
+| `LOADING` | 런 생성 중 | SplashScreen |
 | `HUB` | nodeType = HUB | HubScreen (7 지역 + 알림 + 시그널) |
 | `LOCATION` | nodeType = LOCATION | NarrativePanel + InputSection + 판정 배너 |
 | `COMBAT` | nodeType = COMBAT | BattlePanel + NarrativePanel |
 | `NODE_TRANSITION` | 노드 전이 중 | NodeTransitionScreen |
-| `RUN_ENDED` | 런 종료 | EndingScreen (행동 성향 + NPC epilogues) |
+| `RUN_ENDED` | 런 종료 | EndingScreen (arcRoute 분기 + personalClosing + arcRewards) |
+| `ENDINGS_LIST` | 여정 기록 버튼 클릭 | EndingsListScreen (카드 그리드 + stability 뱃지) |
+| `ENDINGS_DETAIL` | 카드 선택 | JourneySummaryScreen (양피지: synopsis/events/npcs/finale) |
 | `ERROR` | 에러 발생 | ErrorBanner |
 
 ---
