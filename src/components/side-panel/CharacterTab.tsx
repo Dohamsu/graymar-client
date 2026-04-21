@@ -1,9 +1,11 @@
 import Image from "next/image";
+import { useState } from "react";
 import { User, HardHat, Shirt, Sword, Gem } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { CharacterInfo } from "@/types/game";
 import { StatTooltip } from "@/components/ui/StatTooltip";
 import { STAT_ACTION_HINTS } from "@/data/stat-descriptions";
+import { getItemImagePath } from "@/data/items";
 
 const EQUIP_ICON_MAP: Record<string, LucideIcon> = {
   "hard-hat": HardHat,
@@ -11,6 +13,38 @@ const EQUIP_ICON_MAP: Record<string, LucideIcon> = {
   sword: Sword,
   gem: Gem,
 };
+
+/** 장착 장비 썸네일 — baseItemId 이미지 우선, 실패 시 Lucide 아이콘 fallback */
+function EquipmentThumbnail({
+  baseItemId,
+  fallbackIcon: FallbackIcon,
+  color,
+  size = 32,
+}: {
+  baseItemId?: string;
+  fallbackIcon: LucideIcon;
+  color: string;
+  size?: number;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const src = baseItemId ? getItemImagePath(baseItemId) : null;
+
+  if (!src || imgError) {
+    return <FallbackIcon size={size * 0.75} style={{ color }} />;
+  }
+
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element -- dynamic item icon with onError fallback */
+    <img
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      className="h-full w-full rounded object-cover"
+      onError={() => setImgError(true)}
+    />
+  );
+}
 
 interface CharacterTabProps {
   character: CharacterInfo;
@@ -125,7 +159,22 @@ export function CharacterTab({ character }: CharacterTabProps) {
                     borderColor: item.rarity ? `${item.color}50` : undefined,
                   }}
                 >
-                  <IconComponent size={24} style={{ color: item.color }} />
+                  <div
+                    className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border"
+                    style={{
+                      borderColor: item.rarity ? `${item.color}40` : 'var(--border-primary)',
+                      backgroundColor: item.rarity
+                        ? `color-mix(in srgb, ${item.color} 8%, transparent)`
+                        : 'var(--bg-secondary)',
+                    }}
+                  >
+                    <EquipmentThumbnail
+                      baseItemId={item.baseItemId}
+                      fallbackIcon={IconComponent}
+                      color={item.color}
+                      size={32}
+                    />
+                  </div>
                   <span
                     className="text-center text-[11px] font-medium"
                     style={{ color: item.rarity ? item.color : 'var(--text-primary)' }}
