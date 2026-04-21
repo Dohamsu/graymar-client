@@ -132,10 +132,17 @@ function EquipReplaceModal({
   onCancel,
 }: {
   incoming: EquipmentBagItem;
-  outgoing: EquipmentItem;
+  outgoing: EquipmentItem | null;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const slotLabel = SLOT_LABELS[incoming.slot] ?? incoming.slot;
+  const title = outgoing
+    ? `${SLOT_LABELS[outgoing.slot] ?? outgoing.slot} 슬롯을 교체하시겠습니까?`
+    : `${slotLabel} 슬롯에 장착하시겠습니까?`;
+  const headerLabel = outgoing ? '장비 교체 확인' : '장비 장착 확인';
+  const confirmLabel = outgoing ? '교체' : '장착';
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 animate-fade-in"
@@ -147,9 +154,9 @@ function EquipReplaceModal({
       >
         <div className="mb-3 flex items-start justify-between">
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] tracking-[2px] text-[var(--text-muted)]">장비 교체 확인</span>
+            <span className="text-[10px] tracking-[2px] text-[var(--text-muted)]">{headerLabel}</span>
             <h3 className="text-[13px] font-semibold text-[var(--gold)]">
-              {SLOT_LABELS[outgoing.slot] ?? outgoing.slot} 슬롯을 교체하시겠습니까?
+              {title}
             </h3>
           </div>
           <button
@@ -163,12 +170,20 @@ function EquipReplaceModal({
         </div>
 
         <div className="flex flex-col gap-2">
-          <EquipCompareCard
-            label="해제될 장비"
-            item={{ displayName: outgoing.name, rarity: outgoing.rarity, statBonus: outgoing.statBonus }}
-            highlight="out"
-          />
-          <div className="flex justify-center text-[var(--text-muted)]">↓</div>
+          {outgoing ? (
+            <>
+              <EquipCompareCard
+                label="해제될 장비"
+                item={{ displayName: outgoing.name, rarity: outgoing.rarity, statBonus: outgoing.statBonus }}
+                highlight="out"
+              />
+              <div className="flex justify-center text-[var(--text-muted)]">↓</div>
+            </>
+          ) : (
+            <div className="rounded border border-[var(--text-muted)]/30 bg-[var(--bg-secondary)] p-3 text-center text-[10px] text-[var(--text-muted)]">
+              {slotLabel} 슬롯이 비어 있습니다
+            </div>
+          )}
           <EquipCompareCard
             label="장착할 장비"
             item={{ displayName: incoming.displayName, rarity: incoming.rarity, statBonus: incoming.statBonus }}
@@ -189,7 +204,7 @@ function EquipReplaceModal({
             onClick={onConfirm}
             className="flex-1 rounded border border-[var(--gold)]/60 bg-[var(--gold)]/10 px-3 py-2 text-[11px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/20"
           >
-            교체
+            {confirmLabel}
           </button>
         </div>
       </div>
@@ -211,10 +226,10 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
   const characterInfo = useGameStore((s) => s.characterInfo);
   const currentNodeType = useGameStore((s) => s.currentNodeType);
 
-  // 교체 확인 다이얼로그 상태
+  // 교체 확인 다이얼로그 상태 — 빈 슬롯 장착 시 outgoing=null
   const [equipConfirm, setEquipConfirm] = useState<{
     incoming: EquipmentBagItem;
-    outgoing: EquipmentItem;
+    outgoing: EquipmentItem | null;
   } | null>(null);
 
   // 변경된 아이템 ID 추적
@@ -244,11 +259,7 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
   const handleEquip = (bagItem: EquipmentBagItem) => {
     if (isSubmitting) return;
     const slotOccupant = characterInfo?.equipment?.find((e) => e.slot === bagItem.slot);
-    if (slotOccupant) {
-      setEquipConfirm({ incoming: bagItem, outgoing: slotOccupant });
-      return;
-    }
-    equipItem(bagItem.instanceId);
+    setEquipConfirm({ incoming: bagItem, outgoing: slotOccupant ?? null });
   };
 
   const confirmEquipReplace = () => {
