@@ -1007,7 +1007,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
           </div>
         ) : <NarratorLoading />
 
-      ) : message.type === "CHOICE" && message.choices ? (
+      ) : message.type === "CHOICE" && message.choices && (onChoiceSelect || message.selectedChoiceId) ? (
         <div className="flex flex-col gap-1">
           {message.selectedChoiceId ? (
             (() => {

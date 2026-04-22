@@ -173,6 +173,14 @@ export interface GameState {
   useItem: (itemId: string) => Promise<void>;
   requestSceneImage: (turnNo: number) => Promise<void>;
   fetchSceneImageStatus: () => Promise<void>;
+
+  // architecture/42 전투 UI 버튼 폼 — 타겟 선택 + 펼침 패널
+  combatSelectedTargetId: string | null;
+  combatLastAttackedTargetId: string | null;
+  combatExpandedPanel: 'none' | 'special' | 'items';
+  setCombatTarget: (id: string | null) => void;
+  setCombatExpandedPanel: (panel: 'none' | 'special' | 'items') => void;
+
   reset: () => void;
 }
 
@@ -1146,6 +1154,18 @@ export const useGameStore = create<GameState>((set, get) => ({
   isNarrating: false,
   streamTextBuffer: '',
   streamBufferDone: false,
+  // architecture/42 전투 UI — 타겟 선택 + 펼침 패널
+  combatSelectedTargetId: null,
+  combatLastAttackedTargetId: null,
+  combatExpandedPanel: 'none',
+  setCombatTarget: (id) => {
+    set({ combatSelectedTargetId: id });
+  },
+  setCombatExpandedPanel: (panel) => {
+    set((s) => ({
+      combatExpandedPanel: s.combatExpandedPanel === panel ? 'none' : panel,
+    }));
+  },
   finalizeStreaming: () => {
     const { streamDoneNarrative, currentTurnNo } = get();
     if (!streamDoneNarrative) return;

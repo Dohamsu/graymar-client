@@ -12,9 +12,11 @@ interface NarrativePanelProps {
   onNarrationComplete?: () => void;
   /** Optional id attribute for the scroll container (used for mobile scroll tracking) */
   scrollId?: string;
+  /** architecture/42 — 전투 UI 버튼 폼에서는 NarrativePanel 선택지 숨김 (CombatActionBar가 대체) */
+  hideChoices?: boolean;
 }
 
-export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, scrollId }: NarrativePanelProps) {
+export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, scrollId, hideChoices }: NarrativePanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isStreaming = useGameStore((s) => s.isStreaming);
   const streamSegments = useGameStore((s) => s.streamSegments);
@@ -72,7 +74,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
   return (
     <div ref={scrollRef} id={scrollId} className="flex flex-1 flex-col gap-4 overflow-y-auto p-3 pb-20 md:p-6 md:pb-24 lg:p-6 lg:pb-24">
       {messages.map((msg) => (
-        <StoryBlock key={msg.id} message={msg} onChoiceSelect={onChoiceSelect} onNarrationComplete={onNarrationComplete} />
+        <StoryBlock key={msg.id} message={msg} onChoiceSelect={hideChoices ? undefined : onChoiceSelect} onNarrationComplete={onNarrationComplete} />
       ))}
       {/* StreamingBlock은 StoryBlock 내부에서 렌더링됨 (내레이터 박스 안) */}
     </div>

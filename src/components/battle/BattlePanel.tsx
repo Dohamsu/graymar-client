@@ -1,92 +1,48 @@
 "use client";
 
-import { Skull, Shield } from "lucide-react";
+import { useEffect } from "react";
 import type { BattleEnemy } from "@/types/game";
+import { EnemyCard } from "./EnemyCard";
+import { useGameStore } from "@/store/game-store";
 
-const DISTANCE_LABELS: Record<string, string> = {
-  ENGAGED: '밀착', CLOSE: '근거리', MID: '중거리', FAR: '원거리', OUT: '전장 밖',
-};
-const ANGLE_LABELS: Record<string, string> = {
-  FRONT: '정면', SIDE: '측면', BACK: '후방',
-};
-const STATUS_LABELS: Record<string, string> = {
-  BLEED: '출혈', POISON: '중독', STUN: '기절', WEAKEN: '약화', FORTIFY: '강화',
-};
+// architecture/42 전투 UI 버튼 폼 — 적 카드 클릭으로 타겟 선택
 
 interface BattlePanelProps {
   enemies: BattleEnemy[];
 }
 
-function EnemyCard({ enemy }: { enemy: BattleEnemy }) {
-  const maxHp = enemy.maxHp ?? enemy.hp;
-  const hpPct = maxHp > 0 ? Math.round((enemy.hp / maxHp) * 100) : 0;
-  const isDead = enemy.hp <= 0;
-  const displayName = enemy.name ?? enemy.id.replace(/_/g, " ");
-
-  return (
-    <div
-      className="flex flex-col gap-2 rounded-md border p-3"
-      style={{
-        borderColor: isDead ? "var(--text-muted)" : "var(--hp-red)",
-        opacity: isDead ? 0.4 : 1,
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {isDead ? (
-            <Skull size={14} className="text-[var(--text-muted)]" />
-          ) : (
-            <Shield size={14} className="text-[var(--hp-red)]" />
-          )}
-          <span className="text-xs font-semibold text-[var(--text-primary)]">
-            {displayName}
-          </span>
-        </div>
-        <span className="text-[10px] text-[var(--text-muted)]">
-          {DISTANCE_LABELS[enemy.distance] ?? enemy.distance} / {ANGLE_LABELS[enemy.angle] ?? enemy.angle}
-        </span>
-      </div>
-
-      {/* HP Bar */}
-      <div className="flex items-center gap-2">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--border-primary)]">
-          <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${hpPct}%`,
-              backgroundColor: isDead
-                ? "var(--text-muted)"
-                : hpPct > 50
-                  ? "var(--hp-red)"
-                  : hpPct > 25
-                    ? "var(--orange)"
-                    : "var(--hp-red)",
-            }}
-          />
-        </div>
-        <span className="text-[10px] text-[var(--text-secondary)]">
-          {enemy.hp}/{maxHp}
-        </span>
-      </div>
-
-      {/* Status effects */}
-      {enemy.status.length > 0 && (
-        <div className="flex gap-1">
-          {enemy.status.map((s) => (
-            <span
-              key={s.id}
-              className="rounded bg-[var(--border-primary)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]"
-            >
-              {STATUS_LABELS[s.id] ?? s.id} x{s.stacks}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function BattlePanel({ enemies }: BattlePanelProps) {
+  const selectedTargetId = useGameStore((s) => s.combatSelectedTargetId);
+  const lastAttackedId = useGameStore((s) => s.combatLastAttackedTargetId);
+  const setCombatTarget = useGameStore((s) => s.setCombatTarget);
+
+  // 자동 타겟 선택: 마지막 공격한 적 우선 → 첫 ENGAGED 생존 적
+  useEffect(() => {
+    if (!enemies || enemies.length === 0) return;
+    const current = enemies.find(
+      (e) => e.id === selectedTargetId && e.hp > 0,
+    );
+    if (current) return; // 현재 선택이 유효하면 유지
+
+    // 마지막 공격한 적이 살아있으면 우선
+    const lastAttacked = enemies.find(
+      (e) => e.id === lastAttackedId && e.hp > 0,
+    );
+    if (lastAttacked) {
+      setCombatTarget(lastAttacked.id);
+      return;
+    }
+
+    // fallback: 첫 ENGAGED 생존 적 → 첫 생존 적
+    const engaged = enemies.find(
+      (e) => e.hp > 0 && e.distance === 'ENGAGED',
+    );
+    const anyAlive = enemies.find((e) => e.hp > 0);
+    setCombatTarget((engaged ?? anyAlive)?.id ?? null);
+    // enemies 변경 시마다 재평가
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enemies, lastAttackedId]);
+
   if (!enemies || enemies.length === 0) return null;
 
   return (
@@ -96,7 +52,12 @@ export function BattlePanel({ enemies }: BattlePanelProps) {
       </span>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
         {enemies.map((enemy) => (
-          <EnemyCard key={enemy.id} enemy={enemy} />
+          <EnemyCard
+            key={enemy.id}
+            enemy={enemy}
+            selected={enemy.id === selectedTargetId}
+            onSelect={setCombatTarget}
+          />
         ))}
       </div>
     </div>

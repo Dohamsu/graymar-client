@@ -13,6 +13,8 @@ import { SidePanel } from "@/components/side-panel/SidePanel";
 import { CharacterTab } from "@/components/side-panel/CharacterTab";
 import { InventoryTab } from "@/components/side-panel/InventoryTab";
 import { BattlePanel } from "@/components/battle/BattlePanel";
+import { CombatActionBar } from "@/components/battle/CombatActionBar";
+import { CombatItemPickerModal } from "@/components/battle/CombatItemPickerModal";
 import { StartScreen } from "@/components/screens/StartScreen";
 import SplashScreen from "@/components/ui/SplashScreen";
 import InstallPrompt from "@/components/ui/InstallPrompt";
@@ -150,6 +152,9 @@ export default function GameClient() {
   const [splashExiting, setSplashExiting] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
   const splashPrevPhase = useRef(phase);
+
+  // architecture/42 전투 아이템 모달 (early return 전에 선언 필요)
+  const [combatItemModalOpen, setCombatItemModalOpen] = useState(false);
 
   useEffect(() => {
     if (splashPrevPhase.current === "LOADING" && phase !== "LOADING") {
@@ -296,6 +301,11 @@ export default function GameClient() {
   };
 
   const handleChoiceSelect = (choiceId: string) => {
+    // architecture/42 — 공격 계열 선택지에 타겟 id 포함 시 store 갱신
+    const attackMatch = choiceId.match(/^(?:attack_melee|combo_double_attack|combo_attack_defend)_(.+)$/);
+    if (attackMatch) {
+      useGameStore.setState({ combatLastAttackedTargetId: attackMatch[1] });
+    }
     submitChoice(choiceId);
   };
 
@@ -365,6 +375,7 @@ export default function GameClient() {
               messages={displayMessages}
               onChoiceSelect={handleChoiceSelect}
               onNarrationComplete={flushPending}
+              hideChoices={phase === "COMBAT"}
             />
             {/* Party turn status (above input) */}
             {partyRunId && turnStatus && (
@@ -377,6 +388,15 @@ export default function GameClient() {
                 <div className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--gold)] border-t-transparent" />
                 <span className="text-xs text-[var(--text-muted)]">선택지 생성 중...</span>
               </div>
+            )}
+            {/* COMBAT 전용 — 버튼형 Action Bar (architecture/42) */}
+            {phase === "COMBAT" && enemies.length > 0 && (
+              <CombatActionBar
+                enemies={enemies}
+                onChoiceSelect={handleChoiceSelect}
+                onOpenItemModal={() => setCombatItemModalOpen(true)}
+                disabled={isSubmitting}
+              />
             )}
             <InputSection
               onSubmit={handleSubmit}
@@ -411,7 +431,16 @@ export default function GameClient() {
                 onChoiceSelect={handleChoiceSelect}
                 onNarrationComplete={flushPending}
                 scrollId="mobile-narrative-scroll"
+                hideChoices={phase === "COMBAT"}
               />
+              {phase === "COMBAT" && enemies.length > 0 && (
+                <CombatActionBar
+                  enemies={enemies}
+                  onChoiceSelect={handleChoiceSelect}
+                  onOpenItemModal={() => setCombatItemModalOpen(true)}
+                  disabled={isSubmitting}
+                />
+              )}
             </>
           )}
           {mobileTab === "character" && characterInfo && (
@@ -485,6 +514,13 @@ export default function GameClient() {
     </div>
     </PageTransition>
     <InstallPrompt />
+    {/* 전투 아이템 사용 모달 (architecture/42) */}
+    {combatItemModalOpen && (
+      <CombatItemPickerModal
+        onSelect={handleChoiceSelect}
+        onClose={() => setCombatItemModalOpen(false)}
+      />
+    )}
     </>
   );
 }
