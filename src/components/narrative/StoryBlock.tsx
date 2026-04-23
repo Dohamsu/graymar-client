@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Image from "next/image";
 import type { StoryMessage } from "@/types/game";
 import { ResolveOutcomeInline } from "@/components/hub/ResolveOutcomeBanner";
-import { useSettingsStore, TEXT_SPEED_PRESETS, FONT_SIZE_PRESETS } from "@/store/settings-store";
+import { useSettingsStore, TEXT_SPEED_PRESETS, FONT_SIZE_PRESETS, getTypingDelay } from "@/store/settings-store";
 import { STAT_COLORS, STAT_KOREAN_NAMES } from "@/data/stat-descriptions";
 import { useGameStore } from "@/store/game-store";
 import { DialogueBubble } from "./DialogueBubble";
@@ -159,12 +159,8 @@ function StreamTyper({ onComplete }: { onComplete?: () => void }) {
       return;
     }
 
-    // 구두점 딜레이
-    const ch = buffer[typedLength - 1];
-    let delay: number = preset.charSpeed;
-    if (ch && '.!?'.includes(ch)) delay = preset.charSpeed * 5;
-    else if (ch && ',;'.includes(ch)) delay = preset.charSpeed * 2;
-    else if (ch === '\n') delay = preset.paragraphPause;
+    // 공통 유틸: 문장부호 차등 pause 적용 (StreamingBlock 과 동일 규칙)
+    const delay = getTypingDelay(buffer, typedLength, preset);
 
     const timer = setTimeout(() => {
       setTypedLength((prev) => prev + 1);
@@ -547,24 +543,8 @@ function parseNarrativeSegments(text: string): NarrSegment[] {
   return segments;
 }
 
-/** 구두점에 따른 타이핑 딜레이 계산 */
-function getCharDelay(
-  text: string,
-  pos: number,
-  charSpeed: number,
-  paragraphPause: number,
-): number {
-  if (pos >= text.length) return 0;
-  const ch = text[pos - 1]; // 방금 표시한 문자
-  if (!ch) return charSpeed;
-  // 문단 경계
-  if (ch === '\n' && pos < text.length && text[pos] === '\n') return paragraphPause;
-  // 마침표/느낌표/물음표 뒤 멈춤
-  if ('.!?。'.includes(ch)) return charSpeed * 5;
-  // 쉼표/세미콜론 뒤 살짝 멈춤
-  if (',;，'.includes(ch)) return charSpeed * 2;
-  return charSpeed;
-}
+// 문장부호 차등 pause 는 settings-store.ts 의 getTypingDelay 로 일원화.
+// (StreamingBlock / StreamTyper / TypewriterText 3곳 동일 규칙)
 
 function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onComplete?: () => void; speakingNpc?: SpeakingNpc }) {
   const textSpeed = useSettingsStore((s) => s.textSpeed);
@@ -610,9 +590,12 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
         }, preset.charSpeed * 15); // 대사 후 ~375ms 멈춤
         return () => clearTimeout(timer);
       }
-      // 대사 글자 타이핑 (narration보다 약간 빠르게)
-      const dialogueSpeed = Math.max(Math.floor(preset.charSpeed * 0.7), 5);
-      const delay = getCharDelay(seg.text, charIdx, dialogueSpeed, preset.paragraphPause);
+      // 대사 글자 타이핑 (narration 보다 약간 빠르게, 문장부호 규칙은 동일)
+      const dialoguePreset = {
+        ...preset,
+        charSpeed: Math.max(Math.floor(preset.charSpeed * 0.7), 5),
+      };
+      const delay = getTypingDelay(seg.text, charIdx, dialoguePreset);
       const timer = setTimeout(() => {
         setCharIdx((prev) => prev + 1);
       }, delay);
@@ -631,7 +614,7 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
       return () => clearTimeout(timer);
     }
 
-    const delay = getCharDelay(seg.text, charIdx, preset.charSpeed, preset.paragraphPause);
+    const delay = getTypingDelay(seg.text, charIdx, preset);
     const timer = setTimeout(() => {
       setCharIdx((prev) => prev + 1);
     }, delay);
