@@ -3,6 +3,11 @@
 import { memo, useState, useEffect, useRef, useMemo } from "react";
 import { DialogueBubble } from "./DialogueBubble";
 import type { StreamOutput } from "@/lib/stream-parser";
+import {
+  TEXT_SPEED_PRESETS,
+  getTypingDelay,
+  useSettingsStore,
+} from "@/store/settings-store";
 
 interface StreamingBlockProps {
   segments: StreamOutput[];
@@ -25,19 +30,19 @@ function cleanStreamText(text: string): string {
     .trim();
 }
 
-/** 타이핑 속도 (ms/글자) */
-const CHAR_SPEED = 25;
-/** 구두점 후 추가 딜레이 */
-const PUNCT_DELAY = 80;
-
 /**
  * LLM 스트리밍 중 실시간 렌더링 블록.
  *
  * 서버에서 문장 단위로 세그먼트가 도착하면,
  * 각 세그먼트를 타이핑 효과로 한 글자씩 표시한다.
  * 대사(dialogue)는 타이핑 완료 후 말풍선으로 즉시 표시.
+ *
+ * 타이핑 속도/구두점 규칙은 settings-store 의 getTypingDelay 와 공유
+ * (StreamTyper / TypewriterText 동일 리듬).
  */
 function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockProps) {
+  const textSpeed = useSettingsStore((s) => s.textSpeed);
+  const preset = TEXT_SPEED_PRESETS[textSpeed];
   // 타이핑 완료된 세그먼트 수
   const [typedCount, setTypedCount] = useState(0);
   // 현재 타이핑 중인 세그먼트의 표시 글자 수
@@ -73,9 +78,16 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
       return;
     }
 
-    const char = currentText[charIdx];
-    const isPunct = /[.!?。,，;；]/.test(char);
-    const delay = isPunct ? CHAR_SPEED + PUNCT_DELAY : CHAR_SPEED;
+    // charIdx 는 "지금까지 표시된 글자 수" = "다음에 표시할 글자의 인덱스".
+    // getTypingDelay(text, pos) 는 pos-1 위치 글자(방금 표시한 글자) 기준 대기 시간.
+    // charIdx=0 이면 아직 표시한 글자 없음 → 기본 charSpeed 반환.
+    const delay = getTypingDelay(currentText, charIdx, preset);
+
+    // instant 모드: 즉시 전부 표시
+    if (delay === 0) {
+      setCharIdx(currentText.length);
+      return;
+    }
 
     timerRef.current = setTimeout(() => {
       setCharIdx((c) => c + 1);
@@ -84,7 +96,7 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentText, charIdx, typedCount]);
+  }, [currentText, charIdx, typedCount, preset]);
 
   // 모든 세그먼트 타이핑 완료 + done 수신 → onComplete 호출
   const allTyped = typedCount >= segments.length && segments.length > 0;
