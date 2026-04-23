@@ -604,13 +604,18 @@ function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onCom
 
     // narration 세그먼트: 한 글자씩
     if (charIdx >= seg.text.length) {
-      // 세그먼트 완료 → 다음 세그먼트
+      // 세그먼트 완료 → 마지막 글자 기반 pause + dialogue 대비 pause 병합.
+      // 서버가 문장 단위로 분할하므로 마침표/물음표 등 문장 끝 구두점은
+      // 항상 세그먼트 말미. 여기서 pause 를 걸어야 문장→문장 리듬 유지.
       const nextSeg = segments[segIdx + 1];
-      const pauseBeforeDialogue = nextSeg?.type === 'dialogue' ? preset.charSpeed * 8 : 0;
+      const endDelay = getTypingDelay(seg.text, seg.text.length, preset);
+      const dialoguePause =
+        nextSeg?.type === 'dialogue' ? preset.charSpeed * 8 : 0;
+      const pause = Math.max(endDelay, dialoguePause);
       const timer = setTimeout(() => {
         setSegIdx((prev) => prev + 1);
         setCharIdx(0);
-      }, pauseBeforeDialogue);
+      }, pause);
       return () => clearTimeout(timer);
     }
 
