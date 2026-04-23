@@ -72,10 +72,34 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
     }
 
     if (charIdx >= currentText.length) {
-      // 현재 세그먼트 타이핑 완료 → 다음으로
-      setTypedCount((c) => c + 1);
-      setCharIdx(0);
-      return;
+      // 세그먼트 완료 — 마지막 글자 기반 pause 후 다음 세그먼트로.
+      // 서버가 문장 단위로 세그먼트를 분할하므로, 문장 끝의 마침표는 항상
+      // 세그먼트 말미에 위치한다. 여기서 pause 를 걸지 않으면 다음 문장이
+      // 연속해 붙어 리듬이 사라진다.
+      const endDelay = getTypingDelay(
+        currentText,
+        currentText.length,
+        preset,
+      );
+      const nextSeg = segments[typedCount + 1];
+      const pauseAfter = nextSeg?.paragraphStart
+        ? Math.max(endDelay, preset.paragraphPause)
+        : endDelay;
+
+      if (pauseAfter === 0) {
+        setTypedCount((c) => c + 1);
+        setCharIdx(0);
+        return;
+      }
+
+      timerRef.current = setTimeout(() => {
+        setTypedCount((c) => c + 1);
+        setCharIdx(0);
+      }, pauseAfter);
+
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
     }
 
     // charIdx 는 "지금까지 표시된 글자 수" = "다음에 표시할 글자의 인덱스".
