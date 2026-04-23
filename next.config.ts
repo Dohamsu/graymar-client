@@ -4,7 +4,11 @@ import { execSync } from "node:child_process";
 const backendUrl =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
+// Vercel 빌드 환경: VERCEL_GIT_COMMIT_SHA 자동 제공 (shallow clone으로 git 명령이
+// 실패하는 것을 대비). 로컬 빌드: git rev-parse 폴백. 모두 실패하면 "unknown".
 const clientVersion = (() => {
+  const vercelSha = process.env.VERCEL_GIT_COMMIT_SHA;
+  if (vercelSha && vercelSha.length >= 7) return vercelSha.slice(0, 7);
   try {
     return execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
   } catch {
