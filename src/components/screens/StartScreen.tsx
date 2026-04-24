@@ -840,12 +840,23 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const handleQuickStart = () => {
     setShowNewGameChoice(false);
     if (!lastCharacter) return;
-    const opts: Record<string, unknown> = {};
+    // P1-C4: any 캐스팅 제거 — startNewGame signature 와 정확히 일치
+    const opts: {
+      characterName?: string;
+      bonusStats?: Record<string, number>;
+      traitId?: string;
+      portraitUrl?: string;
+    } = {};
     if (lastCharacter.characterName) opts.characterName = lastCharacter.characterName;
     if (lastCharacter.bonusStats) opts.bonusStats = lastCharacter.bonusStats;
     if (lastCharacter.traitId) opts.traitId = lastCharacter.traitId;
     if (lastCharacter.portraitUrl) opts.portraitUrl = lastCharacter.portraitUrl;
-    startNewGame(lastCharacter.presetId, lastCharacter.gender as 'male' | 'female', Object.keys(opts).length > 0 ? opts as any : undefined);
+    const hasOpts = Object.keys(opts).length > 0;
+    startNewGame(
+      lastCharacter.presetId,
+      lastCharacter.gender as 'male' | 'female',
+      hasOpts ? opts : undefined,
+    );
   };
 
   const handleLogout = () => {

@@ -1,22 +1,36 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 export function NetworkStatus() {
   const [isOffline, setIsOffline] = useState(false);
   const [showReconnected, setShowReconnected] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const wasOffline = useRef(false);
+  const reconnectToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
-  useEffect(() => {
-    const handleOnline = () => {
+  // P1-C2: 재연결 전환 공통 로직 — cascade setState 대신 microtask 로 defer
+  const transitionToOnline = useCallback((markAsReconnected: boolean) => {
+    queueMicrotask(() => {
       setIsOffline(false);
-      if (wasOffline.current) {
+      if (markAsReconnected) {
         setShowReconnected(true);
         wasOffline.current = false;
-        setTimeout(() => setShowReconnected(false), 3000);
+        if (reconnectToastTimerRef.current) {
+          clearTimeout(reconnectToastTimerRef.current);
+        }
+        reconnectToastTimerRef.current = setTimeout(
+          () => setShowReconnected(false),
+          3000,
+        );
       }
-    };
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleOnline = () => transitionToOnline(wasOffline.current);
     const handleOffline = () => {
       setIsOffline(true);
       wasOffline.current = true;
@@ -32,19 +46,20 @@ export function NetworkStatus() {
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      if (reconnectToastTimerRef.current) {
+        clearTimeout(reconnectToastTimerRef.current);
+        reconnectToastTimerRef.current = null;
+      }
     };
-  }, []);
+  }, [transitionToOnline]);
 
   // 카운트다운 (재연결 확인)
   useEffect(() => {
     if (!isOffline) return;
     if (countdown <= 0) {
-      // navigator.onLine으로 재확인
+      // navigator.onLine 으로 재확인 — setState 는 microtask 안에서 처리
       if (navigator.onLine) {
-        setIsOffline(false);
-        wasOffline.current = true;
-        setShowReconnected(true);
-        setTimeout(() => setShowReconnected(false), 3000);
+        transitionToOnline(true);
       } else {
         setCountdown(5); // 다시 카운트다운
       }
@@ -52,7 +67,7 @@ export function NetworkStatus() {
     }
     const timer = setTimeout(() => setCountdown((p) => p - 1), 1000);
     return () => clearTimeout(timer);
-  }, [isOffline, countdown]);
+  }, [isOffline, countdown, transitionToOnline]);
 
   // 오프라인 오버레이
   if (isOffline) {

@@ -40,21 +40,23 @@ export function PartyJoinModal({
   const [tab, setTab] = useState<TabKey>("code");
   const [code, setCode] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [initialLoaded, setInitialLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // P1-C3: initialLoaded 상태를 useState 에서 useRef 로 변경.
+  //   이전: 두 개 useEffect 가 서로의 setState 를 유발해 cascade render 위험.
+  //   현재: ref mutation 은 React 규칙을 벗어나지 않으며 단일 effect 로 통합.
+  const initialLoadedRef = useRef(false);
 
-  // 검색 탭 진입 시 자동으로 전체 목록 로드
+  // 검색 탭 진입 시 자동으로 전체 목록 로드 (탭 나갔다 돌아오면 다시 로드)
   useEffect(() => {
-    if (tab === "search" && !initialLoaded && onSearch) {
-      onSearch("");
-      setInitialLoaded(true);
+    if (tab === "search") {
+      if (!initialLoadedRef.current && onSearch) {
+        onSearch("");
+        initialLoadedRef.current = true;
+      }
+    } else {
+      initialLoadedRef.current = false;
     }
-  }, [tab, initialLoaded, onSearch]);
-
-  // 탭 변경 시 초기화
-  useEffect(() => {
-    if (tab !== "search") setInitialLoaded(false);
-  }, [tab]);
+  }, [tab, onSearch]);
 
   if (!open) return null;
 
