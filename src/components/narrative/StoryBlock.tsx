@@ -153,9 +153,9 @@ function StreamTyper({ onComplete }: { onComplete?: () => void }) {
       return; // 버퍼에 더 쌓일 때까지 대기
     }
 
-    // 즉시 모드
+    // 즉시 모드 — cascade render 회피 위해 microtask 에서 flush
     if (preset.charSpeed === 0) {
-      setTypedLength(buffer.length);
+      queueMicrotask(() => setTypedLength(buffer.length));
       return;
     }
 

@@ -158,7 +158,8 @@ export default function GameClient() {
 
   useEffect(() => {
     if (splashPrevPhase.current === "LOADING" && phase !== "LOADING") {
-      setSplashExiting(true);
+      // cascade render 회피: setSplashExiting 을 microtask 로 defer
+      queueMicrotask(() => setSplashExiting(true));
       const timer = setTimeout(() => {
         setShowSplash(false);
         setSplashExiting(false);
@@ -167,8 +168,10 @@ export default function GameClient() {
       return () => clearTimeout(timer);
     }
     if (phase === "LOADING") {
-      setShowSplash(true);
-      setSplashExiting(false);
+      queueMicrotask(() => {
+        setShowSplash(true);
+        setSplashExiting(false);
+      });
     }
     splashPrevPhase.current = phase;
   }, [phase]);
