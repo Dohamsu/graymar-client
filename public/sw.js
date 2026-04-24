@@ -1,6 +1,6 @@
 // DimTale Service Worker — 오프라인 페이지 + 앱 셸 캐싱
-// v4: 세그먼트 경계 pause 배포, 이전 번들 무효화 (2026-04-23)
-const CACHE_VERSION = 4;
+// v5: 타이틀 오프닝 세션 1회 제한 배포, 이전 번들 무효화 (2026-04-24)
+const CACHE_VERSION = 5;
 const STATIC_CACHE = `dimtale-static-v${CACHE_VERSION}`;
 const RUNTIME_CACHE = `dimtale-runtime-v${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties } from "react";
 import Image from "next/image";
 import { useGameStore } from "@/store/game-store";
 import { useAuthStore } from "@/store/auth-store";
@@ -728,12 +728,29 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const [selectedGenderState, setSelectedGenderState] = useState<Gender | null>(null);
   // DIMTALE 로고 드로잉 애니메이션 완료 여부 — 완료 전엔 메뉴/폼 비노출
   const [logoReady, setLogoReady] = useState(false);
-  // screenPhase 가 TITLE/AUTH 로 전환될 때마다 로고 애니 재생을 위해 리셋
+  // 세션 최초 1회만 오프닝 애니메이션(로고 드로잉 + 버튼 stagger) 재생.
+  // 로그인/캐릭터생성 등 뎁스에서 복귀 시 즉시 완성 상태로 표시.
+  const [hasPlayedOpening, setHasPlayedOpening] = useState(false);
   useEffect(() => {
     if (screenPhase === "TITLE" || screenPhase === "AUTH") {
-      setLogoReady(false);
+      if (hasPlayedOpening) {
+        setLogoReady(true);
+      } else {
+        setLogoReady(false);
+      }
     }
-  }, [screenPhase]);
+  }, [screenPhase, hasPlayedOpening]);
+  const handleLogoReady = useCallback(() => {
+    setLogoReady(true);
+    setHasPlayedOpening(true);
+  }, []);
+  const entryStyle = useCallback(
+    (delay: string): CSSProperties =>
+      hasPlayedOpening
+        ? { opacity: 1 }
+        : { animation: "fadeSlideIn 0.4s ease-out forwards", animationDelay: delay, opacity: 0 },
+    [hasPlayedOpening],
+  );
 
   // Character creation state
   const [characterName, setCharacterName] = useState("");
@@ -996,7 +1013,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-[var(--bg-primary)] px-4">
         <div className="flex flex-col items-center gap-2">
-          <DimtaleLogoAnimated width={220} height={88} onReady={() => setLogoReady(true)} readyAfterMs={3200} />
+          <DimtaleLogoAnimated width={220} height={88} onReady={handleLogoReady} readyAfterMs={3200} skipAnimation={hasPlayedOpening} />
           <h1 className="sr-only">DimTale</h1>
         </div>
         <div
@@ -1037,7 +1054,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-[var(--bg-primary)]">
         <div className="flex flex-col items-center gap-3">
-          <DimtaleLogoAnimated width={320} height={128} onReady={() => setLogoReady(true)} readyAfterMs={3200} />
+          <DimtaleLogoAnimated width={320} height={128} onReady={handleLogoReady} readyAfterMs={3200} skipAnimation={hasPlayedOpening} />
           <h1 className="sr-only">DimTale</h1>
           <p
             className="max-w-sm text-center text-sm leading-relaxed text-[var(--text-muted)] transition-opacity duration-500"
@@ -1080,24 +1097,14 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
               </div>
             ) : (
               <>
-                <div
-                  className="mb-2"
-                  style={{ animation: "fadeSlideIn 0.4s ease-out forwards", opacity: 0 }}
-                >
+                <div className="mb-2" style={entryStyle("0s")}>
                   <p className="text-sm text-[var(--text-secondary)]">
                     <span className="text-[var(--gold)]">{displayName}</span> 님, 환영합니다
                   </p>
                 </div>
 
                 {activeRunInfo && (
-                  <div
-                    className="w-full max-w-64"
-                    style={{
-                      animation: "fadeSlideIn 0.4s ease-out forwards",
-                      animationDelay: "0.1s",
-                      opacity: 0,
-                    }}
-                  >
+                  <div className="w-full max-w-64" style={entryStyle("0.1s")}>
                     <button
                       onClick={() => resumeRun()}
                       disabled={isLoading}
@@ -1111,14 +1118,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                   </div>
                 )}
                 {endingsCount >= 1 && (
-                  <div
-                    className="w-full max-w-64"
-                    style={{
-                      animation: "fadeSlideIn 0.4s ease-out forwards",
-                      animationDelay: activeRunInfo ? "0.2s" : "0.1s",
-                      opacity: 0,
-                    }}
-                  >
+                  <div className="w-full max-w-64" style={entryStyle(activeRunInfo ? "0.2s" : "0.1s")}>
                     <button
                       onClick={handleOpenArchive}
                       disabled={isLoading}
@@ -1131,17 +1131,15 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                 )}
                 <div
                   className="w-full max-w-64"
-                  style={{
-                    animation: "fadeSlideIn 0.4s ease-out forwards",
-                    animationDelay: activeRunInfo
+                  style={entryStyle(
+                    activeRunInfo
                       ? endingsCount >= 1
                         ? "0.3s"
                         : "0.2s"
                       : endingsCount >= 1
                         ? "0.2s"
                         : "0.1s",
-                    opacity: 0,
-                  }}
+                  )}
                 >
                   <button
                     onClick={handleNewGameClick}
@@ -1153,14 +1151,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                 </div>
                 {/* 캠페인 버튼 — 시나리오 2+ 준비될 때까지 숨김 */}
                 {onParty && (
-                  <div
-                    className="w-full max-w-64"
-                    style={{
-                      animation: "fadeSlideIn 0.4s ease-out forwards",
-                      animationDelay: activeRunInfo ? "0.35s" : "0.25s",
-                      opacity: 0,
-                    }}
-                  >
+                  <div className="w-full max-w-64" style={entryStyle(activeRunInfo ? "0.35s" : "0.25s")}>
                     <button
                       onClick={onParty}
                       disabled={isLoading}
@@ -1172,11 +1163,9 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                   </div>
                 )}
                 <div
-                  style={{
-                    animation: "fadeSlideIn 0.4s ease-out forwards",
-                    animationDelay: activeRunInfo ? (onParty ? "0.45s" : "0.4s") : (onParty ? "0.35s" : "0.3s"),
-                    opacity: 0,
-                  }}
+                  style={entryStyle(
+                    activeRunInfo ? (onParty ? "0.45s" : "0.4s") : (onParty ? "0.35s" : "0.3s"),
+                  )}
                 >
                   <button
                     onClick={handleLogout}
