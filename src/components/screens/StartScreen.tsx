@@ -29,7 +29,6 @@ import {
   Minus,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Check,
   ImageIcon,
   Loader2,
@@ -744,7 +743,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const [portraitLoading, setPortraitLoading] = useState(false);
   const [portraitGenCount, setPortraitGenCount] = useState(0);
   const [portraitDescription, setPortraitDescription] = useState("");
-  const [showPortraitInput, setShowPortraitInput] = useState(false);
+  const [_showPortraitInput, setShowPortraitInput] = useState(false);
   const [portraitError, setPortraitError] = useState<string | null>(null);
   const [portraitUploading, setPortraitUploading] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
@@ -871,7 +870,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   };
 
   // Portrait generation
-  const handleGeneratePortrait = async () => {
+  const _handleGeneratePortrait = async () => {
     if (!selectedPresetId || portraitGenCount >= 3) return;
     setPortraitLoading(true);
     setPortraitError(null);
@@ -921,7 +920,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   };
 
   // Campaign handlers
-  const handleEnterCampaign = async () => {
+  const _handleEnterCampaign = async () => {
     setCampaignLoading(true);
     setCampaignError(null);
     try {

@@ -60,7 +60,7 @@ export function PartyLobby({
   isReady,
   onToggleReady,
   onStartDungeon,
-  onInviteToRun,
+  onInviteToRun: _onInviteToRun,
   onLeave,
   onSendChat,
   chatSending = false,

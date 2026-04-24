@@ -7,6 +7,9 @@ type ConnectionCallback = () => void;
 
 let eventSource: EventSource | null = null;
 const handlers = new Map<string, EventHandler>();
+// P3-C2: EventSource 에 실제 등록된 raw 리스너를 추적해 재연결 시 누락 없이
+//   removeEventListener 로 정리. offEvent/disconnect 시 누적 리스너 누수 차단.
+const rawListeners = new Map<string, EventListener>();
 let onConnectCb: ConnectionCallback | null = null;
 let onDisconnectCb: ConnectionCallback | null = null;
 
@@ -65,6 +68,11 @@ export function connectPartyStream(partyId: string, token: string): void {
 /** Close the SSE connection and clean up. */
 export function disconnectPartyStream(): void {
   if (eventSource) {
+    // P3-C2: raw 리스너 제거 후 close — 재연결 시 중복 등록 방지
+    for (const [eventType, listener] of rawListeners) {
+      eventSource.removeEventListener(eventType, listener);
+    }
+    rawListeners.clear();
     eventSource.close();
     eventSource = null;
   }
@@ -82,8 +90,12 @@ export function onEvent(eventType: string, handler: EventHandler): void {
 /** Remove a previously registered event handler. */
 export function offEvent(eventType: string): void {
   handlers.delete(eventType);
-  // EventSource does not expose removeEventListener by event name in a
-  // simple way; the listener will simply no-op when the handler is gone.
+  // P3-C2: 실제 DOM 리스너도 제거 (누수 방지)
+  const rawListener = rawListeners.get(eventType);
+  if (rawListener && eventSource) {
+    eventSource.removeEventListener(eventType, rawListener);
+  }
+  rawListeners.delete(eventType);
 }
 
 /** Set a callback invoked when the SSE connection opens. */
@@ -102,7 +114,12 @@ export function onDisconnect(cb: ConnectionCallback): void {
 
 function attachListener(eventType: string): void {
   if (!eventSource) return;
-  eventSource.addEventListener(eventType, ((ev: MessageEvent) => {
+  // P3-C2: 이미 등록된 리스너가 있으면 먼저 제거 (중복 방지)
+  const existing = rawListeners.get(eventType);
+  if (existing) {
+    eventSource.removeEventListener(eventType, existing);
+  }
+  const listener = ((ev: MessageEvent) => {
     const handler = handlers.get(eventType);
     if (!handler) return;
     try {
@@ -110,5 +127,7 @@ function attachListener(eventType: string): void {
     } catch {
       handler(ev.data);
     }
-  }) as EventListener);
+  }) as EventListener;
+  eventSource.addEventListener(eventType, listener);
+  rawListeners.set(eventType, listener);
 }

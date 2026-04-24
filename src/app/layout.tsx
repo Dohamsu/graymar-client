@@ -1,5 +1,22 @@
 import type { Metadata } from "next";
+import { IBM_Plex_Sans_KR, Noto_Serif_KR } from "next/font/google";
 import "./globals.css";
+
+// P3-C1: 폰트 블로킹 요청 제거 — next/font 로 로컬 호스팅 + preload + swap
+const ibmPlexSansKR = IBM_Plex_Sans_KR({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  preload: true,
+  variable: "--font-ibm-plex-sans-kr",
+});
+const notoSerifKR = Noto_Serif_KR({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "900"],
+  display: "swap",
+  preload: true,
+  variable: "--font-noto-serif-kr",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.dimtale.com"),
@@ -51,17 +68,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full" suppressHydrationWarning>
+    <html
+      lang="ko"
+      className={`h-full ${ibmPlexSansKR.variable} ${notoSerifKR.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
         />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font -- App Router: Google Fonts via link is intentional */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700;900&display=swap"
-          rel="stylesheet"
-        />
+        {/* P3-C1: next/font 로 전환 — LCP 블로킹 요청 제거 (2026-04-24) */}
         {/* iOS 네이티브 스플래시 — data URI SVG로 모든 해상도 대응 */}
         <link
           rel="apple-touch-startup-image"

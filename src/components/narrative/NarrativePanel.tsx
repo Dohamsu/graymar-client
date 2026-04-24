@@ -18,7 +18,6 @@ interface NarrativePanelProps {
 
 export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, scrollId, hideChoices }: NarrativePanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isStreaming = useGameStore((s) => s.isStreaming);
   const streamSegments = useGameStore((s) => s.streamSegments);
 
   // 사용자가 위로 스크롤했는지 감지 (하단에서 100px 이상 떨어지면 "위로 스크롤" 판정)

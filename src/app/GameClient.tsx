@@ -70,7 +70,6 @@ export default function GameClient() {
   const notifications = useGameStore((s) => s.notifications);
   const endingResult = useGameStore((s) => s.endingResult);
   const pendingNewsSignals = useGameStore((s) => s.pendingNewsSignals);
-  const isStreaming = useGameStore((s) => s.isStreaming);
   const isNarrating = useGameStore((s) => s.isNarrating);
 
   const [mobileTab, setMobileTab] = useState("story");
