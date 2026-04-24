@@ -123,9 +123,12 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
   }, [currentText, charIdx, typedCount, preset]);
 
   // 모든 세그먼트 타이핑 완료 + done 수신 → onComplete 호출
+  // P1-C1: render pass 에서 ref mutation 금지 — useEffect 로 동기화
   const allTyped = typedCount >= segments.length && segments.length > 0;
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (allTyped && isDone) {

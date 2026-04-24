@@ -1259,10 +1259,20 @@ export const useGameStore = create<GameState>((set, get) => ({
         typeof (info as { endingsCount?: number } | null)?.endingsCount === 'number'
           ? ((info as { endingsCount: number }).endingsCount)
           : 0;
-      set({
-        activeRunInfo: info?.runId ? info as any : null,
-        endingsCount,
-      });
+      // P1-C4: any 캐스팅 제거 — activeRunInfo 타입에 맞춰 필수 필드 검증
+      const activeRunInfo =
+        info?.runId &&
+        typeof info.presetId === 'string' &&
+        (info.gender === 'male' || info.gender === 'female') &&
+        typeof info.currentTurnNo === 'number'
+          ? {
+              runId: info.runId,
+              presetId: info.presetId,
+              gender: info.gender,
+              currentTurnNo: info.currentTurnNo,
+            }
+          : null;
+      set({ activeRunInfo, endingsCount });
     } catch {
       set({ activeRunInfo: null });
     }
