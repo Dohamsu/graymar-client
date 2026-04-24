@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Search, Users, Loader2, UserPlus } from "lucide-react";
 
 // ── Types ──
@@ -40,7 +40,6 @@ export function PartyJoinModal({
   const [tab, setTab] = useState<TabKey>("code");
   const [code, setCode] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
   // P1-C3: initialLoaded 상태를 useState 에서 useRef 로 변경.
   //   이전: 두 개 useEffect 가 서로의 setState 를 유발해 cascade render 위험.
   //   현재: ref mutation 은 React 규칙을 벗어나지 않으며 단일 effect 로 통합.

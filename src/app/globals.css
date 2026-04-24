@@ -70,19 +70,19 @@
   }
 
   .font-display {
-    font-family: "Noto Serif KR", serif;
+    font-family: var(--font-noto-serif-kr), "Noto Serif KR", serif;
   }
 
   .font-ui {
-    font-family: "A2G", "Noto Sans KR", sans-serif;
+    font-family: "A2G", var(--font-ibm-plex-sans-kr), "Noto Sans KR", sans-serif;
   }
 
   .font-narrative {
-    font-family: "Noto Serif KR", serif;
+    font-family: var(--font-noto-serif-kr), "Noto Serif KR", serif;
   }
 
   .font-dialogue {
-    font-family: "IBM Plex Sans KR", sans-serif;
+    font-family: var(--font-ibm-plex-sans-kr), "IBM Plex Sans KR", sans-serif;
   }
 
   .choice-btn {

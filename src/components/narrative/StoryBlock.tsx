@@ -281,7 +281,7 @@ function cleanResidualMarkers(text: string): string {
   // 2. 대사 끝 직후에 붙은 @마커 → 제거
   text = text.replace(
     /(["\u201D])(\s*)@\[([^\]]+)\]\s*(?=[^"\u201C]|$)/g,
-    (match, q, space, marker) => `${q}${space}`,
+    (_match, q: string, space: string) => `${q}${space}`,
   );
 
   // 2b. 문장 끝에 닫힘 따옴표 없이 붙은 @마커 → 마커를 대사 앞으로 이동
@@ -546,7 +546,7 @@ function parseNarrativeSegments(text: string): NarrSegment[] {
 // 문장부호 차등 pause 는 settings-store.ts 의 getTypingDelay 로 일원화.
 // (StreamingBlock / StreamTyper / TypewriterText 3곳 동일 규칙)
 
-function TypewriterText({ text, onComplete, speakingNpc }: { text: string; onComplete?: () => void; speakingNpc?: SpeakingNpc }) {
+function TypewriterText({ text, onComplete }: { text: string; onComplete?: () => void; speakingNpc?: SpeakingNpc }) {
   const textSpeed = useSettingsStore((s) => s.textSpeed);
   const preset = TEXT_SPEED_PRESETS[textSpeed];
 
@@ -671,6 +671,7 @@ function extractTurnNo(messageId: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- 예비 컴포넌트 (향후 AI 장면이미지 복원 대상)
 function SceneImageButton({ messageId }: { messageId: string }) {
   const turnNo = extractTurnNo(messageId);
   const sceneImages = useGameStore((s) => s.sceneImages);
@@ -881,9 +882,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   const fontSizeKey = useSettingsStore((s) => s.fontSize);
   const isStreaming = useGameStore((s) => s.isStreaming);
   const streamSegments = useGameStore((s) => s.streamSegments);
-  const streamDoneNarrative = useGameStore((s) => s.streamDoneNarrative);
   const streamTextBuffer = useGameStore((s) => s.streamTextBuffer);
-  const finalizeStreaming = useGameStore((s) => s.finalizeStreaming);
   const fontSizes = FONT_SIZE_PRESETS[fontSizeKey];
 
   // RESOLVE 타입: 주사위 애니메이션 → 판정 결과 공개 (별도 블록)

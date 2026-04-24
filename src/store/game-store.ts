@@ -36,7 +36,7 @@ import { STAT_COLORS } from '@/data/stat-descriptions';
 import { mapResultToMessages, mapTurnHistoryToMessages, stripNarratorChoices, type TurnHistoryItem } from '@/lib/result-mapper';
 import { applyDiffToHud, applyEnemyDiffs, applyInventoryDiff } from '@/lib/hud-mapper';
 import { ApiError } from '@/lib/api-errors';
-import { StreamParser, type StreamOutput } from '@/lib/stream-parser';
+import { type StreamOutput } from '@/lib/stream-parser';
 import { connectLlmStream } from '@/lib/llm-stream';
 import { uiLog } from '@/lib/ui-logger';
 
@@ -740,7 +740,7 @@ function streamNarrative(
       }).catch(() => { /* 무시 */ });
     },
 
-    onError(message) {
+    onError(_message) {
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
 

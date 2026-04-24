@@ -40,7 +40,7 @@ export function PartyMemberCard({ member, isSelf = false }: PartyMemberCardProps
     );
   }
 
-  const hpPercent = member.maxHp > 0 ? Math.round((member.hp / member.maxHp) * 100) : 0;
+  const _hpPercent = member.maxHp > 0 ? Math.round((member.hp / member.maxHp) * 100) : 0;
 
   return (
     <div

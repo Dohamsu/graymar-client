@@ -430,8 +430,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     sse.onEvent('dungeon:gold_distributed', () => {
       // 골드 분배 알림 — 추후 UI 연동
     });
-    sse.onEvent('dungeon:location_changed', (data) => {
-      const d = data as { targetLocationId: string; targetLocationName?: string };
+    sse.onEvent('dungeon:location_changed', () => {
       // 게임 스토어가 자동으로 런 상태를 폴링하여 새 장소 반영
     });
     sse.onEvent('vote:proposed', (data) => {
