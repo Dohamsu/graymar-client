@@ -57,17 +57,15 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
     return raw.text;
   }, [segments, typedCount]);
 
-  const currentSegType = (segments[typedCount] as StreamOutput | undefined)?.type;
-  const currentSegNpcName = (segments[typedCount] as StreamOutput | undefined)?.npcName;
-  const currentSegNpcImage = (segments[typedCount] as StreamOutput | undefined)?.npcImage;
-
   useEffect(() => {
     if (!currentText) return;
 
-    // 빈 텍스트(정제 후 빈 문자열) → 건너뜀
+    // 빈 텍스트(정제 후 빈 문자열) → 건너뜀 — defer 로 cascade render 회피
     if (currentText.length === 0) {
-      setTypedCount((c) => c + 1);
-      setCharIdx(0);
+      queueMicrotask(() => {
+        setTypedCount((c) => c + 1);
+        setCharIdx(0);
+      });
       return;
     }
 
@@ -87,8 +85,11 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
         : endDelay;
 
       if (pauseAfter === 0) {
-        setTypedCount((c) => c + 1);
-        setCharIdx(0);
+        // instant/0ms: cascade render 회피 위해 microtask 에서 다음 세그먼트 진입
+        queueMicrotask(() => {
+          setTypedCount((c) => c + 1);
+          setCharIdx(0);
+        });
         return;
       }
 
@@ -107,9 +108,9 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
     // charIdx=0 이면 아직 표시한 글자 없음 → 기본 charSpeed 반환.
     const delay = getTypingDelay(currentText, charIdx, preset);
 
-    // instant 모드: 즉시 전부 표시
+    // instant 모드: 즉시 전부 표시 (cascade render 회피 위해 defer)
     if (delay === 0) {
-      setCharIdx(currentText.length);
+      queueMicrotask(() => setCharIdx(currentText.length));
       return;
     }
 
@@ -120,7 +121,7 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentText, charIdx, typedCount, preset]);
+  }, [currentText, charIdx, typedCount, preset, segments]);
 
   // 모든 세그먼트 타이핑 완료 + done 수신 → onComplete 호출
   // P1-C1: render pass 에서 ref mutation 금지 — useEffect 로 동기화

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SignalFeedItemUI } from "@/types/game";
 
 interface Props {
@@ -10,14 +10,20 @@ interface Props {
 
 export default function NewsModal({ signals, onClose }: Props) {
   const [visible, setVisible] = useState(false);
+  // P2-C1: close 애니메이션 setTimeout cleanup
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
   }, []);
 
   const handleClose = () => {
     setVisible(false);
-    setTimeout(onClose, 300);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(onClose, 300);
   };
 
   return (

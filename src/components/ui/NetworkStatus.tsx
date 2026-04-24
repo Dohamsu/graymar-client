@@ -61,7 +61,7 @@ export function NetworkStatus() {
       if (navigator.onLine) {
         transitionToOnline(true);
       } else {
-        setCountdown(5); // 다시 카운트다운
+        queueMicrotask(() => setCountdown(5));
       }
       return;
     }

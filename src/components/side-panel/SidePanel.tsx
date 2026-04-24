@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { CharacterTab } from "./CharacterTab";
 import { InventoryTab } from "./InventoryTab";
 import { EquipmentTab } from "./EquipmentTab";
@@ -20,6 +20,13 @@ interface SidePanelProps {
 
 export function SidePanel({ character, inventory, gold, inventoryChanges, onClearChanges }: SidePanelProps) {
   const [activeTab, setActiveTab] = useState<string>("캐릭터");
+  // P2-C1: setTimeout cleanup — 언마운트 시 leak 방지
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+    };
+  }, []);
 
   const hasChanges = !!inventoryChanges;
 
@@ -27,7 +34,8 @@ export function SidePanel({ character, inventory, gold, inventoryChanges, onClea
     setActiveTab(tab);
     // "소지품" 탭 진입 시 5초 후 하이라이트 제거
     if (tab === "소지품" && hasChanges && onClearChanges) {
-      setTimeout(onClearChanges, 5000);
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = setTimeout(onClearChanges, 5000);
     }
   }, [hasChanges, onClearChanges]);
 
