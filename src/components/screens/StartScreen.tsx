@@ -1052,8 +1052,20 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     const displayName = authUser?.nickname ?? authUser?.email ?? "";
 
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-[var(--bg-primary)]">
-        <div className="flex flex-col items-center gap-3">
+      <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-[var(--bg-primary)]">
+        {/* 배경 이미지 — 모바일/데스크톱 분기 */}
+        <picture aria-hidden>
+          <source media="(min-width: 768px)" srcSet="/title-bg-desktop.webp" />
+          <img
+            src="/title-bg-mobile.webp"
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </picture>
+        {/* 어두운 오버레이 — 텍스트/메뉴 가독성 확보 */}
+        <div className="absolute inset-0 bg-black/45" aria-hidden />
+
+        <div className="relative z-10 flex flex-col items-center gap-3">
           <DimtaleLogoAnimated width={320} height={128} onReady={handleLogoReady} readyAfterMs={3200} skipAnimation={hasPlayedOpening} />
           <h1 className="sr-only">DimTale</h1>
           <p
@@ -1067,7 +1079,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         </div>
 
         <div
-          className="w-full overflow-hidden"
+          className="relative z-10 w-full overflow-hidden"
           style={{
             maxHeight: logoReady ? 600 : 0,
             pointerEvents: logoReady ? "auto" : "none",
