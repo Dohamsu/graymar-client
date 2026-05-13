@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Clock, AlertTriangle, Award, GitBranch, Target, Shield } from "lucide-react";
+import { Compass, Clock, AlertTriangle, Award, GitBranch, Target, Shield, Sparkles } from "lucide-react";
 import { useGameStore } from "@/store/game-store";
 import type { ArcRoute } from "@/types/game";
 
@@ -69,21 +69,48 @@ const FACTION_LABELS: Record<string, string> = {
 const CARD_CLASS =
   "rounded-md border border-white/20 bg-white/[0.06] p-3 shadow-md shadow-black/40 backdrop-blur-[1px]";
 
-function SectionHeader({ icon: Icon, title }: { icon: typeof Compass; title: string }) {
+function SectionHeader({
+  icon: Icon,
+  title,
+  hint,
+}: {
+  icon: typeof Compass;
+  title: string;
+  hint?: string;
+}) {
   return (
-    <div className="flex items-center gap-2 border-b border-white/15 pb-2">
-      <Icon size={14} className="text-[var(--gold)]" />
-      <span className="text-[12px] font-bold uppercase tracking-[2px] text-[var(--text-primary)]">
-        {title}
-      </span>
+    <div className="flex items-end justify-between gap-2 border-b border-white/15 pb-2">
+      <div className="flex items-center gap-2">
+        <Icon size={14} className="text-[var(--gold)]" />
+        <span className="text-[12px] font-bold uppercase tracking-[2px] text-[var(--text-primary)]">
+          {title}
+        </span>
+      </div>
+      {hint && (
+        <span className="text-[11px] font-medium tabular-nums text-[var(--text-primary)]/70">
+          {hint}
+        </span>
+      )}
     </div>
   );
 }
 
-function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
+function MiniBar({
+  value,
+  max,
+  color,
+  height = "h-2.5",
+}: {
+  value: number;
+  max: number;
+  color: string;
+  height?: string;
+}) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
   return (
-    <div className="h-2.5 w-full overflow-hidden rounded-full border border-white/10 bg-white/[0.14]">
+    <div
+      className={`${height} w-full overflow-hidden rounded-full border border-white/15 bg-white/[0.16]`}
+    >
       <div
         className="h-full rounded-full transition-all"
         style={{ width: `${pct}%`, backgroundColor: color, boxShadow: `0 0 6px ${color}66` }}
@@ -92,8 +119,60 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
   );
 }
 
-function EmptyState({ text }: { text: string }) {
-  return <p className="py-3 text-[12px] font-medium text-[var(--text-primary)]/70">{text}</p>;
+function EmptyCard({ text }: { text: string }) {
+  return (
+    <div className="rounded-md border border-dashed border-white/20 bg-white/[0.03] px-3 py-3">
+      <p className="text-[12px] font-medium text-[var(--text-primary)]/85">{text}</p>
+    </div>
+  );
+}
+
+function StageDots({ stage, total = 3 }: { stage: number; total?: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      {Array.from({ length: total }).map((_, i) => {
+        const reached = i <= stage;
+        return (
+          <span
+            key={i}
+            className="h-1.5 w-4 rounded-full"
+            style={{
+              backgroundColor: reached ? "var(--gold)" : "rgba(255,255,255,0.18)",
+              boxShadow: reached ? "0 0 4px var(--gold)" : undefined,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// 진행도 라벨 + 바 + 우측 % 숫자. 가로 폭 일관성 보장.
+function StatRow({
+  label,
+  value,
+  color,
+  max = 100,
+  suffix = "%",
+}: {
+  label: string;
+  value: number;
+  color: string;
+  max?: number;
+  suffix?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="w-10 shrink-0 text-[12px] font-semibold text-[var(--text-primary)]/90">
+        {label}
+      </span>
+      <MiniBar value={value} max={max} color={color} />
+      <span className="w-11 shrink-0 text-right text-[12px] font-bold tabular-nums text-[var(--text-primary)]">
+        {value}
+        {suffix}
+      </span>
+    </div>
+  );
 }
 
 function ReputationBar({ value }: { value: number }) {
@@ -101,7 +180,7 @@ function ReputationBar({ value }: { value: number }) {
   const pct = ((clamped + 100) / 200) * 100;
   const color = value > 0 ? "var(--success-green)" : value < 0 ? "var(--hp-red)" : "var(--text-primary)";
   return (
-    <div className="relative h-2.5 w-full overflow-hidden rounded-full border border-white/10 bg-white/[0.14]">
+    <div className="relative h-2.5 w-full overflow-hidden rounded-full border border-white/15 bg-white/[0.16]">
       {/* center marker */}
       <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-white/60" />
       {/* filled portion from center */}
@@ -137,8 +216,98 @@ export function QuestTab() {
   const activeGoals = playerGoals.filter((g) => !g.completed);
   const reputationEntries = reputation ? Object.entries(reputation) : [];
 
+  // ── 상단 요약 — 현재 데이터만 사용. 항목이 하나라도 있으면 카드 노출.
+  const summaryRoute = arcState?.currentRoute ? ARC_ROUTE_LABELS[arcState.currentRoute] : null;
+  const summaryDeadline = mainArcClock
+    ? mainArcClock.triggered
+      ? { label: "시한 초과", urgent: true }
+      : (() => {
+          const remaining = mainArcClock.softDeadlineDay - (day ?? 1);
+          return { label: `D-${remaining}`, urgent: remaining <= 3 };
+        })()
+    : null;
+  const summaryGoal = activeGoals[0] ?? null;
+  const summaryActiveIncidentCount = activeIncidents.filter((i) => !i.resolved).length;
+  const showSummary = Boolean(summaryRoute || summaryDeadline || summaryGoal || summaryActiveIncidentCount);
+
   return (
     <div className="flex flex-col gap-6">
+      {/* 0. Top Summary — 현재 상황 한눈에 */}
+      {showSummary && (
+        <section className="flex flex-col gap-2">
+          <SectionHeader icon={Sparkles} title="현재 상황" />
+          <div className={`flex flex-col gap-2.5 ${CARD_CLASS}`}>
+            {/* 노선 + 시한 한 줄 */}
+            {(summaryRoute || summaryDeadline) && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[12px] font-semibold text-[var(--text-primary)]/85">노선</span>
+                <div className="flex items-center gap-2">
+                  {summaryRoute ? (
+                    <span
+                      className="text-[13px] font-bold"
+                      style={{ color: summaryRoute.color }}
+                    >
+                      {summaryRoute.name}
+                    </span>
+                  ) : (
+                    <span className="text-[12px] font-medium text-[var(--text-primary)]/70">
+                      미정
+                    </span>
+                  )}
+                  {summaryDeadline && (
+                    <span
+                      className={`rounded px-2 py-0.5 text-[11px] font-bold tabular-nums ${
+                        summaryDeadline.urgent
+                          ? "bg-[var(--hp-red)]/25 text-[var(--hp-red)]"
+                          : "bg-white/10 text-[var(--text-primary)]/95"
+                      }`}
+                    >
+                      {summaryDeadline.label}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* 활성 사건 카운트 */}
+            {summaryActiveIncidentCount > 0 && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[12px] font-semibold text-[var(--text-primary)]/85">활성 사건</span>
+                <span className="text-[12px] font-bold tabular-nums text-[var(--text-primary)]">
+                  {summaryActiveIncidentCount}건
+                </span>
+              </div>
+            )}
+            {/* 다음 목표 한 줄 */}
+            {summaryGoal && (
+              <div className="flex flex-col gap-1.5 border-t border-white/15 pt-2.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-primary)]/75">
+                  다음 목표
+                </span>
+                <div className="flex items-start gap-2">
+                  <span className="mt-px text-[12px] leading-none">
+                    {summaryGoal.type === "EXPLICIT" ? "\u{1F4CB}" : "\u{1F50D}"}
+                  </span>
+                  <span className="text-[12px] font-semibold leading-snug text-[var(--text-primary)]">
+                    {summaryGoal.description}
+                  </span>
+                </div>
+                <StatRow
+                  label="진행"
+                  value={summaryGoal.progress}
+                  color={
+                    summaryGoal.progress >= 70
+                      ? "var(--success-green)"
+                      : summaryGoal.progress >= 30
+                        ? "var(--gold)"
+                        : "var(--info-blue)"
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* A. Arc Route */}
       <section className="flex flex-col gap-2">
         <SectionHeader icon={Compass} title="노선" />
@@ -159,7 +328,7 @@ export function QuestTab() {
             </div>
             {/* Commitment pips */}
             <div className="flex items-center gap-1.5">
-              <span className="mr-1 text-[11px] font-semibold text-[var(--text-primary)]/85">각오</span>
+              <span className="mr-1 w-10 shrink-0 text-[12px] font-semibold text-[var(--text-primary)]/90">각오</span>
               {[0, 1, 2].map((i) => {
                 const filled = i < arcState.commitment;
                 const routeColor = ARC_ROUTE_LABELS[arcState.currentRoute!].color;
@@ -175,16 +344,16 @@ export function QuestTab() {
                   />
                 );
               })}
-              <span className="ml-1 text-[11px] font-bold tabular-nums text-[var(--text-primary)]">{arcState.commitment}/3</span>
+              <span className="ml-1 text-[12px] font-bold tabular-nums text-[var(--text-primary)]">{arcState.commitment}/3</span>
             </div>
             {arcState.betrayalCount > 0 && (
-              <span className="text-[11px] font-semibold text-[var(--hp-red)]">
+              <span className="text-[12px] font-semibold text-[var(--hp-red)]">
                 노선 변경 {arcState.betrayalCount}회
               </span>
             )}
           </div>
         ) : (
-          <EmptyState text="아직 노선을 정하지 않았다" />
+          <EmptyCard text="아직 노선을 정하지 않았다" />
         )}
       </section>
 
@@ -216,7 +385,7 @@ export function QuestTab() {
             ))}
           </div>
         ) : (
-          <EmptyState text="세력 정보 없음" />
+          <EmptyCard text="아직 접촉한 세력이 없다" />
         )}
       </section>
 
@@ -254,13 +423,17 @@ export function QuestTab() {
             />
           </div>
         ) : (
-          <EmptyState text="시한 정보 없음" />
+          <EmptyCard text="아직 시한이 정해지지 않았다" />
         )}
       </section>
 
       {/* C. Active Incidents */}
       <section className="flex flex-col gap-2">
-        <SectionHeader icon={AlertTriangle} title="진행 중 사건" />
+        <SectionHeader
+          icon={AlertTriangle}
+          title="진행 중 사건"
+          hint={activeIncidents.length > 0 ? `${activeIncidents.length}건` : undefined}
+        />
         {activeIncidents.length > 0 ? (
           <div className="flex flex-col gap-2">
             {activeIncidents.map((inc) => {
@@ -269,6 +442,9 @@ export function QuestTab() {
                 <div
                   key={inc.incidentId}
                   className={`flex flex-col gap-2.5 ${CARD_CLASS} ${inc.resolved ? "opacity-60" : ""}`}
+                  style={{
+                    borderLeft: `2px solid ${kindInfo.color}${inc.resolved ? "55" : "AA"}`,
+                  }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-[13px] font-semibold leading-snug text-[var(--text-primary)]">
@@ -286,24 +462,19 @@ export function QuestTab() {
                     </span>
                   </div>
                   {inc.resolved ? (
-                    <span className="text-[11px] font-medium text-[var(--text-primary)]/85">
+                    <span className="text-[12px] font-medium text-[var(--text-primary)]/85">
                       결과: {inc.outcome === "CONTAINED" ? "해결" : inc.outcome === "ESCALATED" ? "악화" : "만료"}
                     </span>
                   ) : (
                     <>
-                      <div className="flex items-center gap-2">
-                        <span className="w-8 text-[11px] font-semibold text-[var(--text-primary)]/85">통제</span>
-                        <MiniBar value={inc.control} max={100} color="var(--success-green)" />
-                        <span className="w-8 text-right text-[11px] font-bold tabular-nums text-[var(--text-primary)]">{inc.control}</span>
+                      <StatRow label="통제" value={inc.control} color="var(--success-green)" />
+                      <StatRow label="압박" value={inc.pressure} color="var(--hp-red)" />
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[12px] font-semibold text-[var(--text-primary)]/85">
+                          단계 {inc.stage + 1}/3
+                        </span>
+                        <StageDots stage={inc.stage} total={3} />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-8 text-[11px] font-semibold text-[var(--text-primary)]/85">압박</span>
-                        <MiniBar value={inc.pressure} max={100} color="var(--hp-red)" />
-                        <span className="w-8 text-right text-[11px] font-bold tabular-nums text-[var(--text-primary)]">{inc.pressure}</span>
-                      </div>
-                      <span className="text-[11px] font-medium text-[var(--text-primary)]/75">
-                        단계 {inc.stage + 1}/3
-                      </span>
                     </>
                   )}
                 </div>
@@ -311,7 +482,7 @@ export function QuestTab() {
             })}
           </div>
         ) : (
-          <EmptyState text="활성 사건 없음" />
+          <EmptyCard text="아직 진행 중인 사건이 없다" />
         )}
       </section>
 
@@ -329,7 +500,7 @@ export function QuestTab() {
                   {MARK_LABELS[mark.type] ?? mark.type}
                 </span>
                 {mark.context && (
-                  <span className="text-[11px] font-medium leading-relaxed text-[var(--text-primary)]/85">
+                  <span className="text-[12px] font-medium leading-relaxed text-[var(--text-primary)]/90">
                     {mark.context}
                   </span>
                 )}
@@ -337,7 +508,7 @@ export function QuestTab() {
             ))}
           </div>
         ) : (
-          <EmptyState text="아직 획득한 정체성이 없다" />
+          <EmptyCard text="아직 획득한 정체성이 없다" />
         )}
       </section>
 
@@ -365,21 +536,16 @@ export function QuestTab() {
                         {GOAL_LABELS[thread.goalCategory] ?? thread.goalCategory}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <MiniBar
-                        value={successRate}
-                        max={100}
-                        color={successRate >= 60 ? "var(--success-green)" : successRate >= 30 ? "var(--gold)" : "var(--hp-red)"}
-                      />
-                      <span className="w-10 text-right text-[11px] font-bold tabular-nums text-[var(--text-primary)]">
-                        {successRate}%
-                      </span>
-                    </div>
-                    <span className="text-[11px] font-medium text-[var(--text-primary)]/75">
+                    <StatRow
+                      label="성공"
+                      value={successRate}
+                      color={successRate >= 60 ? "var(--success-green)" : successRate >= 30 ? "var(--gold)" : "var(--hp-red)"}
+                    />
+                    <span className="text-[12px] font-medium text-[var(--text-primary)]/80">
                       {thread.actionCount}회 시도
                     </span>
                     {thread.summary && (
-                      <span className="text-[11px] leading-relaxed text-[var(--text-primary)]/85">
+                      <span className="text-[12px] leading-relaxed text-[var(--text-primary)]/90">
                         {thread.summary}
                       </span>
                     )}
@@ -388,7 +554,7 @@ export function QuestTab() {
               })}
           </div>
         ) : (
-          <EmptyState text="아직 패턴이 감지되지 않았다" />
+          <EmptyCard text="아직 패턴이 감지되지 않았다" />
         )}
       </section>
 
@@ -410,15 +576,11 @@ export function QuestTab() {
                     {goal.description}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-8 text-[11px] font-semibold text-[var(--text-primary)]/85">진행</span>
-                  <MiniBar
-                    value={goal.progress}
-                    max={100}
-                    color={goal.progress >= 70 ? "var(--success-green)" : goal.progress >= 30 ? "var(--gold)" : "var(--info-blue)"}
-                  />
-                  <span className="w-10 text-right text-[11px] font-bold tabular-nums text-[var(--text-primary)]">{goal.progress}%</span>
-                </div>
+                <StatRow
+                  label="진행"
+                  value={goal.progress}
+                  color={goal.progress >= 70 ? "var(--success-green)" : goal.progress >= 30 ? "var(--gold)" : "var(--info-blue)"}
+                />
                 {goal.milestones.length > 0 && (
                   <div className="mt-0.5 flex flex-col gap-1.5 border-t border-white/15 pt-2.5">
                     {goal.milestones.map((ms, i) => (
@@ -427,7 +589,7 @@ export function QuestTab() {
                           {ms.completed ? "\u2705" : "\u2B1C"}
                         </span>
                         <span
-                          className={`text-[11px] leading-relaxed ${
+                          className={`text-[12px] leading-relaxed ${
                             ms.completed
                               ? "text-[var(--text-primary)]/55 line-through"
                               : "text-[var(--text-primary)]/95"
@@ -443,7 +605,7 @@ export function QuestTab() {
             ))}
           </div>
         ) : (
-          <EmptyState text="아직 감지된 목표가 없다" />
+          <EmptyCard text="아직 감지된 목표가 없다" />
         )}
       </section>
     </div>
