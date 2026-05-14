@@ -806,6 +806,10 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
   const handleStartGame = () => {
     if (!selectedPresetId) return;
+    if (bonusPointsRemaining > 0) {
+      setScreenPhase("CHARACTER_STATS");
+      return;
+    }
     const opts: {
       characterName?: string;
       bonusStats?: Record<string, number>;
@@ -1725,12 +1729,20 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         totalSteps={6}
         onBack={() => setScreenPhase("CHARACTER_NAME")}
         footer={
-          <button
-            onClick={() => setScreenPhase("CHARACTER_TRAIT")}
-            className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
-          >
-            다 음 <ChevronRight size={18} className="ml-1" />
-          </button>
+          <div className="flex w-full flex-col gap-2">
+            {bonusPointsRemaining > 0 && (
+              <p className="text-center text-xs text-[var(--text-muted)]">
+                포인트 {bonusPointsRemaining}개를 모두 배분해야 다음으로 넘어갈 수 있습니다.
+              </p>
+            )}
+            <button
+              onClick={() => setScreenPhase("CHARACTER_TRAIT")}
+              disabled={bonusPointsRemaining > 0}
+              className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:shadow-none"
+            >
+              다 음 <ChevronRight size={18} className="ml-1" />
+            </button>
+          </div>
         }
       >
         <div className="flex flex-col gap-6">
@@ -1941,20 +1953,31 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         totalSteps={6}
         onBack={() => setScreenPhase("CHARACTER_TRAIT")}
         footer={
-          <div className="flex gap-3">
-            <button
-              onClick={() => setScreenPhase("SELECT_PRESET")}
-              className="flex h-12 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] font-display text-sm tracking-wider text-[var(--text-muted)] transition-all hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-            >
-              수정하기
-            </button>
-            <button
-              onClick={handleStartGame}
-              disabled={isLoading}
-              className="flex h-12 flex-[2] items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-lg tracking-[4px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-50"
-            >
-              {isLoading ? "불러오는 중..." : "모험 시작"}
-            </button>
+          <div className="flex flex-col gap-2">
+            {bonusPointsRemaining > 0 && (
+              <p className="text-center text-xs text-[var(--danger,#d97a7a)]">
+                보너스 포인트 {bonusPointsRemaining}개가 남아 있습니다. 스탯 단계로 돌아가 모두 배분해주세요.
+              </p>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() =>
+                  bonusPointsRemaining > 0
+                    ? setScreenPhase("CHARACTER_STATS")
+                    : setScreenPhase("SELECT_PRESET")
+                }
+                className="flex h-12 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] font-display text-sm tracking-wider text-[var(--text-muted)] transition-all hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              >
+                {bonusPointsRemaining > 0 ? "스탯 배분하러" : "수정하기"}
+              </button>
+              <button
+                onClick={handleStartGame}
+                disabled={isLoading || bonusPointsRemaining > 0}
+                className="flex h-12 flex-[2] items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-lg tracking-[4px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:shadow-none"
+              >
+                {isLoading ? "불러오는 중..." : "모험 시작"}
+              </button>
+            </div>
           </div>
         }
       >
