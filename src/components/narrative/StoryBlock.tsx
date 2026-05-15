@@ -883,6 +883,10 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   const isStreaming = useGameStore((s) => s.isStreaming);
   const streamSegments = useGameStore((s) => s.streamSegments);
   const streamTextBuffer = useGameStore((s) => s.streamTextBuffer);
+  // P0-1: 선택지 버튼 클릭 잠금 — submit 진행 중에는 시각/접근성 모두 disabled 로 명확히
+  const isSubmitting = useGameStore((s) => s.isSubmitting);
+  // P0-2: Track 2 (선택지 nano 재생성) 로딩 시 사용자에게 "선택지 생성 중" 명시
+  const choicesLoading = useGameStore((s) => s.choicesLoading);
   const fontSizes = FONT_SIZE_PRESETS[fontSizeKey];
 
   // RESOLVE 타입: 주사위 애니메이션 → 판정 결과 공개 (별도 블록)
@@ -944,6 +948,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
             <StreamingBlock
               segments={streamSegments}
               isDone={useGameStore.getState().streamBufferDone}
+              choicesLoading={choicesLoading}
               onComplete={() => {
                 const store = useGameStore.getState();
                 const finalText = store.streamTextBuffer;
@@ -1017,11 +1022,27 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
               );
             })()
           ) : (
-            message.choices.map((choice, i) => (
+            message.choices.map((choice, i) => {
+              // P0-1: 제출 진행 중이거나 choice.disabled 면 시각 + 접근성 모두 잠금
+              const isLocked = isSubmitting || !!choice.disabled;
+              return (
               <button
                 key={choice.id}
-                onClick={() => onChoiceSelect?.(choice.id)}
-                className="choice-btn cursor-pointer rounded-md px-3 py-2 text-left font-display leading-[1.6] max-w-full [word-break:keep-all]"
+                type="button"
+                data-testid="choice-btn"
+                data-choice-id={choice.id}
+                data-choice-index={i}
+                aria-label={`선택지 ${i + 1}: ${choice.label}`}
+                aria-busy={isSubmitting || undefined}
+                aria-disabled={isLocked || undefined}
+                disabled={isLocked}
+                onClick={() => {
+                  if (isLocked) return;
+                  onChoiceSelect?.(choice.id);
+                }}
+                className={`choice-btn rounded-md px-3 py-2 text-left font-display leading-[1.6] max-w-full [word-break:keep-all] transition-opacity ${
+                  isLocked ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
                 style={{
                   color: choice.disabled
                     ? "var(--text-secondary)"
@@ -1058,7 +1079,8 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
                   </span>
                 )}
               </button>
-            ))
+              );
+            })
           )}
         </div>
       ) : isNarrator ? (
