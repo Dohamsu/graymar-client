@@ -525,6 +525,10 @@ function streamNarrative(
   let flushTimer: ReturnType<typeof setInterval> | null = null;
   let rawBuffer = '';           // 토큰 누적 원본 버퍼
   let analyzedBuffer = '';      // 분석 완료 텍스트 (버퍼에 누적)
+  // P0-2: done 미수신 안전망 — Track 2 nano 가 hang/네트워크 단절 시 폴링 fallback 으로 강제 전환
+  //   값은 LLM_TIMEOUT_MS(8s) + Track 2 nano 평균 3s + buffer 를 고려해 45s 로 보수적 설정
+  const STREAM_DONE_TIMEOUT_MS = 45_000;
+  let doneWatchdog: ReturnType<typeof setTimeout> | null = null;
 
   // speakingNpc 정보 (대사 귀속용)
   const narratorMsg = get().messages.find(m => m.id === `narrator-${turnNo}`);
@@ -545,6 +549,22 @@ function streamNarrative(
   });
 
   uiLog('stream', 'streamNarrative 시작', { runId, turnNo });
+
+  // P0-2: done 안전망 — 시간 초과 시 폴링 fallback
+  doneWatchdog = setTimeout(() => {
+    if (receivedDone) return;
+    uiLog('stream', 'doneWatchdog timeout → 폴링 fallback', { runId, turnNo, timeoutMs: STREAM_DONE_TIMEOUT_MS });
+    if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
+    const disc = get().streamDisconnect;
+    if (disc) try { disc(); } catch { /* ignore */ }
+    set({
+      isStreaming: false,
+      streamSegments: [],
+      streamDisconnect: null,
+      choicesLoading: false,
+    });
+    pollForNarrative(runId, turnNo, fallbackText, get, set);
+  }, STREAM_DONE_TIMEOUT_MS);
 
   /**
    * 원본 버퍼에서 완성된 문장까지 추출 (나머지는 버퍼에 유지).
@@ -697,6 +717,7 @@ function streamNarrative(
 
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
+      if (doneWatchdog) { clearTimeout(doneWatchdog); doneWatchdog = null; }
 
       // 남은 버퍼 전부 flush → streamTextBuffer에 추가
       const remaining = extractCompleteSentences();
@@ -743,6 +764,7 @@ function streamNarrative(
     onError(_message) {
       // 타이머 정리
       if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
+      if (doneWatchdog) { clearTimeout(doneWatchdog); doneWatchdog = null; }
 
       // 스트리밍 실패 — 상태 정리 후 폴링 fallback
       rawBuffer = '';
@@ -750,6 +772,7 @@ function streamNarrative(
         isStreaming: false,
         streamSegments: [],
         streamDisconnect: null,
+        choicesLoading: false,
       });
       if (!receivedDone) {
         pollForNarrative(runId, turnNo, fallbackText, get, set);

@@ -43,6 +43,23 @@ import { TimePhaseTransition } from "@/components/hub/TimePhaseTransition";
 import { NetworkStatus } from "@/components/ui/NetworkStatus";
 import NewsModal from "@/components/ui/NewsModal";
 
+function NarrativeProgressNotice({ choicesLoading }: { choicesLoading: boolean }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex items-center justify-center gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-3"
+    >
+      <div className="h-3 w-3 animate-pulse rounded-full bg-[var(--success-green)]" />
+      <span className="text-xs text-[var(--text-muted)]">
+        {choicesLoading
+          ? "선택지 생성 중... 완료되면 아래에 표시됩니다."
+          : "서술 표시 중... 완료되면 선택지와 입력이 활성화됩니다."}
+      </span>
+    </div>
+  );
+}
+
 export default function GameClient() {
   const authToken = useAuthStore((s) => s.token);
   const hydrate = useAuthStore((s) => s.hydrate);
@@ -74,6 +91,18 @@ export default function GameClient() {
 
   const [mobileTab, setMobileTab] = useState("story");
   const [showPartyScreen, setShowPartyScreen] = useState(false);
+  const [isDesktopLayout, setIsDesktopLayout] = useState(true);
+
+  // Tailwind의 lg:hidden/lg:flex만 쓰면 데스크톱/모바일 선택지 DOM이 동시에 존재해
+  // 브라우저·접근성 레이어가 숨겨진 중복 버튼을 클릭할 수 있다. 실제 뷰포트에 맞는
+  // 레이아웃만 렌더링해서 선택지 클릭 타깃을 하나로 유지한다.
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktopLayout(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   // Party store subscription (for PartyHUD in-game)
   const partyInfo = usePartyStore((s) => s.party);
@@ -352,7 +381,8 @@ export default function GameClient() {
       )}
 
       {/* ===== Desktop Layout (lg+) ===== */}
-      <div className="hidden h-full flex-col lg:flex animate-phase-fade" key={`desktop-${phaseKey}`}>
+      {isDesktopLayout && (
+      <div className="flex h-full flex-col animate-phase-fade" key={`desktop-${phaseKey}`}>
         <Header location={location} hud={hud} worldState={worldState} llmStats={llmStats} />
 
         {/* 데드라인 임박/초과 배너 — 조건 충족 시에만 렌더 */}
@@ -385,11 +415,8 @@ export default function GameClient() {
                 <PartyTurnStatus turnStatus={turnStatus} totalMembers={partyMembers.length} />
               </div>
             )}
-            {choicesLoading && (
-              <div className="flex items-center justify-center gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-3">
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--gold)] border-t-transparent" />
-                <span className="text-xs text-[var(--text-muted)]">선택지 생성 중...</span>
-              </div>
+            {(choicesLoading || isNarrating) && (
+              <NarrativeProgressNotice choicesLoading={choicesLoading} />
             )}
             {/* COMBAT 전용 — 버튼형 Action Bar (architecture/42) */}
             {phase === "COMBAT" && enemies.length > 0 && (
@@ -397,14 +424,14 @@ export default function GameClient() {
                 enemies={enemies}
                 onChoiceSelect={handleChoiceSelect}
                 onOpenItemModal={() => setCombatItemModalOpen(true)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isNarrating || choicesLoading}
               />
             )}
             <InputSection
               onSubmit={handleSubmit}
               onQuickAction={handleQuickAction}
               nodeType={currentNodeType}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isNarrating || choicesLoading}
             />
           </div>
 
@@ -412,9 +439,11 @@ export default function GameClient() {
           {characterInfo && <SidePanel character={characterInfo} inventory={inventory} gold={hud.gold} inventoryChanges={inventoryChanges} onClearChanges={clearInventoryChanges} />}
         </div>
       </div>
+      )}
 
       {/* ===== Mobile & Tablet Layout (<lg) ===== */}
-      <div className="flex h-full flex-col lg:hidden" key={`mobile-${phaseKey}`}>
+      {!isDesktopLayout && (
+      <div className="flex h-full flex-col" key={`mobile-${phaseKey}`}>
         <MobileHeader location={location} visible={mobileHeaderVisible} activeTab={mobileTab} onTabChange={setMobileTab} />
         {/* 이야기 탭 외에서는 헤더 고정 → 콘텐츠 시작 위치 확보 */}
         {mobileTab !== "story" && <div className="h-12 shrink-0" />}
@@ -440,7 +469,7 @@ export default function GameClient() {
                   enemies={enemies}
                   onChoiceSelect={handleChoiceSelect}
                   onOpenItemModal={() => setCombatItemModalOpen(true)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isNarrating || choicesLoading}
                 />
               )}
             </>
@@ -474,23 +503,21 @@ export default function GameClient() {
                 <PartyTurnStatus turnStatus={turnStatus} totalMembers={partyMembers.length} />
               </div>
             )}
-            {choicesLoading && (
-              <div className="flex items-center justify-center gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2">
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--gold)] border-t-transparent" />
-                <span className="text-xs text-[var(--text-muted)]">선택지 생성 중...</span>
-              </div>
+            {(choicesLoading || isNarrating) && (
+              <NarrativeProgressNotice choicesLoading={choicesLoading} />
             )}
             <MobileInputSection
               onSubmit={handleSubmit}
               onQuickAction={handleQuickAction}
               nodeType={currentNodeType}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isNarrating || choicesLoading}
             />
           </>
         )}
 
         {/* 하단 네비 제거 → 햄버거 메뉴로 이동 */}
       </div>
+      )}
 
       {/* LOCATION Toast Layer (floating, both desktop & mobile) */}
       {phase === "LOCATION" && (

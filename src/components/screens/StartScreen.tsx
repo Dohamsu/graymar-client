@@ -731,6 +731,11 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   // 세션 최초 1회만 오프닝 애니메이션(로고 드로잉 + 버튼 stagger) 재생.
   // 로그인/캐릭터생성 등 뎁스에서 복귀 시 즉시 완성 상태로 표시.
   const [hasPlayedOpening, setHasPlayedOpening] = useState(false);
+  const handleLogoReady = useCallback(() => {
+    setLogoReady(true);
+    setHasPlayedOpening(true);
+  }, []);
+
   useEffect(() => {
     if (screenPhase === "TITLE" || screenPhase === "AUTH") {
       if (hasPlayedOpening) {
@@ -740,10 +745,15 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       }
     }
   }, [screenPhase, hasPlayedOpening]);
-  const handleLogoReady = useCallback(() => {
-    setLogoReady(true);
-    setHasPlayedOpening(true);
-  }, []);
+
+  // 접근성/자동화 환경에서 로고 이미지 애니메이션 타이머가 늦거나 누락되면
+  // TITLE 메뉴 컨테이너가 max-height: 0 상태로 남아 좌표 기반 클릭이 배경에 흡수될 수 있다.
+  // 로고 컴포넌트의 onReady 외에 부모 레벨 안전망을 둬 실제 메뉴 클릭 가능 상태를 보장한다.
+  useEffect(() => {
+    if (hasPlayedOpening || (screenPhase !== "TITLE" && screenPhase !== "AUTH")) return;
+    const t = window.setTimeout(() => handleLogoReady(), 3600);
+    return () => window.clearTimeout(t);
+  }, [handleLogoReady, hasPlayedOpening, screenPhase]);
   const entryStyle = useCallback(
     (delay: string): CSSProperties =>
       hasPlayedOpening
@@ -1023,8 +1033,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         <div
           className="w-full overflow-hidden"
           style={{
-            maxHeight: logoReady ? 600 : 0,
-            pointerEvents: logoReady ? "auto" : "none",
+            maxHeight: 600,
+            pointerEvents: "auto",
             transition: "max-height 1.5s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
@@ -1058,16 +1068,16 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-[var(--bg-primary)]">
         {/* 배경 이미지 — 모바일/데스크톱 분기 */}
-        <picture aria-hidden>
+        <picture className="pointer-events-none">
           <source media="(min-width: 768px)" srcSet="/title-bg-desktop.webp" />
           <img
             src="/title-bg-mobile.webp"
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           />
         </picture>
-        {/* 어두운 오버레이 — 텍스트/메뉴 가독성 확보 */}
-        <div className="absolute inset-0 bg-black/45" aria-hidden />
+        {/* 어두운 오버레이 — 텍스트/메뉴 가독성 확보. 입력 이벤트는 메뉴 버튼에 통과시킨다. */}
+        <div className="pointer-events-none absolute inset-0 bg-black/45" aria-hidden />
 
         <div className="relative z-10 flex flex-col items-center gap-3">
           <DimtaleLogoAnimated width={320} height={128} onReady={handleLogoReady} readyAfterMs={3200} skipAnimation={hasPlayedOpening} />
@@ -1085,8 +1095,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         <div
           className="relative z-10 w-full overflow-hidden"
           style={{
-            maxHeight: logoReady ? 600 : 0,
-            pointerEvents: logoReady ? "auto" : "none",
+            maxHeight: 600,
+            pointerEvents: "auto",
             transition: "max-height 1.5s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >

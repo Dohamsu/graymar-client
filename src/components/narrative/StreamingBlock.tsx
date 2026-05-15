@@ -15,6 +15,8 @@ interface StreamingBlockProps {
   onComplete?: () => void;
   /** done 이벤트가 수신되었는지 (더 이상 세그먼트가 오지 않음) */
   isDone?: boolean;
+  /** P0-2: Track 2 nano 선택지 재생성 중일 때 "선택지 생성 중" 라벨 노출 */
+  choicesLoading?: boolean;
 }
 
 /** 스트리밍 원문에서 시스템 태그와 @마커를 제거 */
@@ -40,7 +42,7 @@ function cleanStreamText(text: string): string {
  * 타이핑 속도/구두점 규칙은 settings-store 의 getTypingDelay 와 공유
  * (StreamTyper / TypewriterText 동일 리듬).
  */
-function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockProps) {
+function StreamingBlockInner({ segments, onComplete, isDone, choicesLoading }: StreamingBlockProps) {
   const textSpeed = useSettingsStore((s) => s.textSpeed);
   const preset = TEXT_SPEED_PRESETS[textSpeed];
   // 타이핑 완료된 세그먼트 수
@@ -243,12 +245,42 @@ function StreamingBlockInner({ segments, onComplete, isDone }: StreamingBlockPro
         );
       })}
 
-      {/* 타이핑 대기 중 (세그먼트 끝, 다음 기다리는 중) 커서만 */}
+      {/* P0-2: 세그먼트는 모두 표시됐지만 done 미수신 — 상태별 명확한 안내
+            - choicesLoading: Track 2 선택지 nano 재생성 중
+            - 그 외: 다음 청크 도착 대기 중 (펄스 커서)
+          done 이 끝까지 안 와도 "잘린 듯 보이는" 모호함을 시각으로 해소 */}
       {typedCount >= segments.length && segments.length > 0 && !isDone && (
-        <span
-          className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
-          style={{ backgroundColor: 'var(--gold)', opacity: 0.5 }}
-        />
+        choicesLoading ? (
+          <div
+            data-testid="streaming-status"
+            data-status="choices-loading"
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-2 pt-1 text-[12px] font-display"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <span
+              className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[var(--gold)] border-t-transparent"
+              aria-hidden="true"
+            />
+            <span className="animate-pulse">선택지를 짓는 중…</span>
+          </div>
+        ) : (
+          <div
+            data-testid="streaming-status"
+            data-status="awaiting-chunk"
+            role="status"
+            aria-live="polite"
+            className="inline-flex items-center"
+          >
+            <span
+              className="inline-block w-[2px] h-[1em] align-text-bottom animate-pulse"
+              style={{ backgroundColor: 'var(--gold)', opacity: 0.5 }}
+              aria-hidden="true"
+            />
+            <span className="sr-only">서술 도착 대기 중</span>
+          </div>
+        )
       )}
     </div>
   );
