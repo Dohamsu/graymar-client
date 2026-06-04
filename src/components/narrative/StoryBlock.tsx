@@ -21,6 +21,31 @@ const AFFORDANCE_TO_STAT: Record<string, string> = {
   HELP: 'con',
 };
 
+export function getChoiceStatName(affordance?: string): string | null {
+  if (!affordance) return null;
+  const statKey = AFFORDANCE_TO_STAT[affordance];
+  return statKey ? (STAT_KOREAN_NAMES[statKey] ?? null) : null;
+}
+
+export function buildChoiceAccessibleName({
+  index,
+  label,
+  affordance,
+  isPending = false,
+}: {
+  index: number;
+  label: string;
+  affordance?: string;
+  isPending?: boolean;
+}): string {
+  const statName = getChoiceStatName(affordance);
+  return [
+    `선택지 ${index + 1}: ${label}`,
+    statName ? `(판정: ${statName})` : null,
+    isPending ? "선택 처리 중" : null,
+  ].filter(Boolean).join(" ");
+}
+
 const LOADING_MESSAGES = [
   "어둠 속에서 이야기가 풀려나간다...",
   "운명의 실타래가 엮이고 있다...",
@@ -879,6 +904,9 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   const [shouldAnimate, setShouldAnimate] = useState(false);
   const [prevLoading, setPrevLoading] = useState(message.loading);
   const [wasLoading, setWasLoading] = useState(!!message.loading);
+  const [selectingChoiceId, setSelectingChoiceId] = useState<string | null>(null);
+  const choiceRegionRef = useRef<HTMLDivElement>(null);
+  const announcedChoiceBlockRef = useRef<string | null>(null);
   const fontSizeKey = useSettingsStore((s) => s.fontSize);
   const isStreaming = useGameStore((s) => s.isStreaming);
   const streamSegments = useGameStore((s) => s.streamSegments);
@@ -888,6 +916,54 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   // P0-2: Track 2 (선택지 nano 재생성) 로딩 시 사용자에게 "선택지 생성 중" 명시
   const choicesLoading = useGameStore((s) => s.choicesLoading);
   const fontSizes = FONT_SIZE_PRESETS[fontSizeKey];
+
+  useEffect(() => {
+    if (!isSubmitting) {
+      setSelectingChoiceId(null);
+    }
+  }, [isSubmitting]);
+
+  useEffect(() => {
+    const hasActiveChoices =
+      message.type === "CHOICE" &&
+      !!message.choices?.length &&
+      !message.selectedChoiceId &&
+      !!onChoiceSelect;
+    if (!hasActiveChoices || announcedChoiceBlockRef.current === message.id) return;
+
+    announcedChoiceBlockRef.current = message.id;
+    const region = choiceRegionRef.current;
+    if (!region) return;
+
+    window.requestAnimationFrame(() => {
+      const scrollParent = (() => {
+        let parent = region.parentElement;
+        while (parent) {
+          const style = window.getComputedStyle(parent);
+          const canScroll = /(auto|scroll)/.test(style.overflowY) && parent.scrollHeight > parent.clientHeight;
+          if (canScroll) return parent;
+          parent = parent.parentElement;
+        }
+        return null;
+      })();
+
+      if (scrollParent) {
+        const parentRect = scrollParent.getBoundingClientRect();
+        const regionRect = region.getBoundingClientRect();
+        scrollParent.scrollTo({
+          top:
+            scrollParent.scrollTop +
+            (regionRect.top - parentRect.top) -
+            parentRect.height / 2 +
+            regionRect.height / 2,
+          behavior: "smooth",
+        });
+      } else {
+        region.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      region.focus({ preventScroll: true });
+    });
+  }, [message.id, message.type, message.choices?.length, message.selectedChoiceId, onChoiceSelect]);
 
   // RESOLVE 타입: 주사위 애니메이션 → 판정 결과 공개 (별도 블록)
   // 과거 턴(history-resolve-*) 재방문 시 애니메이션 건너뜀
@@ -1000,7 +1076,13 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
         ) : <NarratorLoading />
 
       ) : message.type === "CHOICE" && message.choices && (onChoiceSelect || message.selectedChoiceId) ? (
-        <div className="flex flex-col gap-1">
+        <div
+          ref={choiceRegionRef}
+          tabIndex={-1}
+          role="group"
+          aria-label="선택지"
+          className="flex scroll-mt-6 flex-col gap-1 outline-none"
+        >
           {message.selectedChoiceId ? (
             (() => {
               const selected = message.choices.find(
@@ -1010,6 +1092,8 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
               const idx = message.choices.indexOf(selected);
               return (
                 <div
+                  role="status"
+                  aria-live="polite"
                   className="rounded-md px-3 py-2 font-display leading-[1.6]"
                   style={{
                     color: "var(--gold)",
@@ -1022,65 +1106,93 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
               );
             })()
           ) : (
-            message.choices.map((choice, i) => {
-              // P0-1: 제출 진행 중이거나 choice.disabled 면 시각 + 접근성 모두 잠금
-              const isLocked = isSubmitting || !!choice.disabled;
-              return (
-              <button
-                key={choice.id}
-                type="button"
-                data-testid="choice-btn"
-                data-choice-id={choice.id}
-                data-choice-index={i}
-                aria-label={`선택지 ${i + 1}: ${choice.label}`}
-                aria-busy={isSubmitting || undefined}
-                aria-disabled={isLocked || undefined}
-                disabled={isLocked}
-                onClick={() => {
-                  if (isLocked) return;
-                  onChoiceSelect?.(choice.id);
-                }}
-                className={`choice-btn rounded-md px-3 py-2 text-left font-display leading-[1.6] max-w-full [word-break:keep-all] transition-opacity ${
-                  isLocked ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-                }`}
-                style={{
-                  color: choice.disabled
-                    ? "var(--text-secondary)"
-                    : "var(--text-primary)",
-                  fontSize: `${Math.max(fontSizes.choice, 16)}px`,
-                }}
+            <>
+              <div
+                role="status"
+                aria-live="polite"
+                className="sticky top-0 z-10 mb-1 rounded-md border border-[rgba(201,169,98,0.35)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-semibold text-[var(--gold)] shadow-sm"
               >
-                {i + 1}. {choice.label}
-                {(() => {
-                  const statKey = choice.affordance ? AFFORDANCE_TO_STAT[choice.affordance] : undefined;
-                  if (!statKey) return null;
-                  const color = STAT_COLORS[statKey.toUpperCase()];
-                  const name = STAT_KOREAN_NAMES[statKey];
-                  return (
+                선택지가 준비되었습니다. 아래에서 다음 행동을 선택하세요.
+              </div>
+              {message.choices.map((choice, i) => {
+                // P0-1: 제출 진행 중이거나 choice.disabled 면 시각 + 접근성 모두 잠금
+                const isPendingChoice = selectingChoiceId === choice.id;
+                const isLocked = isSubmitting || selectingChoiceId !== null || !!choice.disabled;
+                return (
+                <button
+                  key={choice.id}
+                  type="button"
+                  data-testid="choice-btn"
+                  data-choice-id={choice.id}
+                  data-choice-index={i}
+                  aria-label={buildChoiceAccessibleName({
+                    index: i,
+                    label: choice.label,
+                    affordance: choice.affordance,
+                    isPending: isPendingChoice,
+                  })}
+                  aria-busy={isPendingChoice || isSubmitting || undefined}
+                  aria-disabled={isLocked || undefined}
+                  disabled={isLocked}
+                  onClick={() => {
+                    if (isLocked) return;
+                    setSelectingChoiceId(choice.id);
+                    onChoiceSelect?.(choice.id);
+                  }}
+                  className={`choice-btn rounded-md px-3 py-2 text-left font-display leading-[1.6] max-w-full [word-break:keep-all] transition-opacity ${
+                    isLocked ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                  }`}
+                  style={{
+                    color: choice.disabled
+                      ? "var(--text-secondary)"
+                      : "var(--text-primary)",
+                    fontSize: `${Math.max(fontSizes.choice, 16)}px`,
+                  }}
+                >
+                  <span>{i + 1}. {choice.label}</span>
+                  {isPendingChoice && (
                     <span
-                      className="ml-1.5 inline-block rounded px-1 py-0.5 text-[10px] font-semibold leading-none opacity-80"
-                      style={{ color, borderWidth: 1, borderStyle: 'solid', borderColor: color }}
+                      aria-hidden="true"
+                      className="ml-2 inline-block rounded border border-[var(--gold)] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-[var(--gold)]"
                     >
-                      {name}
+                      처리 중
                     </span>
-                  );
-                })()}
-                {choice.modifier != null && choice.modifier !== 0 && (
-                  <span
-                    className="ml-1 inline-block rounded px-1 py-0.5 text-[10px] font-semibold leading-none"
-                    style={{
-                      color: choice.modifier > 0 ? 'var(--success-green)' : 'var(--hp-red)',
-                      borderWidth: 1,
-                      borderStyle: 'solid',
-                      borderColor: choice.modifier > 0 ? 'var(--success-green)' : 'var(--hp-red)',
-                    }}
-                  >
-                    {choice.modifier > 0 ? `+${choice.modifier}` : choice.modifier}
-                  </span>
-                )}
-              </button>
-              );
-            })
+                  )}
+                  {(() => {
+                    const statKey = choice.affordance ? AFFORDANCE_TO_STAT[choice.affordance] : undefined;
+                    if (!statKey) return null;
+                    const color = STAT_COLORS[statKey.toUpperCase()];
+                    const name = STAT_KOREAN_NAMES[statKey];
+                    return (
+                      <span aria-hidden="true" className="ml-1.5 inline-flex items-center gap-1">
+                        <span className="text-[var(--text-muted)]">·</span>
+                        <span
+                          className="inline-block rounded px-1 py-0.5 text-[10px] font-semibold leading-none opacity-80"
+                          style={{ color, borderWidth: 1, borderStyle: 'solid', borderColor: color }}
+                        >
+                          {name}
+                        </span>
+                      </span>
+                    );
+                  })()}
+                  {choice.modifier != null && choice.modifier !== 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="ml-1 inline-block rounded px-1 py-0.5 text-[10px] font-semibold leading-none"
+                      style={{
+                        color: choice.modifier > 0 ? 'var(--success-green)' : 'var(--hp-red)',
+                        borderWidth: 1,
+                        borderStyle: 'solid',
+                        borderColor: choice.modifier > 0 ? 'var(--success-green)' : 'var(--hp-red)',
+                      }}
+                    >
+                      {choice.modifier > 0 ? `+${choice.modifier}` : choice.modifier}
+                    </span>
+                  )}
+                </button>
+                );
+              })}
+            </>
           )}
         </div>
       ) : isNarrator ? (

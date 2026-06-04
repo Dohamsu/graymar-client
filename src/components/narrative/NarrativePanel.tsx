@@ -19,6 +19,12 @@ interface NarrativePanelProps {
 export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, scrollId, hideChoices }: NarrativePanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const streamSegments = useGameStore((s) => s.streamSegments);
+  const lastMessage = messages.at(-1);
+  const shouldForceChoiceIntoView =
+    !hideChoices &&
+    lastMessage?.type === "CHOICE" &&
+    !!lastMessage.choices?.length &&
+    !lastMessage.selectedChoiceId;
 
   // 사용자가 위로 스크롤했는지 감지 (하단에서 100px 이상 떨어지면 "위로 스크롤" 판정)
   const isUserScrolledUp = useRef(false);
@@ -40,15 +46,28 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
   // 메시지 변경 시 하단 추적 (사용자 스크롤 존중)
   //   bug 4749: 페이지 전환 시 3단계 강제 setTimeout 스크롤 제거.
   //   사용자가 위로 스크롤 해서 읽는 중이면 방해하지 않음.
-  //   MutationObserver 가 타이핑 중 콘텐츠 변화에 따라 자연스럽게 추적.
+  //   단, 새 선택지가 마지막 블록으로 열린 순간에는 조작 가능성이 우선이므로
+  //   사용자 스크롤 상태와 무관하게 2-pass로 하단 노출을 보장한다.
   useEffect(() => {
-    if (!scrollRef.current) return;
-    if (isUserScrolledUp.current) return;
-    scrollRef.current.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: 'smooth',
-    });
-  }, [messages, streamSegments]);
+    const el = scrollRef.current;
+    if (!el) return;
+    if (!shouldForceChoiceIntoView && isUserScrolledUp.current) return;
+
+    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+      el.scrollTo({ top: el.scrollHeight, behavior });
+    };
+
+    scrollToBottom();
+    if (shouldForceChoiceIntoView) {
+      isUserScrolledUp.current = false;
+      const rafId = window.requestAnimationFrame(() => scrollToBottom('auto'));
+      const timeoutId = window.setTimeout(() => scrollToBottom('smooth'), 120);
+      return () => {
+        window.cancelAnimationFrame(rafId);
+        window.clearTimeout(timeoutId);
+      };
+    }
+  }, [messages, streamSegments, shouldForceChoiceIntoView]);
 
   // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (사용자 스크롤 존중)
   //   bug 4749: 항상 smooth 로 통일. 페이지 전환 시 즉시 점프 제거.

@@ -155,6 +155,18 @@ const STAT_COLORS_MAP: Record<string, string> = {
 const BONUS_POINTS_TOTAL = 6;
 const STAT_KEYS = ["str", "dex", "wit", "con", "per", "cha"] as const;
 
+export function nextBonusStats(
+  current: Record<string, number>,
+  statKey: string,
+  delta: 1 | -1,
+  remainingPoints: number,
+): Record<string, number> {
+  const currentValue = current[statKey] ?? 0;
+  if (delta > 0 && remainingPoints <= 0) return current;
+  if (delta < 0 && currentValue <= 0) return current;
+  return { ...current, [statKey]: currentValue + delta };
+}
+
 // ---------------------------------------------------------------------------
 // PresetCard
 // ---------------------------------------------------------------------------
@@ -172,12 +184,14 @@ function PresetCard({
     .map((i) => (i.qty > 1 ? `${i.name} x${i.qty}` : i.name))
     .join(", ");
 
+  const selectedLabel = selected ? "선택됨" : "선택";
+
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
+      aria-pressed={selected}
+      aria-label={`${preset.name} 출신 ${selectedLabel}. ${preset.subtitle}`}
       onClick={onSelect}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
       className={`flex cursor-pointer flex-col overflow-hidden rounded-lg border text-left transition-all ${
         selected
           ? "border-[var(--gold)] bg-[rgba(201,169,98,0.08)] shadow-[0_0_20px_rgba(201,169,98,0.18)]"
@@ -187,7 +201,18 @@ function PresetCard({
       <div className="flex flex-col gap-3 px-4 py-4">
         {/* Title */}
         <div>
-          <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">{preset.name}</h3>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">{preset.name}</h3>
+            <span
+              className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold ${
+                selected
+                  ? "border-[var(--gold)] bg-[rgba(201,169,98,0.16)] text-[var(--gold)]"
+                  : "border-[var(--border-primary)] text-[var(--text-muted)]"
+              }`}
+            >
+              {selected ? "✓ 선택됨" : "선택"}
+            </span>
+          </div>
           <p className="text-sm text-[var(--gold)]">{preset.subtitle}</p>
         </div>
 
@@ -232,7 +257,7 @@ function PresetCard({
           )}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -671,7 +696,7 @@ function CreationLayout({
         <h2 className="flex-1 font-display text-base text-[var(--text-primary)]">{title}</h2>
         <StepIndicator current={step} total={totalSteps} />
       </div>
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+      <div className={`flex-1 overflow-y-auto px-4 pt-6 sm:px-6 ${footer ? "pb-28" : "pb-6"}`}>
         <div className="mx-auto max-w-3xl">{children}</div>
       </div>
       {footer && (
@@ -737,7 +762,9 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   }, []);
 
   useEffect(() => {
-    if (screenPhase === "TITLE" || screenPhase === "AUTH") {
+    if (screenPhase === "AUTH") {
+      setLogoReady(true);
+    } else if (screenPhase === "TITLE") {
       if (hasPlayedOpening) {
         setLogoReady(true);
       } else {
@@ -750,7 +777,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   // TITLE 메뉴 컨테이너가 max-height: 0 상태로 남아 좌표 기반 클릭이 배경에 흡수될 수 있다.
   // 로고 컴포넌트의 onReady 외에 부모 레벨 안전망을 둬 실제 메뉴 클릭 가능 상태를 보장한다.
   useEffect(() => {
-    if (hasPlayedOpening || (screenPhase !== "TITLE" && screenPhase !== "AUTH")) return;
+    if (hasPlayedOpening || screenPhase !== "TITLE") return;
     const t = window.setTimeout(() => handleLogoReady(), 3600);
     return () => window.clearTimeout(t);
   }, [handleLogoReady, hasPlayedOpening, screenPhase]);
@@ -812,6 +839,13 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     setShowPortraitInput(false);
     setPortraitError(null);
     setFocusedStat(null);
+  };
+
+  const handlePresetSelect = (presetId: string) => {
+    if (selectedPresetId !== presetId) {
+      setSelectedGenderState(null);
+    }
+    setSelectedPresetId(presetId);
   };
 
   const handleStartGame = () => {
@@ -1027,7 +1061,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-[var(--bg-primary)] px-4">
         <div className="flex flex-col items-center gap-2">
-          <DimtaleLogoAnimated width={220} height={88} onReady={handleLogoReady} readyAfterMs={3200} skipAnimation={hasPlayedOpening} />
+          <DimtaleLogoAnimated width={220} height={88} onReady={handleLogoReady} readyAfterMs={0} skipAnimation />
           <h1 className="sr-only">DimTale</h1>
         </div>
         <div
@@ -1041,8 +1075,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           <div
             className="flex w-full flex-col items-center gap-8 pt-8"
             style={{
-              opacity: logoReady ? 1 : 0,
-              transition: "opacity 1.2s ease 0.2s",
+              opacity: 1,
+              transition: "opacity 0.2s ease",
             }}
           >
             <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
@@ -1394,7 +1428,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                 key={preset.presetId}
                 preset={preset}
                 selected={selectedPresetId === preset.presetId}
-                onSelect={() => { setSelectedPresetId(preset.presetId); setSelectedGenderState(null); }}
+                onSelect={() => handlePresetSelect(preset.presetId)}
               />
             ))}
           </div>
@@ -1470,7 +1504,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                 key={preset.presetId}
                 preset={preset}
                 selected={selectedPresetId === preset.presetId}
-                onSelect={() => { setSelectedPresetId(preset.presetId); setSelectedGenderState(null); }}
+                onSelect={() => handlePresetSelect(preset.presetId)}
               />
             ))}
           </div>
@@ -1821,18 +1855,32 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                   {/* +/- buttons */}
                   <div className="ml-auto flex items-center gap-1">
                     <button
-                      onClick={(e) => { e.stopPropagation(); if (canDecrease) setBonusStats((prev) => ({ ...prev, [key]: bonus - 1 })); }}
+                      type="button"
+                      aria-label={`${STAT_LABELS[key]} 감소`}
+                      title={`${STAT_LABELS[key]} 감소`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (canDecrease) setBonusStats((prev) => nextBonusStats(prev, key, -1, bonusPointsRemaining));
+                      }}
                       disabled={!canDecrease}
                       className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-primary)] text-[var(--text-muted)] transition-colors hover:border-[var(--text-secondary)] hover:text-[var(--text-secondary)] disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       <Minus size={14} />
+                      <span className="sr-only">{STAT_LABELS[key]} 감소</span>
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); if (canIncrease) setBonusStats((prev) => ({ ...prev, [key]: bonus + 1 })); }}
+                      type="button"
+                      aria-label={`${STAT_LABELS[key]} 증가`}
+                      title={`${STAT_LABELS[key]} 증가`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (canIncrease) setBonusStats((prev) => nextBonusStats(prev, key, 1, bonusPointsRemaining));
+                      }}
                       disabled={!canIncrease}
                       className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--gold)] text-[var(--gold)] transition-colors hover:bg-[rgba(201,169,98,0.1)] disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       <Plus size={14} />
+                      <span className="sr-only">{STAT_LABELS[key]} 증가</span>
                     </button>
                   </div>
                 </div>
