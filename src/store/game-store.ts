@@ -126,7 +126,6 @@ export interface GameState {
   streamSegments: StreamOutput[];
   streamDisconnect: (() => void) | null;
   /** done 이벤트 후 최종 서술 (StreamingBlock 타이핑 완료 대기용) */
-  streamDoneNarrative: string | null;
   /** Track 2 진행 중 (선택지 생성 대기) */
   choicesLoading: boolean;
   /** 내레이터가 타이핑 애니메이션 진행 중 (선택지 표시 억제용) */
@@ -136,7 +135,6 @@ export interface GameState {
   /** 스트리밍 완료 여부 (done 수신 + 버퍼 최종 확정) */
   streamBufferDone: boolean;
   /** StreamingBlock 타이핑 완료 후 호출 — 최종 서술 교체 + 선택지 표시 */
-  finalizeStreaming: () => void;
 
 
   // Campaign
@@ -1179,7 +1177,6 @@ export const useGameStore = create<GameState>((set, get) => ({
   isStreaming: false,
   streamSegments: [],
   streamDisconnect: null,
-  streamDoneNarrative: null,
   choicesLoading: false,
   isNarrating: false,
   streamTextBuffer: '',
@@ -1195,21 +1192,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     set((s) => ({
       combatExpandedPanel: s.combatExpandedPanel === panel ? 'none' : panel,
     }));
-  },
-  finalizeStreaming: () => {
-    const { streamDoneNarrative, currentTurnNo } = get();
-    if (!streamDoneNarrative) return;
-    const turnNo = (currentTurnNo ?? 1) - 1;
-    const targetId = `narrator-${turnNo}`;
-    const updatedMessages = get().messages.map((msg) =>
-      msg.id === targetId ? { ...msg, text: streamDoneNarrative, loading: false, typed: true } : msg,
-    );
-    set({
-      messages: updatedMessages,
-      isStreaming: false,
-      streamSegments: [],
-      streamDoneNarrative: null,
-    });
   },
   // Campaign
   campaignId: null,

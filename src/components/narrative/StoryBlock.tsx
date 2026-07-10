@@ -1037,7 +1037,6 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
                   streamSegments: [],
                   streamTextBuffer: '',
                   streamBufferDone: false,
-                  streamDoneNarrative: null,
                 });
                 const msgs = store.messages.map((msg) =>
                   msg.id === message.id ? { ...msg, text: finalText, loading: false, typed: true } : msg,
@@ -1063,7 +1062,6 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
                   streamSegments: [],
                   streamTextBuffer: '',
                   streamBufferDone: false,
-                  streamDoneNarrative: null,
                 });
                 const msgs = store.messages.map((msg) =>
                   msg.id === message.id ? { ...msg, text: finalText, loading: false, typed: true } : msg,

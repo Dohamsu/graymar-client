@@ -131,7 +131,6 @@ function collectClientSnapshot(): Record<string, unknown> {
     choicesLoading: s.choicesLoading,
     streamBufferLength: s.streamTextBuffer.length,
     streamBufferDone: s.streamBufferDone,
-    streamDoneNarrativeLength: s.streamDoneNarrative?.length ?? 0,
     streamSegmentsCount: s.streamSegments.length,
     activeChoiceCount: s.choices.length,
     pendingMessagesCount: s.pendingMessages.length,
