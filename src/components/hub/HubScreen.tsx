@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { MapPin, Shield, AlertTriangle, Skull, Handshake, Coins } from "lucide-react";
+import { scenarioUiLabels } from "@/data/presets";
 import { useGameStore } from "@/store/game-store";
 import { HeatGauge } from "./HeatGauge";
 import { TimePhaseIndicator } from "./TimePhaseIndicator";
@@ -225,6 +226,7 @@ function HeatResolutionCard({
 
 export function HubScreen() {
   const choices = useGameStore((s) => s.choices);
+  const scenarioId = useGameStore((s) => s.scenarioId);
   const worldState = useGameStore((s) => s.worldState);
   const messages = useGameStore((s) => s.messages);
   const submitChoice = useGameStore((s) => s.submitChoice);
@@ -253,7 +255,7 @@ export function HubScreen() {
       <div className="flex items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-6 py-4">
         <div className="flex flex-col gap-1">
           <h2 className="font-display text-xl tracking-[2px] text-[var(--text-primary)]">
-            그레이마르 거점
+            {scenarioUiLabels(scenarioId).hubName}
           </h2>
           <p className="text-xs text-[var(--text-muted)]">
             도시의 소식을 살피고 다음 행선지를 정하라.

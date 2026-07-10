@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { scenarioUiLabels } from "@/data/presets";
 import { useGameStore } from "@/store/game-store";
 import { useAuthStore } from "@/store/auth-store";
 import {
@@ -81,6 +82,7 @@ export default function GameClient() {
   const flushPending = useGameStore((s) => s.flushPending);
   const worldState = useGameStore((s) => s.worldState);
   const locationName = useGameStore((s) => s.locationName);
+  const scenarioId = useGameStore((s) => s.scenarioId);
   const llmStats = useGameStore((s) => s.llmStats);
   const inventoryChanges = useGameStore((s) => s.inventoryChanges);
   const clearInventoryChanges = useGameStore((s) => s.clearInventoryChanges);
@@ -301,10 +303,12 @@ export default function GameClient() {
       ? (battleState as { enemies: BattleEnemy[] }).enemies
       : [];
 
+  // architecture/63 ⑥: 시나리오별 HUB 라벨
+  const scenarioLabels = scenarioUiLabels(scenarioId);
   const location =
     phase === "HUB"
-      ? "그레이마르 거점"
-      : locationName ?? "그레이마르 항만";
+      ? scenarioLabels.hubName
+      : locationName ?? scenarioLabels.fallbackLocation;
 
   // Combine choices into the message feed if not already there
   // 내레이터가 타이핑 중이면 선택지 표시를 억제 (내러티브 완료 후 표시)

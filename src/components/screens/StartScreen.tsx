@@ -4,12 +4,13 @@ import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties }
 import Image from "next/image";
 import { useGameStore } from "@/store/game-store";
 import { useAuthStore } from "@/store/auth-store";
-import { PRESETS } from "@/data/presets";
+import { PRESETS, adaptPresetsForScenario } from "@/data/presets";
 import { TRAITS } from "@/data/traits";
 import {
   getActiveCampaign,
   createCampaign,
   getAvailableScenarios,
+  getScenarios,
   generatePortrait,
   uploadPortrait,
   type CampaignResponse,
@@ -40,6 +41,7 @@ import {
 type ScreenPhase =
   | "TITLE"
   | "AUTH"
+  | "SELECT_SCENARIO"
   | "SELECT_PRESET"
   | "CHARACTER_NAME"
   | "CHARACTER_PORTRAIT"
@@ -812,9 +814,20 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
 
+  // architecture/63 ⑥ — 솔로 런 시나리오 선택 (캠페인 플로우와 분리)
+  const [soloScenarios, setSoloScenarios] = useState<ScenarioInfo[]>([]);
+  const [soloScenarioId, setSoloScenarioId] = useState<string | null>(null);
+  /** 시나리오 선택 후 진행할 다음 동작 — 새 캐릭터 생성 or 이전 캐릭터 퀵스타트 */
+  const [scenarioNext, setScenarioNext] = useState<"CREATE" | "QUICK">("CREATE");
+
+  // architecture/63 ⑥: 선택 시나리오에 맞춘 프리셋 배경 텍스트
+  const scenarioPresets = useMemo(
+    () => adaptPresetsForScenario(soloScenarioId),
+    [soloScenarioId],
+  );
   const selectedPreset = useMemo(
-    () => PRESETS.find((p) => p.presetId === selectedPresetId) ?? null,
-    [selectedPresetId],
+    () => scenarioPresets.find((p) => p.presetId === selectedPresetId) ?? null,
+    [scenarioPresets, selectedPresetId],
   );
   const selectedGender = selectedGenderState;
   // 실제 API 호출 시 gender 기본값 (선택 안 했으면 male)
@@ -859,7 +872,9 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       bonusStats?: Record<string, number>;
       traitId?: string;
       portraitUrl?: string;
+      scenarioId?: string;
     } = {};
+    if (soloScenarioId) opts.scenarioId = soloScenarioId;
     if (characterName.trim()) opts.characterName = characterName.trim();
     if (bonusPointsUsed > 0) opts.bonusStats = bonusStats;
     if (selectedTraitId) opts.traitId = selectedTraitId;
@@ -893,16 +908,47 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     } catch { /* ignore */ }
   }, []);
 
+  // architecture/63 ⑥: 새 여정 진입 시 시나리오 목록을 확인하고, 2개 이상이면
+  // 선택 화면을 먼저 보여준다. 1개(또는 조회 실패)면 기본 시나리오로 기존 흐름.
+  const enterScenarioGate = async (next: "CREATE" | "QUICK") => {
+    setScenarioNext(next);
+    let list: ScenarioInfo[] = [];
+    try {
+      list = await getScenarios();
+    } catch {
+      /* 조회 실패 → 기본 시나리오로 진행 */
+    }
+    if (list.length > 1) {
+      setSoloScenarios(list);
+      setScreenPhase("SELECT_SCENARIO");
+    } else {
+      setSoloScenarioId(null);
+      if (next === "QUICK") {
+        quickStartWith(null);
+      } else {
+        setScreenPhase("SELECT_PRESET");
+      }
+    }
+  };
+
   const handleNewGameClick = () => {
     if (lastCharacter) {
       setShowNewGameChoice(true);
+    } else {
+      void enterScenarioGate("CREATE");
+    }
+  };
+
+  const handleSelectSoloScenario = (scenarioId: string) => {
+    setSoloScenarioId(scenarioId);
+    if (scenarioNext === "QUICK") {
+      quickStartWith(scenarioId);
     } else {
       setScreenPhase("SELECT_PRESET");
     }
   };
 
-  const handleQuickStart = () => {
-    setShowNewGameChoice(false);
+  const quickStartWith = (scenarioId: string | null) => {
     if (!lastCharacter) return;
     // P1-C4: any 캐스팅 제거 — startNewGame signature 와 정확히 일치
     const opts: {
@@ -910,17 +956,24 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       bonusStats?: Record<string, number>;
       traitId?: string;
       portraitUrl?: string;
+      scenarioId?: string;
     } = {};
     if (lastCharacter.characterName) opts.characterName = lastCharacter.characterName;
     if (lastCharacter.bonusStats) opts.bonusStats = lastCharacter.bonusStats;
     if (lastCharacter.traitId) opts.traitId = lastCharacter.traitId;
     if (lastCharacter.portraitUrl) opts.portraitUrl = lastCharacter.portraitUrl;
+    if (scenarioId) opts.scenarioId = scenarioId;
     const hasOpts = Object.keys(opts).length > 0;
     startNewGame(
       lastCharacter.presetId,
       lastCharacter.gender as 'male' | 'female',
       hasOpts ? opts : undefined,
     );
+  };
+
+  const handleQuickStart = () => {
+    setShowNewGameChoice(false);
+    void enterScenarioGate("QUICK");
   };
 
   const handleLogout = () => {
@@ -1251,7 +1304,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                           이전 캐릭터로 시작
                         </button>
                         <button
-                          onClick={() => { setShowNewGameChoice(false); setScreenPhase("SELECT_PRESET"); }}
+                          onClick={() => { setShowNewGameChoice(false); void enterScenarioGate("CREATE"); }}
                           className="h-12 w-full rounded border border-[var(--border-primary)] font-display tracking-wider text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)]"
                         >
                           새 캐릭터 생성
@@ -1481,6 +1534,49 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   }
 
   // =========================================================================
+  // =========================================================================
+  // SELECT_SCENARIO — 솔로 런 시나리오 선택 (architecture/63 ⑥)
+  // =========================================================================
+  if (screenPhase === "SELECT_SCENARIO") {
+    return (
+      <div className="flex h-full flex-col bg-[var(--bg-primary)]">
+        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
+          <button
+            onClick={() => { setSoloScenarioId(null); setScreenPhase("TITLE"); }}
+            className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+          >
+            &larr; 뒤로
+          </button>
+          <h2 className="font-display text-base text-[var(--text-primary)]">여정 선택</h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+          <div className="mx-auto flex max-w-2xl flex-col gap-4">
+            <p className="text-center text-sm text-[var(--text-muted)]">
+              어느 땅에서 이야기를 시작하시겠습니까?
+            </p>
+            {soloScenarios.map((scenario) => (
+              <button
+                key={scenario.scenarioId}
+                onClick={() => handleSelectSoloScenario(scenario.scenarioId)}
+                disabled={isLoading}
+                className="flex flex-col gap-2 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4 text-left transition-all hover:border-[var(--gold)] hover:bg-[rgba(201,169,98,0.04)]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--gold)] font-display text-sm text-[var(--gold)]">
+                    {scenario.order}
+                  </span>
+                  <h3 className="font-display text-lg text-[var(--text-primary)]">{scenario.name}</h3>
+                </div>
+                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{scenario.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Step 1: SELECT_PRESET (출신 + 성별)
   // =========================================================================
   if (screenPhase === "SELECT_PRESET") {
@@ -1499,7 +1595,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
         <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
           <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-5">
-            {PRESETS.map((preset) => (
+            {scenarioPresets.map((preset) => (
               <PresetCard
                 key={preset.presetId}
                 preset={preset}

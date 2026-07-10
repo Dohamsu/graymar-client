@@ -141,3 +141,41 @@ export const PRESETS: CharacterPreset[] = [
     startingItems: [{ name: "하급 치료제", qty: 3 }],
   },
 ];
+
+/**
+ * architecture/63 ⑥ — 시나리오별 프리셋 배경 텍스트 치환.
+ * 서버 content/silverdeen_v1/presets.json 생성 규칙과 동일 (이름/스탯은 팩 공통).
+ * 근본 해법(서버에서 팩 프리셋 fetch)은 후속 — arch/63 부록 B 잔여.
+ */
+const SILVERDEEN_REPLACERS: Array<[RegExp, string]> = [
+  [/그레이마르 항만/g, "실버딘 광산"],
+  [/그레이마르/g, "실버딘"],
+  [/항만/g, "광산"],
+  [/부두/g, "갱도"],
+];
+
+export function adaptPresetsForScenario(scenarioId: string | null): CharacterPreset[] {
+  if (scenarioId !== "silverdeen_v1") return PRESETS;
+  return PRESETS.map((preset) => {
+    const swap = (text: string) =>
+      SILVERDEEN_REPLACERS.reduce((acc, [re, to]) => acc.replace(re, to), text);
+    return {
+      ...preset,
+      subtitle: swap(preset.subtitle),
+      description: swap(preset.description),
+    };
+  });
+}
+
+/** architecture/63 ⑥ — 시나리오별 클라 고정 라벨 (HUB 헤더 등 서버 미전달 표기) */
+export const SCENARIO_UI_LABELS: Record<
+  string,
+  { hubName: string; fallbackLocation: string }
+> = {
+  graymar_v1: { hubName: "그레이마르 거점", fallbackLocation: "그레이마르 항만" },
+  silverdeen_v1: { hubName: "실버딘 거점", fallbackLocation: "실버딘 광산 마을" },
+};
+
+export function scenarioUiLabels(scenarioId: string | null) {
+  return SCENARIO_UI_LABELS[scenarioId ?? "graymar_v1"] ?? SCENARIO_UI_LABELS.graymar_v1;
+}

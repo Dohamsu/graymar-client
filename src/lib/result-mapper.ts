@@ -142,18 +142,15 @@ export function mapResultToMessages(
     const isLocationEnter = event.tags?.includes('LOCATION_ENTER');
     const isPostureChange = event.tags?.includes('POSTURE_CHANGE');
     if (SYSTEM_EVENT_KINDS.has(event.kind) || isLocationEnter || isPostureChange) {
+      // architecture/63 ⑥: 이미지 에셋 없는 시나리오 팩은 null → 필드 생략
+      const locationImage = isLocationEnter && ws
+        ? getLocationImagePath(ws.currentLocationId, ws.timePhase, ws.hubSafety, ws.phaseV2)
+        : null;
       messages.push({
         id: crypto.randomUUID(),
         type: 'SYSTEM',
         text: event.text,
-        ...(isLocationEnter && ws ? {
-          locationImage: getLocationImagePath(
-            ws.currentLocationId,
-            ws.timePhase,
-            ws.hubSafety,
-            ws.phaseV2,
-          ),
-        } : {}),
+        ...(locationImage ? { locationImage } : {}),
         ...(isPostureChange ? { tags: ['POSTURE_CHANGE'] } : {}),
       });
     }

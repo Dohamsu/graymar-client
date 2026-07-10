@@ -30,7 +30,7 @@ import type {
 } from '@/types/game';
 import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, equipItem as apiEquipItem, unequipItem as apiUnequipItem, useItem as apiUseItem, getEndings, getEndingDetail, type LlmTokenStats } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
-import { PRESETS } from '@/data/presets';
+import { PRESETS, adaptPresetsForScenario } from '@/data/presets';
 import { ITEM_CATALOG } from '@/data/items';
 import { STAT_COLORS } from '@/data/stat-descriptions';
 import { mapResultToMessages, mapTurnHistoryToMessages, stripNarratorChoices, type TurnHistoryItem } from '@/lib/result-mapper';
@@ -78,6 +78,8 @@ export interface GameState {
   worldState: WorldStateUI | null;
   resolveOutcome: ResolveOutcome | null;
   locationName: string | null;
+  /** architecture/63 ⑥ — 현재 런의 시나리오 팩 ID (HUB 라벨·프리셋 표기용) */
+  scenarioId: string | null;
   llmStats: (LlmTokenStats & { model: string | null }) | null;
   llmFailure: { message: string; provider?: string; turnNo: number } | null;
   inventoryChanges: InventoryChanges | null;
@@ -157,7 +159,7 @@ export interface GameState {
   // actions
   checkActiveRun: () => Promise<void>;
   resumeRun: () => Promise<void>;
-  startNewGame: (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string }) => Promise<void>;
+  startNewGame: (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string; scenarioId?: string }) => Promise<void>;
   startCampaignRun: (campaignId: string, scenarioId: string, presetId: string, gender?: 'male' | 'female') => Promise<void>;
   submitAction: (text: string) => Promise<void>;
   submitChoice: (choiceId: string) => Promise<void>;
@@ -273,8 +275,12 @@ function buildCharacterInfo(
   presetId: string,
   gender: 'male' | 'female' = 'male',
   options?: { characterName?: string; portraitUrl?: string; bonusStats?: Record<string, number> },
+  // architecture/63 ⑥: 시나리오별 프리셋 표기 (subtitle 등)
+  scenarioId?: string | null,
 ): CharacterInfo {
-  const preset = PRESETS.find((p) => p.presetId === presetId);
+  const preset = adaptPresetsForScenario(scenarioId ?? null).find(
+    (p) => p.presetId === presetId,
+  );
   if (!preset) {
     return {
       name: options?.characterName || '용병',
@@ -1136,6 +1142,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   worldState: null,
   resolveOutcome: null,
   locationName: null,
+  scenarioId: null,
   llmStats: null,
   llmFailure: null,
   inventoryChanges: null,
@@ -1314,6 +1321,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const data = (await getRun(activeRunInfo.runId, { turnsLimit: 50 })) as Record<string, unknown>;
       const run = data.run as Record<string, unknown>;
       const runId = run.id as string;
+      set({ scenarioId: (run.scenarioId as string | undefined) ?? null });
       const currentNode = data.currentNode as Record<string, unknown> | undefined;
       const lastResult = data.lastResult as ServerResultV1 | undefined;
       const battleState = data.battleState as unknown | undefined;
@@ -1424,6 +1432,7 @@ export const useGameStore = create<GameState>((set, get) => ({
               characterName: (runState as Record<string, unknown>)?.characterName as string | undefined,
               portraitUrl: (runState as Record<string, unknown>)?.portraitUrl as string | undefined,
             },
+            (run.scenarioId as string | undefined) ?? null,
           ),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
@@ -1454,7 +1463,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   // -----------------------------------------------------------------------
   // startNewGame
   // -----------------------------------------------------------------------
-  startNewGame: async (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string }) => {
+  startNewGame: async (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string; scenarioId?: string }) => {
     // 이전 런 데이터 초기화 (이전 캐릭터로 시작 시 잔류 방지)
     set({ phase: 'LOADING', error: null, messages: [], choices: [], pendingMessages: [], pendingChoices: [] });
 
@@ -1463,6 +1472,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       const run = data.run as Record<string, unknown>;
       const runId = run.id as string;
+      set({ scenarioId: (run.scenarioId as string | undefined) ?? null });
       const currentNode = data.currentNode as
         | Record<string, unknown>
         | undefined;
@@ -1549,7 +1559,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         pendingChoices: hasNarratorLoading ? initialChoices : [],
         isSubmitting: false,
         characterInfo: {
-          ...buildCharacterInfo(presetId, gender, options),
+          ...buildCharacterInfo(
+            presetId,
+            gender,
+            options,
+            (run.scenarioId as string | undefined) ?? null,
+          ),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
         equipmentBag: mapEquipmentBag(runState?.equipmentBag),
@@ -1599,6 +1614,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       const run = data.run as Record<string, unknown>;
       const runId = run.id as string;
+      set({ scenarioId: (run.scenarioId as string | undefined) ?? null });
       const currentNode = data.currentNode as
         | Record<string, unknown>
         | undefined;
@@ -1667,7 +1683,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         pendingChoices: hasNarratorLoading ? initialChoices : [],
         isSubmitting: false,
         characterInfo: {
-          ...buildCharacterInfo(presetId, gender),
+          ...buildCharacterInfo(
+            presetId,
+            gender,
+            undefined,
+            (run.scenarioId as string | undefined) ?? null,
+          ),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
         equipmentBag: mapEquipmentBag(runState?.equipmentBag),

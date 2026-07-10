@@ -327,6 +327,11 @@ export function getCampaign(campaignId: string) {
   return request<CampaignResponse>(`/v1/campaigns/${campaignId}`);
 }
 
+/** GET /v1/scenarios — 솔로 런 시나리오 선택 목록 (architecture/63 ⑥). */
+export function getScenarios() {
+  return request<ScenarioInfo[]>('/v1/scenarios');
+}
+
 /** GET /v1/campaigns/:id/scenarios — fetch available scenarios. */
 export function getAvailableScenarios(campaignId: string) {
   return request<ScenarioInfo[]>(`/v1/campaigns/${campaignId}/scenarios`);
