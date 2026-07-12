@@ -354,6 +354,24 @@ export interface NpcEmotionalUI {
   marks: string[];
 }
 
+/** 상점 진열 (ui.shops — arch/68 부록 E) */
+export interface ShopItemUI {
+  itemId: string;
+  name: string;
+  price: number;
+  qty: number;
+  type: string;
+  rarity?: string;
+  slot?: string;
+  description?: string;
+}
+
+export interface ShopDisplayUI {
+  shopId: string;
+  name: string;
+  items: ShopItemUI[];
+}
+
 export interface OperationProgressUI {
   sessionId: string;
   locationId: string;

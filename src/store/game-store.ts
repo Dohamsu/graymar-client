@@ -89,6 +89,8 @@ export interface GameState {
   activeIncidents: IncidentSummaryUI[];
   operationProgress: OperationProgressUI | null;
   npcEmotional: NpcEmotionalUI[];
+  /** 현재 장소 상점 진열 (arch/68 부록 E) — LOCATION 턴마다 갱신 */
+  shops: import('@/types/game').ShopDisplayUI[];
   endingResult: EndingResult | null;
   // Notification System
   notifications: GameNotification[];
@@ -968,6 +970,9 @@ function processTurnResponse(
     if (ai) set({ activeIncidents: ai });
     if (op !== undefined) set({ operationProgress: op ?? null });
     if (ne) set({ npcEmotional: ne });
+    // 상점 진열 — 서버는 재고 있는 장소에서만 필드를 실으므로,
+    // 없으면 [] 로 클리어 (장소 이탈 시 이전 장소 상점 잔류 방지)
+    set({ shops: (uiBundle.shops as import('@/types/game').ShopDisplayUI[] | undefined) ?? [] });
 
     // Notification System 업데이트
     const notifs = uiBundle.notifications as GameNotification[] | undefined;
@@ -1150,6 +1155,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   activeIncidents: [],
   operationProgress: null,
   npcEmotional: [],
+  shops: [],
   endingResult: null,
   // Notification System
   notifications: [],
@@ -1433,6 +1439,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (resumeWs?.locationDynamicStates ?? {}),
         // NPC 도감 복원 — 서버가 runState.npcStates에서 조립해 내려줌
         npcEmotional: (data.npcEmotional as import('@/types/game').NpcEmotionalUI[] | undefined) ?? [],
+        // 상점 진열 복원 — 마지막 턴 ui 번들 기준 (현 장소 종속)
+        shops: ((lastResult?.ui as Record<string, unknown> | undefined)?.shops as import('@/types/game').ShopDisplayUI[] | undefined) ?? [],
       });
       // 기존 씬 이미지 복원
       get().fetchSceneImageStatus();
@@ -2076,6 +2084,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       activeIncidents: [],
       operationProgress: null,
       npcEmotional: [],
+      shops: [],
       endingResult: null,
       // Notification System
       notifications: [],

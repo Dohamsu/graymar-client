@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Coins, FlaskConical, Key, Search, Shield, TrendingUp, TrendingDown, X } from "lucide-react";
+import { Coins, FlaskConical, Key, Search, Shield, Store, TrendingUp, TrendingDown, X } from "lucide-react";
+import { korParticle } from "@/lib/korean";
 import type { LucideIcon } from "lucide-react";
 import type { InventoryItem, InventoryChanges, EquipmentBagItem, EquipmentItem } from "@/types/game";
 import { ITEM_CATALOG, type ItemMeta, getItemImagePath, isUsableInHub } from "@/data/items";
@@ -218,6 +219,86 @@ interface InventoryTabProps {
   changes?: InventoryChanges | null;
 }
 
+/**
+ * 현재 장소 상점 진열 (arch/68 부록 E — 상점 노출 동선)
+ * ui.shops(LOCATION 턴마다 갱신)를 표시하고, 구매 버튼이 자유 입력과
+ * 동일한 ACTION("〈이름〉을 구매한다")을 제출 — 서버 상점 구매 경로 재사용.
+ */
+function ShopSection({ gold }: { gold: number }) {
+  const shops = useGameStore((s) => s.shops);
+  const submitAction = useGameStore((s) => s.submitAction);
+  const isSubmitting = useGameStore((s) => s.isSubmitting);
+  const isNarrating = useGameStore((s) => s.isNarrating);
+  const currentNodeType = useGameStore((s) => s.currentNodeType);
+
+  if (shops.length === 0 || currentNodeType !== "LOCATION") return null;
+  const busy = isSubmitting || isNarrating;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {shops.map((shop) => (
+        <div key={shop.shopId} className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Store size={12} className="text-[var(--gold)]" />
+            <span className="text-[10px] font-semibold tracking-[1px] text-[var(--text-secondary)]">
+              {shop.name}
+            </span>
+            <span className="text-[10px] text-[var(--text-muted)]">
+              ({shop.items.length})
+            </span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {shop.items.map((item) => {
+              const rarityColor = item.rarity
+                ? RARITY_COLORS[item.rarity] ?? "var(--text-secondary)"
+                : "var(--text-secondary)";
+              const affordable = gold >= item.price;
+              return (
+                <div
+                  key={item.itemId}
+                  className="flex items-center gap-2.5 rounded border border-[var(--border-primary)] bg-[var(--bg-card)] p-2"
+                  title={item.description}
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[var(--bg-secondary)]">
+                    <ItemThumbnail
+                      itemId={item.itemId}
+                      fallbackIcon={item.type === "EQUIPMENT" ? Shield : FlaskConical}
+                      fallbackColor={rarityColor}
+                    />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-xs font-medium" style={{ color: rarityColor }}>
+                      {item.name}
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] text-[var(--gold)]">
+                      <Coins size={9} /> {item.price}G
+                      {item.qty > 1 && (
+                        <span className="text-[var(--text-muted)]">× {item.qty}</span>
+                      )}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (busy || !affordable) return;
+                      void submitAction(`${item.name}${korParticle(item.name, "을", "를")} 구매한다`);
+                    }}
+                    disabled={busy || !affordable}
+                    title={affordable ? `${item.price}G에 구매` : "골드 부족"}
+                    className="shrink-0 rounded border border-[var(--gold)]/40 px-2 py-1 text-[10px] font-semibold text-[var(--gold)] transition-colors hover:bg-[var(--gold)]/10 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    구매
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
   const equipmentBag = useGameStore((s) => s.equipmentBag);
   const equipItem = useGameStore((s) => s.equipItem);
@@ -319,6 +400,9 @@ export function InventoryTab({ inventory, gold, changes }: InventoryTabProps) {
           </div>
         </div>
       </div>
+
+      {/* 상점 (현재 장소 — arch/68 부록 E) */}
+      <ShopSection gold={gold ?? 0} />
 
       {/* Equipment Bag */}
       {equipmentBag.length > 0 && (
