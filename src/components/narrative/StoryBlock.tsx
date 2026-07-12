@@ -395,6 +395,11 @@ function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactN
   let match: RegExpExecArray | null;
   let key = 0;
   const npcBubbleCounts = new Map<string, number>(); // NPC별 연속 대사 카운트
+  // arch/68 부록 K — 마커가 한 번이라도 등장한 턴에서는 이후 무마커 대사에
+  // speakingNpc(대표 화자) 초상화를 상속하지 않는다. 마커 화자와 배경 인물
+  // (행상인 두 명 등)이 섞인 턴에서 배경 대사에 대표 화자 초상이 오귀속되던
+  // 버그(f4bf2e66) 방지. 마커가 전혀 없는 턴은 기존대로 speakingNpc fallback.
+  let markerSeenInTurn = false;
 
   while ((match = dialogueRegex.exec(text)) !== null) {
     const rawMarker = match[1]; // @[이름] 또는 @[이름|URL] 에서 추출
@@ -429,12 +434,19 @@ function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactN
       }
     }
 
-    // NPC 이름 결정: @[이름] 마커 > speakingNpc fallback
-    const npcName = markerName || speakingNpc?.displayName || '무명 인물';
-    // 초상화: @[이름|URL]의 URL > speakingNpc fallback
+    if (markerName) markerSeenInTurn = true;
+
+    // NPC 이름 결정: @[이름] 마커 > (마커 미등장 턴 한정) speakingNpc fallback
+    //   마커가 이미 나온 턴의 무마커 대사는 배경 인물 → 무명 처리.
+    const npcName =
+      markerName ||
+      (markerSeenInTurn ? '무명 인물' : speakingNpc?.displayName || '무명 인물');
+    // 초상화: @[이름|URL]의 URL > (마커 미등장 턴 한정) speakingNpc fallback
     const npcImage = markerName
       ? markerImage // 마커에 초상화 URL 포함 (소개된 NPC만)
-      : speakingNpc?.imageUrl;
+      : markerSeenInTurn
+        ? undefined // 마커 화자 뒤 배경 대사 — 초상화 상속 금지
+        : speakingNpc?.imageUrl;
 
     // 연속 대사 카운트 (같은 NPC면 compact)
     const count = npcBubbleCounts.get(npcName) ?? 0;
