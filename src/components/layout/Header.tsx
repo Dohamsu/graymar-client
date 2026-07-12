@@ -101,7 +101,8 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
               {(hud.gold ?? 0).toLocaleString()}
             </span>
           </div>
-          {llmStats && (
+          {/* LLM 토큰/레이턴시 디버그 배지 — 개발 빌드 전용 */}
+          {llmStats && process.env.NODE_ENV !== "production" && (
             <div className="flex items-center gap-1.5 rounded bg-[var(--bg-card)] px-2 py-1 font-mono text-[10px] text-[var(--text-muted)]" title={`model: ${llmStats.model ?? '?'}\nprompt: ${llmStats.prompt}\ncached: ${llmStats.cached}\ncompletion: ${llmStats.completion}\nlatency: ${llmStats.latencyMs}ms`}>
               <span>P:{llmStats.prompt}</span>
               <span className={llmStats.cached > 0 ? "text-[var(--stamina-green)]" : ""}>C:{llmStats.cached}</span>
@@ -140,9 +141,42 @@ interface MobileHeaderProps {
   visible?: boolean;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  hud?: PlayerHud | null;
+  worldState?: WorldStateUI | null;
 }
 
-export function MobileHeader({ location, visible = true, activeTab, onTabChange }: MobileHeaderProps) {
+/** 모바일 헤더 2행 — 핵심 상태(HP/STA/골드/시간대) 컴팩트 표시 */
+function MobileStatusRow({ hud, worldState }: { hud: PlayerHud; worldState?: WorldStateUI | null }) {
+  const hpPct = hud.maxHp > 0 ? Math.round((hud.hp / hud.maxHp) * 100) : 0;
+  const staPct = hud.maxStamina > 0 ? Math.round((hud.stamina / hud.maxStamina) * 100) : 0;
+  return (
+    <div className="flex h-8 w-full items-center justify-between gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-4">
+      <div className="flex items-center gap-1">
+        <span className="text-[10px] font-semibold text-[var(--hp-red)]">HP</span>
+        <div className="h-1.5 w-[52px] overflow-hidden rounded-full bg-[var(--border-primary)]">
+          <div className="h-full rounded-full bg-[var(--hp-red)]" style={{ width: `${hpPct}%` }} />
+        </div>
+        <span className="text-[10px] text-[var(--text-secondary)]">{hud.hp}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-[10px] font-semibold text-[var(--stamina-green)]">STA</span>
+        <div className="h-1.5 w-[40px] overflow-hidden rounded-full bg-[var(--border-primary)]">
+          <div className="h-full rounded-full bg-[var(--stamina-green)]" style={{ width: `${staPct}%` }} />
+        </div>
+        <span className="text-[10px] text-[var(--text-secondary)]">{hud.stamina}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <Coins size={11} className="text-[var(--gold)]" />
+        <span className="text-[11px] font-semibold text-[var(--gold)]">
+          {(hud.gold ?? 0).toLocaleString()}
+        </span>
+      </div>
+      {worldState && <TimePhaseIndicator timePhase={worldState.timePhase} />}
+    </div>
+  );
+}
+
+export function MobileHeader({ location, visible = true, activeTab, onTabChange, hud, worldState }: MobileHeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -151,37 +185,41 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange 
   return (
     <>
       <header
-        className="fixed top-[env(safe-area-inset-top)] left-0 z-40 flex h-12 w-full items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 transition-transform duration-300 ease-in-out lg:hidden"
+        className="fixed top-[env(safe-area-inset-top)] left-0 z-40 flex w-full flex-col border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] transition-transform duration-300 ease-in-out lg:hidden"
         style={{ transform: visible ? "translateY(0)" : "translateY(-100%)" }}
       >
-        <button
-          onClick={() => setSettingsOpen(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-md bg-[var(--bg-card)]"
-          title="AI 모델 설정"
-          aria-label="AI 모델 설정"
-        >
-          <Settings size={16} className="text-[var(--text-primary)]" />
-        </button>
-        <span className="font-display text-xs tracking-[1px] text-[var(--text-secondary)] truncate max-w-[60%] text-center">
-          {location ?? ""}
-        </span>
-        <button
-          onClick={() => setMenuOpen((v) => !v)}
-          className="flex h-11 w-11 items-center justify-center rounded-md bg-[var(--bg-card)]"
-          aria-label="메뉴 열기"
-        >
-          <Menu size={16} className="text-[var(--text-primary)]" />
-        </button>
+        <div className="flex h-12 w-full items-center justify-between px-4">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="flex h-11 w-11 items-center justify-center rounded-md bg-[var(--bg-card)]"
+            title="AI 모델 설정"
+            aria-label="AI 모델 설정"
+          >
+            <Settings size={16} className="text-[var(--text-primary)]" />
+          </button>
+          <span className="font-display text-xs tracking-[1px] text-[var(--text-secondary)] truncate max-w-[60%] text-center">
+            {location ?? ""}
+          </span>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex h-11 w-11 items-center justify-center rounded-md bg-[var(--bg-card)]"
+            aria-label="메뉴 열기"
+          >
+            <Menu size={16} className="text-[var(--text-primary)]" />
+          </button>
+        </div>
+        {hud && <MobileStatusRow hud={hud} worldState={worldState} />}
       </header>
 
       {/* 드롭다운 메뉴 */}
       {menuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setMenuOpen(false)}>
-          <div className="absolute right-3 top-13 w-40 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] py-1 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute right-3 top-[5.5rem] w-40 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] py-1 shadow-xl" onClick={(e) => e.stopPropagation()}>
             {([
               { id: "story", label: "이야기", icon: "📖" },
               { id: "character", label: "캐릭터", icon: "👤" },
               { id: "inventory", label: "소지품", icon: "🎒" },
+              { id: "npcs", label: "인물", icon: "🎭" },
               { id: "quests", label: "퀘스트", icon: "📜" },
             ] as const).map((item) => (
               <button

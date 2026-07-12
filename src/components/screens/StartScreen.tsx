@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties } from "react";
 import Image from "next/image";
 import { useGameStore } from "@/store/game-store";
+import { korParticleRo } from "@/lib/korean";
 import { useAuthStore } from "@/store/auth-store";
 import { PRESETS, adaptPresetsForScenario } from "@/data/presets";
 import { TRAITS } from "@/data/traits";
@@ -1294,7 +1295,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                     <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
                       <h3 className="mb-4 text-center font-display text-lg text-[var(--gold)]">새 게임</h3>
                       <p className="mb-5 text-center text-sm text-[var(--text-secondary)]">
-                        이전 캐릭터 <span className="text-[var(--gold)]">{lastCharacter.characterName || getPresetName(lastCharacter.presetId)}</span>(으)로 바로 시작하거나, 새 캐릭터를 생성할 수 있습니다.
+                        이전 캐릭터 <span className="text-[var(--gold)]">{lastCharacter.characterName || getPresetName(lastCharacter.presetId)}</span>{korParticleRo(lastCharacter.characterName || getPresetName(lastCharacter.presetId))} 바로 시작하거나, 새 캐릭터를 생성할 수 있습니다.
                       </p>
                       <div className="flex flex-col gap-3">
                         <button

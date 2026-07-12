@@ -1431,6 +1431,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         day: (wsObj?.day as number) ?? 1,
         playerGoals: (wsObj?.playerGoals as PlayerGoalUI[]) ?? (resumeWs?.playerGoals ?? []),
         locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (resumeWs?.locationDynamicStates ?? {}),
+        // NPC 도감 복원 — 서버가 runState.npcStates에서 조립해 내려줌
+        npcEmotional: (data.npcEmotional as import('@/types/game').NpcEmotionalUI[] | undefined) ?? [],
       });
       // 기존 씬 이미지 복원
       get().fetchSceneImageStatus();

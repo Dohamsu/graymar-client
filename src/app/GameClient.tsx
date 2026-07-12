@@ -13,6 +13,7 @@ import { InputSection, MobileInputSection } from "@/components/input/InputSectio
 import { SidePanel } from "@/components/side-panel/SidePanel";
 import { CharacterTab } from "@/components/side-panel/CharacterTab";
 import { InventoryTab } from "@/components/side-panel/InventoryTab";
+import { NpcDossierTab } from "@/components/side-panel/NpcDossierTab";
 import { BattlePanel } from "@/components/battle/BattlePanel";
 import { CombatActionBar } from "@/components/battle/CombatActionBar";
 import { CombatItemPickerModal } from "@/components/battle/CombatItemPickerModal";
@@ -357,7 +358,8 @@ export default function GameClient() {
       {/* LLM failure modal */}
       <LlmFailureModal />
       {/* 그레이마르 호외 — 새 시그널 알림 */}
-      {pendingNewsSignals.length > 0 && (
+      {/* 호외 모달 — 판정 배너·서술 스트리밍이 끝난 뒤에 표시 (연출 가림 방지) */}
+      {pendingNewsSignals.length > 0 && !isNarrating && !isSubmitting && !choicesLoading && (
         <NewsModal
           signals={pendingNewsSignals}
           onClose={() => useGameStore.setState({ pendingNewsSignals: [] })}
@@ -448,9 +450,9 @@ export default function GameClient() {
       {/* ===== Mobile & Tablet Layout (<lg) ===== */}
       {!isDesktopLayout && (
       <div className="flex h-full flex-col" key={`mobile-${phaseKey}`}>
-        <MobileHeader location={location} visible={mobileHeaderVisible} activeTab={mobileTab} onTabChange={setMobileTab} />
-        {/* 이야기 탭 외에서는 헤더 고정 → 콘텐츠 시작 위치 확보 */}
-        {mobileTab !== "story" && <div className="h-12 shrink-0" />}
+        <MobileHeader location={location} visible={mobileHeaderVisible} activeTab={mobileTab} onTabChange={setMobileTab} hud={hud} worldState={worldState} />
+        {/* 이야기 탭 외에서는 헤더 고정 → 콘텐츠 시작 위치 확보 (h-12 + 상태줄 h-8) */}
+        {mobileTab !== "story" && <div className="h-20 shrink-0" />}
 
         {/* 데드라인 임박/초과 배너 (모바일) */}
         <DeadlineBanner />
@@ -491,6 +493,11 @@ export default function GameClient() {
           {mobileTab === "inventory" && (
             <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
               <InventoryTab inventory={inventory} gold={hud.gold} changes={inventoryChanges} />
+            </div>
+          )}
+          {mobileTab === "npcs" && (
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+              <NpcDossierTab />
             </div>
           )}
           {mobileTab === "quests" && (

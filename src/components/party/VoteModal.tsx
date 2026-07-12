@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { MapPin, Check, X, Clock } from "lucide-react";
 import type { PartyVoteDTO } from "@/types/party";
+import { korParticleRo } from "@/lib/korean";
 
 interface VoteModalProps {
   vote: PartyVoteDTO;
@@ -47,7 +48,7 @@ export function VoteModal({ vote, currentUserId, onCast }: VoteModalProps) {
           <span className="font-medium text-[var(--text-primary)]">
             {vote.targetLocationName ?? vote.targetLocationId}
           </span>
-          (으)로의 이동을 제안했습니다.
+          {korParticleRo(vote.targetLocationName ?? vote.targetLocationId ?? "")}의 이동을 제안했습니다.
         </p>
 
         {/* Vote counts */}

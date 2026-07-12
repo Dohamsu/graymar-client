@@ -153,8 +153,8 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
             </div>
           ) : (
             <>
-              {/* 현재 LLM 모델 정보 */}
-              {settings && (
+              {/* 현재 LLM 모델 정보 — 개발 빌드 전용 (일반 유저에게 내부 인프라 비노출) */}
+              {settings && process.env.NODE_ENV !== "production" && (
                 <div className="rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-3">
                   <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
                     현재 AI 모델
@@ -261,7 +261,8 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
                 </p>
               </div>
 
-              {/* LLM 과금 현황 */}
+              {/* LLM 과금 현황 — 개발 빌드 전용 */}
+              {process.env.NODE_ENV !== "production" && (
               <div className="border-t border-[var(--border-primary)] pt-4">
                 <label className="mb-3 block text-xs font-semibold text-[var(--text-secondary)]">
                   LLM 과금 현황
@@ -339,6 +340,7 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
                   </>
                 )}
               </div>
+              )}
 
               {/* 캐시 초기화 */}
               <div className="border-t border-[var(--border-primary)] pt-4">
