@@ -1481,7 +1481,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           '• 체질(CON) — 방어, 도움\n' +
           '• 통찰(PER) — 관찰, 발견\n' +
           '• 카리스마(CHA) — 설득, 뇌물, 거래\n\n' +
-          '행동의 성패는 1d6 + 능력치 보너스로 결정됩니다. 캐릭터의 강점을 살려 행동하세요.',
+          '행동의 성패는 1d6 + 능력치 보너스로 결정됩니다. 캐릭터의 강점을 살려 행동하세요.\n\n' +
+          '선택지는 제안일 뿐 — 하고 싶은 행동을 입력창에 문장으로 직접 쓸 수 있습니다.',
       };
       initialMessages.push(tutorialMessage);
 
