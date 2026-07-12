@@ -1,11 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Loader2 } from "lucide-react";
+import { Play, Loader2, MapPin } from "lucide-react";
 
 /** HUB 노드는 선택지만 사용 — 텍스트 입력 숨김 */
 function shouldHideTextInput(nodeType: string | null): boolean {
   return nodeType === "HUB";
+}
+
+/** HUB 입력 안내 — 자유 행동은 장소에서 (arch/68 C-1) */
+function HubInputNotice({ compact }: { compact?: boolean }) {
+  return (
+    <div
+      className={`flex w-full items-center justify-center gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] ${
+        compact ? "p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]" : "p-4"
+      }`}
+    >
+      <MapPin size={13} className="shrink-0 text-[var(--text-muted)]" />
+      <span className="text-xs text-[var(--text-muted)]">
+        거점에서는 행선지를 선택하세요 — 대화와 행동은 장소에 들어가 자유롭게 입력할 수 있습니다
+      </span>
+    </div>
+  );
 }
 
 interface InputSectionProps {
@@ -26,7 +42,7 @@ export function InputSection({ onSubmit, nodeType, disabled }: InputSectionProps
   };
 
   const hideInput = shouldHideTextInput(nodeType ?? null);
-  if (hideInput) return null;
+  if (hideInput) return <HubInputNotice />;
 
   return (
     <div className="flex w-full flex-col gap-4 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] p-6">
@@ -78,7 +94,7 @@ export function MobileInputSection({
     }
   };
 
-  if (hideInput) return null;
+  if (hideInput) return <HubInputNotice compact />;
 
   return (
     <div className="sticky bottom-0 z-30 flex w-full flex-col gap-3 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
