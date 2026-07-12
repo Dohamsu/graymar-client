@@ -287,12 +287,12 @@ function buildCharacterInfo(
       exp: 0,
       maxExp: 100,
       stats: [
-        { label: 'STR', value: 12, color: 'var(--hp-red)' },
-        { label: 'DEX', value: 10, color: 'var(--gold)' },
-        { label: 'WIT', value: 8, color: 'var(--success-green)' },
-        { label: 'CON', value: 10, color: 'var(--info-blue)' },
-        { label: 'PER', value: 7, color: '#c084fc' },
-        { label: 'CHA', value: 8, color: '#f472b6' },
+        { label: 'STR', value: 12, color: 'var(--stat-str)' },
+        { label: 'DEX', value: 10, color: 'var(--stat-dex)' },
+        { label: 'WIT', value: 8, color: 'var(--stat-wit)' },
+        { label: 'CON', value: 10, color: 'var(--stat-con)' },
+        { label: 'PER', value: 7, color: 'var(--stat-per)' },
+        { label: 'CHA', value: 8, color: 'var(--stat-cha)' },
       ],
       equipment: [],
     };

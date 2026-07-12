@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Coins, Menu, Settings, Home } from "lucide-react";
+import { MapPin, Coins, Menu, Settings, Home, BookOpen, User, Backpack, Users, ScrollText } from "lucide-react";
 import type { PlayerHud, WorldStateUI } from "@/types/game";
 import type { LlmTokenStats } from "@/lib/api-client";
 import { LlmSettingsModal } from "@/components/ui/LlmSettingsModal";
@@ -216,11 +216,11 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange,
         <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setMenuOpen(false)}>
           <div className="absolute right-3 top-[5.5rem] w-40 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] py-1 shadow-xl" onClick={(e) => e.stopPropagation()}>
             {([
-              { id: "story", label: "이야기", icon: "📖" },
-              { id: "character", label: "캐릭터", icon: "👤" },
-              { id: "inventory", label: "소지품", icon: "🎒" },
-              { id: "npcs", label: "인물", icon: "🎭" },
-              { id: "quests", label: "퀘스트", icon: "📜" },
+              { id: "story", label: "이야기", Icon: BookOpen },
+              { id: "character", label: "캐릭터", Icon: User },
+              { id: "inventory", label: "소지품", Icon: Backpack },
+              { id: "npcs", label: "인물", Icon: Users },
+              { id: "quests", label: "퀘스트", Icon: ScrollText },
             ] as const).map((item) => (
               <button
                 key={item.id}
@@ -231,7 +231,7 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange,
                     : "text-[var(--text-secondary)]"
                 }`}
               >
-                <span>{item.icon}</span>
+                <item.Icon size={15} className={activeTab === item.id ? "text-[var(--gold)]" : "text-[var(--text-muted)]"} />
                 <span>{item.label}</span>
               </button>
             ))}

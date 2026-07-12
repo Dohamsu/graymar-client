@@ -118,3 +118,13 @@ export function getLocationImagePath(
 
   return pack.hubImage;
 }
+
+/** 시나리오 선택 카드 배너 — 팩 대표 이미지 (없으면 null, 카드는 그라데이션 fallback) */
+const SCENARIO_BANNERS: Record<string, string | null> = {
+  graymar_v1: '/locations/graymar_overview.webp',
+  silverdeen_v1: null,
+};
+
+export function getScenarioBannerImage(scenarioId: string): string | null {
+  return SCENARIO_BANNERS[scenarioId] ?? null;
+}

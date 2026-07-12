@@ -18,14 +18,14 @@ export const STAT_ACTION_HINTS: Record<string, string> = {
   CHA: '설득, 뇌물, 거래 판정에 사용',
 };
 
-/** 스탯별 색상 (대문자 키) */
+/** 스탯별 색상 (대문자 키) — 정본. globals.css --stat-* 토큰 참조 (arch/68 C-4) */
 export const STAT_COLORS: Record<string, string> = {
-  STR: 'var(--hp-red)',
-  DEX: 'var(--gold)',
-  WIT: 'var(--success-green)',
-  CON: 'var(--info-blue)',
-  PER: '#c084fc',
-  CHA: '#f472b6',
+  STR: 'var(--stat-str)',
+  DEX: 'var(--stat-dex)',
+  WIT: 'var(--stat-wit)',
+  CON: 'var(--stat-con)',
+  PER: 'var(--stat-per)',
+  CHA: 'var(--stat-cha)',
 };
 
 /** 소문자 statKey → 대문자 라벨 */

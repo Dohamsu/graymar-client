@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties }
 import Image from "next/image";
 import { useGameStore } from "@/store/game-store";
 import { korParticleRo } from "@/lib/korean";
+import { getScenarioBannerImage } from "@/data/location-images";
+import { STAT_COLORS } from "@/data/stat-descriptions";
 import { useAuthStore } from "@/store/auth-store";
 import { PRESETS, adaptPresetsForScenario } from "@/data/presets";
 import { TRAITS } from "@/data/traits";
@@ -146,14 +148,10 @@ const STAT_DESCRIPTIONS: Record<string, string> = {
   cha: "설득과 거래 판정, NPC 정보 획득에 핵심",
 };
 
-const STAT_COLORS_MAP: Record<string, string> = {
-  str: "var(--hp-red)",
-  dex: "var(--gold)",
-  wit: "var(--success-green)",
-  con: "var(--info-blue)",
-  per: "#c084fc",
-  cha: "#f472b6",
-};
+/* 스탯 색 정본은 data/stat-descriptions.ts STAT_COLORS — 소문자 키 별칭 */
+const STAT_COLORS_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(STAT_COLORS).map(([k, v]) => [k.toLowerCase(), v]),
+);
 
 const BONUS_POINTS_TOTAL = 6;
 const STAT_KEYS = ["str", "dex", "wit", "con", "per", "cha"] as const;
@@ -233,13 +231,10 @@ function PresetCard({
             const value = preset.stats[key] ?? 0;
             const max = 18;
             const pct = Math.min(100, Math.round((value / max) * 100));
-            const colors: Record<string, string> = {
-              str: "var(--hp-red)", dex: "var(--gold)", wit: "var(--success-green)",
-              con: "var(--info-blue)", per: "#c084fc", cha: "#f472b6",
-            };
+            const colors = STAT_COLORS_MAP;
             return (
               <div key={key} className="flex items-center gap-1.5" title={STAT_HINTS[key]}>
-                <span className="w-8 text-right font-semibold text-[var(--text-muted)]">{STAT_LABELS[key]}</span>
+                <span className="w-12 shrink-0 whitespace-nowrap text-right font-semibold text-[var(--text-muted)]">{STAT_LABELS[key]}</span>
                 <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-[var(--bg-secondary)]">
                   <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${pct}%`, backgroundColor: colors[key] }} />
                 </div>
@@ -277,7 +272,8 @@ function RadarChart({
   bonusStats: Record<string, number>;
   size?: number;
 }) {
-  const labels = ["STR", "DEX", "WIT", "CON", "PER", "CHA"];
+  // 하단 스탯 카드와 표기 통일 — 한글 라벨 (arch/68 C-5)
+  const labels = ["힘", "민첩", "재치", "체질", "통찰", "카리스마"];
   const keys = ["str", "dex", "wit", "con", "per", "cha"];
   const maxVal = 22; // max possible with bonus
   const cx = size / 2;
@@ -617,7 +613,7 @@ function AuthForm({ onSuccess }: { onSuccess: () => void }) {
               type="checkbox"
               checked={rememberEmail}
               onChange={(e) => setRememberEmail(e.target.checked)}
-              className="h-4 w-4 cursor-pointer accent-[var(--gold)]"
+              className="checkbox-gold h-4 w-4 cursor-pointer"
             />
             <span className="text-sm text-[var(--text-muted)]">이메일 저장</span>
           </label>
@@ -1556,22 +1552,42 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             <p className="text-center text-sm text-[var(--text-muted)]">
               어느 땅에서 이야기를 시작하시겠습니까?
             </p>
-            {soloScenarios.map((scenario) => (
+            {soloScenarios.map((scenario) => {
+              const banner = getScenarioBannerImage(scenario.scenarioId);
+              return (
               <button
                 key={scenario.scenarioId}
                 onClick={() => handleSelectSoloScenario(scenario.scenarioId)}
                 disabled={isLoading}
-                className="flex flex-col gap-2 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4 text-left transition-all hover:border-[var(--gold)] hover:bg-[rgba(201,169,98,0.04)]"
+                className="group flex flex-col overflow-hidden rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] text-left transition-all hover:border-[var(--gold)] hover:bg-[rgba(201,169,98,0.04)]"
               >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--gold)] font-display text-sm text-[var(--gold)]">
-                    {scenario.order}
-                  </span>
-                  <h3 className="font-display text-lg text-[var(--text-primary)]">{scenario.name}</h3>
+                {/* 팩 대표 배너 — 이미지 없으면 그라데이션 fallback (arch/68 C-3) */}
+                <div className="relative h-36 w-full overflow-hidden sm:h-44">
+                  {banner ? (
+                    <Image
+                      src={banner}
+                      alt={scenario.name}
+                      fill
+                      sizes="(max-width: 672px) 100vw, 672px"
+                      className="object-cover opacity-80 transition-all duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-[#2a2318] via-[var(--bg-secondary)] to-[#141210]" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] via-transparent to-transparent" />
                 </div>
-                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{scenario.description}</p>
+                <div className="flex flex-col gap-2 p-4 pt-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--gold)] font-display text-sm text-[var(--gold)]">
+                      {scenario.order}
+                    </span>
+                    <h3 className="font-display text-lg text-[var(--text-primary)]">{scenario.name}</h3>
+                  </div>
+                  <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{scenario.description}</p>
+                </div>
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1612,12 +1628,12 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           <div className="mx-auto max-w-3xl flex flex-col gap-3">
             {/* 스탯 범례 */}
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
-              <span><span className="font-semibold" style={{color:'var(--hp-red)'}}>힘</span> 전투/협박</span>
-              <span><span className="font-semibold" style={{color:'var(--gold)'}}>민첩</span> 잠입/절도</span>
-              <span><span className="font-semibold" style={{color:'var(--success-green)'}}>지력</span> 조사/수색</span>
-              <span><span className="font-semibold" style={{color:'var(--info-blue)'}}>체질</span> 체력/저항</span>
-              <span><span className="font-semibold" style={{color:'#c084fc'}}>지각</span> 관찰/탐색</span>
-              <span><span className="font-semibold" style={{color:'#f472b6'}}>매력</span> 설득/거래</span>
+              <span><span className="font-semibold" style={{color:'var(--stat-str)'}}>힘</span> 전투/협박</span>
+              <span><span className="font-semibold" style={{color:'var(--stat-dex)'}}>민첩</span> 잠입/절도</span>
+              <span><span className="font-semibold" style={{color:'var(--stat-wit)'}}>재치</span> 조사/수색</span>
+              <span><span className="font-semibold" style={{color:'var(--stat-con)'}}>체질</span> 체력/저항</span>
+              <span><span className="font-semibold" style={{color:'var(--stat-per)'}}>통찰</span> 관찰/탐색</span>
+              <span><span className="font-semibold" style={{color:'var(--stat-cha)'}}>카리스마</span> 설득/거래</span>
             </div>
 
             {/* 성별 선택 */}
