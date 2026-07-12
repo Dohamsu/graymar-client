@@ -185,8 +185,13 @@ function StreamingBlockInner({ segments, onComplete, isDone, choicesLoading }: S
     <div className="space-y-3">
       {groups.map((group, gIdx) => {
         if (group.type === 'dialogue') {
-          const count = npcCounts.get(group.npcName ?? '') ?? 0;
-          npcCounts.set(group.npcName ?? '', count + 1);
+          // 무명 인물(빈/미상 화자)은 compact로 묶지 않고 각 대사를 독립
+          // 버블로 분리 — 서버가 배경 화자를 구분해 주지 않아 여러 명이
+          // 뭉치는 문제 (arch/68 부록 K 후속). renderStyledText와 동일 원칙.
+          const rawName = group.npcName ?? '';
+          const isAnonymous = !rawName || rawName === '무명 인물';
+          const count = npcCounts.get(rawName) ?? 0;
+          npcCounts.set(rawName, count + 1);
 
           // 타이핑 진행도
           const isCompleted = group.segIdx < typedCount;
@@ -207,9 +212,9 @@ function StreamingBlockInner({ segments, onComplete, isDone, choicesLoading }: S
             <DialogueBubble
               key={`g-${gIdx}`}
               text={displayText}
-              npcName={group.npcName ?? ''}
-              npcImageUrl={group.npcImage}
-              compact={count > 0}
+              npcName={isAnonymous ? '무명 인물' : rawName}
+              npcImageUrl={isAnonymous ? undefined : group.npcImage}
+              compact={!isAnonymous && count > 0}
             />
           );
         }

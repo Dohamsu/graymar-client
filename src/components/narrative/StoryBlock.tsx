@@ -448,9 +448,16 @@ function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactN
         ? undefined // 마커 화자 뒤 배경 대사 — 초상화 상속 금지
         : speakingNpc?.imageUrl;
 
-    // 연속 대사 카운트 (같은 NPC면 compact)
+    // 연속 대사 카운트 (같은 NPC면 compact = 헤더 생략 묶음)
     const count = npcBubbleCounts.get(npcName) ?? 0;
     npcBubbleCounts.set(npcName, count + 1);
+
+    // 무명 인물은 compact로 묶지 않는다 (arch/68 부록 K 후속) — 서버가 배경
+    // 화자를 구분해 주지 않아 여러 명이 전부 "무명 인물"로 뭉치므로, 묶으면
+    // 서로 다른 발화가 한 사람의 연속 대사처럼 보인다. 각 대사를 독립 실루엣
+    // 버블로 분리해 "여러 명이 말한다"는 것이 드러나게 한다.
+    const isAnonymous = npcName === '무명 인물';
+    const compact = !isAnonymous && count > 0;
 
     const strippedDialogue = rawDialogue.replace(/^[""\u201C]|[""\u201D]$/g, '').trim();
     if (strippedDialogue) {
@@ -460,7 +467,7 @@ function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React.ReactN
           text={strippedDialogue}
           npcName={npcName}
           npcImageUrl={npcImage}
-          compact={count > 0}
+          compact={compact}
         />,
       );
     }
