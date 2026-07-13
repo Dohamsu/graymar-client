@@ -14,9 +14,14 @@ interface NarrativePanelProps {
   scrollId?: string;
   /** architecture/42 — 전투 UI 버튼 폼에서는 NarrativePanel 선택지 숨김 (CombatActionBar가 대체) */
   hideChoices?: boolean;
+  /**
+   * 모바일 고정 헤더(h-12 + 상태줄 h-8 = 80px + safe-area) 아래로 첫 서술이 가려지는 것을 방지.
+   * true 이면 스크롤 컨테이너 상단에 헤더 높이만큼 in-scroll 패딩을 준다 (스크롤 시 함께 밀려 헤더 자동숨김과 양립).
+   */
+  topInset?: boolean;
 }
 
-export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, scrollId, hideChoices }: NarrativePanelProps) {
+export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, scrollId, hideChoices, topInset }: NarrativePanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const streamSegments = useGameStore((s) => s.streamSegments);
   const lastMessage = messages.at(-1);
@@ -90,7 +95,15 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
   }, []);
 
   return (
-    <div ref={scrollRef} id={scrollId} className="flex flex-1 flex-col gap-4 overflow-y-auto p-3 pb-20 md:p-6 md:pb-24 lg:p-6 lg:pb-24">
+    <div
+      ref={scrollRef}
+      id={scrollId}
+      className={
+        topInset
+          ? "flex flex-1 flex-col gap-4 overflow-y-auto px-3 pb-20 pt-[calc(env(safe-area-inset-top)+5rem)] md:px-6 md:pb-24 md:pt-[calc(env(safe-area-inset-top)+5rem)]"
+          : "flex flex-1 flex-col gap-4 overflow-y-auto p-3 pb-20 md:p-6 md:pb-24 lg:p-6 lg:pb-24"
+      }
+    >
       {messages.map((msg) => (
         <StoryBlock key={msg.id} message={msg} onChoiceSelect={hideChoices ? undefined : onChoiceSelect} onNarrationComplete={onNarrationComplete} />
       ))}

@@ -469,6 +469,7 @@ export default function GameClient() {
                 onNarrationComplete={flushPending}
                 scrollId="mobile-narrative-scroll"
                 hideChoices={phase === "COMBAT"}
+                topInset
               />
               {phase === "COMBAT" && enemies.length > 0 && (
                 <CombatActionBar
