@@ -52,19 +52,29 @@ export default function NewsModal({ signals, onClose }: Props) {
           {/* 헤더 */}
           <div className="px-6 pt-6 pb-2 text-center">
             <div
-              className="mb-1 text-[10px] tracking-[0.3em] uppercase"
-              style={{ color: "#5a4a35" }}
+              className="mb-1 text-[10px] font-semibold tracking-[0.3em] uppercase"
+              style={{ color: "#d9cdb4", textShadow: "0 1px 2px rgba(0,0,0,0.7)" }}
             >
               DIMTALE TIMES
             </div>
             <h2
               className="text-xl font-bold tracking-wider"
-              style={{ fontFamily: "'Noto Serif KR', serif", color: "#2a1f14" }}
+              style={{
+                fontFamily: "'Noto Serif KR', serif",
+                color: "#f7f1e3",
+                textShadow: "0 1px 3px rgba(0,0,0,0.85)",
+              }}
             >
               그레이마르 호외
             </h2>
-            <div className="mx-auto mt-2 h-[2px] w-full" style={{ background: "#5a4a35" }} />
-            <div className="mx-auto mt-1 h-px w-3/4" style={{ background: "#5a4a35", opacity: 0.5 }} />
+            <div
+              className="mx-auto mt-2 h-[2px] w-full"
+              style={{ background: "#cbbfa6", opacity: 0.7 }}
+            />
+            <div
+              className="mx-auto mt-1 h-px w-3/4"
+              style={{ background: "#cbbfa6", opacity: 0.4 }}
+            />
           </div>
 
           {/* 기사 본문 */}
@@ -74,8 +84,9 @@ export default function NewsModal({ signals, onClose }: Props) {
                 key={signal.id ?? i}
                 className="text-sm leading-relaxed"
                 style={{
-                  color: "#2a1f14",
+                  color: "#eee4cf",
                   fontFamily: "'Noto Serif KR', serif",
+                  textShadow: "0 1px 3px rgba(0,0,0,0.9)",
                 }}
               >
                 {signal.text}
@@ -88,8 +99,8 @@ export default function NewsModal({ signals, onClose }: Props) {
             <button
               type="button"
               onClick={handleClose}
-              className="text-xs transition-opacity hover:opacity-70"
-              style={{ color: "#5a4a35" }}
+              className="text-xs font-semibold transition-opacity hover:opacity-70"
+              style={{ color: "#d9cdb4", textShadow: "0 1px 2px rgba(0,0,0,0.7)" }}
             >
               [ 닫기 ]
             </button>
