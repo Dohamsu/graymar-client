@@ -723,6 +723,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const activeRunInfo = useGameStore((s) => s.activeRunInfo);
   const checkActiveRun = useGameStore((s) => s.checkActiveRun);
   const resumeRun = useGameStore((s) => s.resumeRun);
+  const abortActiveRun = useGameStore((s) => s.abortActiveRun);
   const endingsCount = useGameStore((s) => s.endingsCount);
   const loadEndings = useGameStore((s) => s.loadEndings);
 
@@ -897,6 +898,19 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     traitId?: string; portraitUrl?: string;
   } | null>(null);
   const [showNewGameChoice, setShowNewGameChoice] = useState(false);
+  const [showAbortConfirm, setShowAbortConfirm] = useState(false);
+  const [showNewGameWarn, setShowNewGameWarn] = useState(false);
+  const [aborting, setAborting] = useState(false);
+
+  const handleAbortActiveRun = async () => {
+    setAborting(true);
+    try {
+      await abortActiveRun();
+      setShowAbortConfirm(false);
+    } finally {
+      setAborting(false);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -928,11 +942,31 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     }
   };
 
-  const handleNewGameClick = () => {
+  const proceedNewGame = () => {
     if (lastCharacter) {
       setShowNewGameChoice(true);
     } else {
       void enterScenarioGate("CREATE");
+    }
+  };
+
+  const handleNewGameClick = () => {
+    // 진행 중 런이 있으면 먼저 경고 (새로 시작하면 기존 게임 중단 — arch/70)
+    if (activeRunInfo) {
+      setShowNewGameWarn(true);
+      return;
+    }
+    proceedNewGame();
+  };
+
+  const handleNewGameConfirmAbort = async () => {
+    setAborting(true);
+    try {
+      await abortActiveRun();
+      setShowNewGameWarn(false);
+      proceedNewGame();
+    } finally {
+      setAborting(false);
     }
   };
 
@@ -1228,6 +1262,13 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                         {getPresetName(activeRunInfo.presetId)} · 턴 {activeRunInfo.currentTurnNo}
                       </span>
                     </button>
+                    <button
+                      onClick={() => setShowAbortConfirm(true)}
+                      disabled={isLoading}
+                      className="mt-1.5 w-full text-center text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--color-danger)] disabled:opacity-50"
+                    >
+                      진행 중인 게임 그만두기
+                    </button>
                   </div>
                 )}
                 {endingsCount >= 1 && (
@@ -1308,6 +1349,62 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                           className="h-12 w-full rounded border border-[var(--border-primary)] font-display tracking-wider text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)]"
                         >
                           새 캐릭터 생성
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 진행 중 런 그만두기 확인 모달 (arch/70 §3.3) */}
+                {showAbortConfirm && activeRunInfo && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => !aborting && setShowAbortConfirm(false)}>
+                    <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
+                      <h3 className="mb-4 text-center font-display text-lg text-[var(--color-danger)]">게임 그만두기</h3>
+                      <p className="mb-5 text-center text-sm text-[var(--text-secondary)]">
+                        진행 중인 게임을 그만두면 <span className="text-[var(--color-danger)]">지금까지의 진행 상황이 사라집니다.</span> 계속할까요?
+                      </p>
+                      <div className="flex flex-col gap-3">
+                        <button
+                          onClick={() => void handleAbortActiveRun()}
+                          disabled={aborting}
+                          className="h-12 w-full rounded border border-[var(--color-danger)] font-display tracking-wider text-[var(--color-danger)] transition-all hover:bg-[var(--color-danger)] hover:text-[var(--bg-primary)] disabled:opacity-50"
+                        >
+                          {aborting ? "처리 중…" : "그만두기"}
+                        </button>
+                        <button
+                          onClick={() => setShowAbortConfirm(false)}
+                          disabled={aborting}
+                          className="h-12 w-full rounded border border-[var(--border-primary)] font-display tracking-wider text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 새 게임 시작 전 활성 런 경고 모달 (arch/70) */}
+                {showNewGameWarn && activeRunInfo && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => !aborting && setShowNewGameWarn(false)}>
+                    <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
+                      <h3 className="mb-4 text-center font-display text-lg text-[var(--gold)]">새 게임 시작</h3>
+                      <p className="mb-5 text-center text-sm text-[var(--text-secondary)]">
+                        진행 중인 게임이 있습니다. 새로 시작하면 <span className="text-[var(--color-danger)]">기존 게임은 중단</span>되고 진행 상황이 사라집니다.
+                      </p>
+                      <div className="flex flex-col gap-3">
+                        <button
+                          onClick={() => void handleNewGameConfirmAbort()}
+                          disabled={aborting}
+                          className="h-12 w-full rounded border border-[var(--gold)] bg-[var(--gold)] font-display tracking-wider text-[var(--bg-primary)] transition-all hover:shadow-[0_0_15px_rgba(201,169,98,0.3)] disabled:opacity-50"
+                        >
+                          {aborting ? "처리 중…" : "기존 게임 중단하고 새로 시작"}
+                        </button>
+                        <button
+                          onClick={() => setShowNewGameWarn(false)}
+                          disabled={aborting}
+                          className="h-12 w-full rounded border border-[var(--border-primary)] font-display tracking-wider text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
+                        >
+                          취소
                         </button>
                       </div>
                     </div>

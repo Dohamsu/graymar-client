@@ -171,6 +171,14 @@ export function getRun(runId: string, options?: { turnsLimit?: number }) {
   return request<Record<string, unknown>>(`/v1/runs/${runId}${params}`);
 }
 
+/** POST /v1/runs/:runId/abort — 진행 중 런 포기(RUN_ABORTED). 캠페인 재도전 가능 (arch/70). */
+export function abortRun(runId: string) {
+  return request<{ runId: string; status: string }>(
+    `/v1/runs/${runId}/abort`,
+    { method: 'POST' },
+  );
+}
+
 // --- LLM Settings ---
 
 export interface LlmSettingsResponse {

@@ -28,7 +28,7 @@ import type {
   EndingSummary,
   EndingSummaryCard,
 } from '@/types/game';
-import { createRun, getActiveRun, getRun, submitTurn, getTurnDetail, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, equipItem as apiEquipItem, unequipItem as apiUnequipItem, useItem as apiUseItem, getEndings, getEndingDetail, type LlmTokenStats } from '@/lib/api-client';
+import { createRun, getActiveRun, getRun, abortRun as apiAbortRun, submitTurn, getTurnDetail, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, equipItem as apiEquipItem, unequipItem as apiUnequipItem, useItem as apiUseItem, getEndings, getEndingDetail, type LlmTokenStats } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { PRESETS, adaptPresetsForScenario } from '@/data/presets';
 import { ITEM_CATALOG } from '@/data/items';
@@ -159,6 +159,7 @@ export interface GameState {
   // actions
   checkActiveRun: () => Promise<void>;
   resumeRun: () => Promise<void>;
+  abortActiveRun: () => Promise<void>;
   startNewGame: (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string; scenarioId?: string }) => Promise<void>;
   startCampaignRun: (campaignId: string, scenarioId: string, presetId?: string, gender?: 'male' | 'female') => Promise<void>;
   submitAction: (text: string) => Promise<void>;
@@ -1294,6 +1295,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     } catch {
       set({ activeRunInfo: null });
     }
+  },
+
+  // -----------------------------------------------------------------------
+  // abortActiveRun — 진행 중 런 포기 (arch/70 §3.3). 이후 activeRunInfo 갱신.
+  // -----------------------------------------------------------------------
+  abortActiveRun: async () => {
+    const { activeRunInfo } = get();
+    if (!activeRunInfo) return;
+    await apiAbortRun(activeRunInfo.runId);
+    await get().checkActiveRun(); // 활성 런 재조회 → null 로 갱신
   },
 
   // -----------------------------------------------------------------------
