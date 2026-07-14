@@ -272,49 +272,42 @@ function mapEquipmentBag(
   });
 }
 
+const GENERIC_STATS: Record<string, number> = {
+  STR: 12, DEX: 10, WIT: 8, CON: 10, PER: 7, CHA: 8,
+};
+
 function buildCharacterInfo(
   presetId: string | undefined,
   gender: 'male' | 'female' = 'male',
   options?: { characterName?: string; portraitUrl?: string; bonusStats?: Record<string, number> },
   // architecture/63 ⑥: 시나리오별 프리셋 표기 (subtitle 등)
   scenarioId?: string | null,
+  // architecture/71: 이월 캐릭터는 프리셋 파생 불가 — 서버 확정 스탯을 직접 표시
+  statsOverride?: Record<string, number> | null,
 ): CharacterInfo {
   const preset = adaptPresetsForScenario(scenarioId ?? null).find(
     (p) => p.presetId === presetId,
   );
-  if (!preset) {
-    return {
-      name: options?.characterName || '용병',
-      class: '방랑 검사',
-      level: 1,
-      exp: 0,
-      maxExp: 100,
-      stats: [
-        { label: 'STR', value: 12, color: 'var(--stat-str)' },
-        { label: 'DEX', value: 10, color: 'var(--stat-dex)' },
-        { label: 'WIT', value: 8, color: 'var(--stat-wit)' },
-        { label: 'CON', value: 10, color: 'var(--stat-con)' },
-        { label: 'PER', value: 7, color: 'var(--stat-per)' },
-        { label: 'CHA', value: 8, color: 'var(--stat-cha)' },
-      ],
-      equipment: [],
-    };
-  }
-
   const bonus = options?.bonusStats ?? {};
-
+  const statValue = (key: string): number => {
+    const k = key.toLowerCase();
+    if (statsOverride) return statsOverride[k] ?? statsOverride[key] ?? 0;
+    if (preset)
+      return (
+        (preset.stats[k] ?? preset.stats[key] ?? 0) + (bonus[k] ?? 0)
+      );
+    return GENERIC_STATS[key] ?? 0;
+  };
   return {
-    name: options?.characterName || preset.name,
-    class: preset.subtitle,
-    portrait: options?.portraitUrl || preset.portraits?.[gender],
+    name: options?.characterName || preset?.name || '용병',
+    class: preset?.subtitle || '방랑 검사',
+    portrait: options?.portraitUrl || preset?.portraits?.[gender],
     level: 1,
     exp: 0,
     maxExp: 100,
-    stats: (
-      ['STR', 'DEX', 'WIT', 'CON', 'PER', 'CHA'] as const
-    ).map((key) => ({
+    stats: (['STR', 'DEX', 'WIT', 'CON', 'PER', 'CHA'] as const).map((key) => ({
       label: key,
-      value: (preset.stats[key.toLowerCase()] ?? preset.stats[key] ?? 0) + (bonus[key.toLowerCase()] ?? 0),
+      value: statValue(key),
       color: STAT_COLORS[key] ?? 'var(--text-primary)',
     })),
     equipment: [],
@@ -1432,6 +1425,7 @@ export const useGameStore = create<GameState>((set, get) => ({
               portraitUrl: (runState as Record<string, unknown>)?.portraitUrl as string | undefined,
             },
             (run.scenarioId as string | undefined) ?? null,
+            (data.stats as Record<string, number> | null | undefined) ?? undefined,
           ),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
@@ -1568,6 +1562,7 @@ export const useGameStore = create<GameState>((set, get) => ({
             gender,
             options,
             (run.scenarioId as string | undefined) ?? null,
+            (data.stats as Record<string, number> | null | undefined) ?? undefined,
           ),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
@@ -1688,11 +1683,16 @@ export const useGameStore = create<GameState>((set, get) => ({
         pendingChoices: hasNarratorLoading ? initialChoices : [],
         isSubmitting: false,
         characterInfo: {
+          // arch/71: 이월 캐릭터는 프리셋/성별/이름/스탯을 응답에서 취득(요청엔 없음)
           ...buildCharacterInfo(
-            presetId,
-            gender,
-            undefined,
+            (run.presetId as string | undefined) ?? presetId,
+            ((run.gender as string | undefined) ?? gender ?? 'male') as 'male' | 'female',
+            {
+              characterName: (runState as Record<string, unknown> | undefined)?.characterName as string | undefined,
+              portraitUrl: (runState as Record<string, unknown> | undefined)?.portraitUrl as string | undefined,
+            },
             (run.scenarioId as string | undefined) ?? null,
+            (data.stats as Record<string, number> | null | undefined) ?? undefined,
           ),
           equipment: mapEquippedToDisplay(runState?.equipped),
         },
