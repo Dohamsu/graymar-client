@@ -74,8 +74,35 @@ const SILVERDEEN_IMAGES: PackImages = {
 };
 
 /** locationId 접두 → 팩 이미지 셋 판별 */
+// star_sand_v1 — 극야해안. 장소당 이미지 1장이라 `_day_safe` 키 하나로
+// 모든 시간/안전 조합을 defaultKey fallback으로 커버한다.
+const STAR_SAND_IMAGES: PackImages = {
+  locPrefix: {
+    LOC_SS_INN: 'ss_inn',
+    LOC_SS_DOCK: 'ss_dock',
+    LOC_SS_RIB: 'ss_rib',
+    LOC_SS_HEART: 'ss_heart',
+    LOC_SS_CONVENT: 'ss_convent',
+    LOC_SS_MARKET: 'ss_market',
+    LOC_SS_TOWER: 'ss_tower',
+    LOC_SS_BEACH: 'ss_beach',
+  },
+  imageMap: {
+    ss_inn_day_safe: '/locations/star_sand_v1/dream_inn.webp',
+    ss_dock_day_safe: '/locations/star_sand_v1/winter_harbor_ghost_whale.webp',
+    ss_rib_day_safe: '/locations/star_sand_v1/ancient_whale_bone_altar.webp',
+    ss_heart_day_safe: '/locations/star_sand_v1/eldritch_ritual_laboratory.webp',
+    ss_convent_day_safe: '/locations/star_sand_v1/frozen_cliff_ritual_procession.webp',
+    ss_market_day_safe: '/locations/star_sand_v1/ice_black_market_deal.webp',
+    ss_tower_day_safe: '/locations/star_sand_v1/frozen_sea_observatory.webp',
+    ss_beach_day_safe: '/locations/star_sand_v1/frozen_ritual_worship.webp',
+  },
+  hubImage: null,
+};
+
 function packFor(locationId: string | null | undefined): PackImages {
   if (locationId && locationId.startsWith('LOC_SD_')) return SILVERDEEN_IMAGES;
+  if (locationId && locationId.startsWith('LOC_SS_')) return STAR_SAND_IMAGES;
   return GRAYMAR_IMAGES;
 }
 
@@ -123,6 +150,7 @@ export function getLocationImagePath(
 const SCENARIO_BANNERS: Record<string, string | null> = {
   graymar_v1: '/locations/graymar_overview.webp',
   silverdeen_v1: null,
+  star_sand_v1: '/locations/star_sand_v1/winter_harbor_ghost_whale.webp',
 };
 
 export function getScenarioBannerImage(scenarioId: string): string | null {
