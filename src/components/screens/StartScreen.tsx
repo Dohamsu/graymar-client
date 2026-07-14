@@ -695,11 +695,11 @@ function CreationLayout({
         <h2 className="flex-1 font-display text-base text-[var(--text-primary)]">{title}</h2>
         <StepIndicator current={step} total={totalSteps} />
       </div>
-      <div className={`flex-1 overflow-y-auto px-4 pt-6 sm:px-6 ${footer ? "pb-28" : "pb-6"}`}>
+      <div className={`min-h-0 flex-1 overflow-y-auto px-4 pt-6 sm:px-6 ${footer ? "pb-28" : "pb-6"}`}>
         <div className="mx-auto max-w-3xl">{children}</div>
       </div>
       {footer && (
-        <div className="border-t border-[var(--border-primary)] px-4 py-4 sm:px-6">
+        <div className="shrink-0 border-t border-[var(--border-primary)] px-4 py-4 sm:px-6">
           <div className="mx-auto max-w-3xl">{footer}</div>
         </div>
       )}
@@ -1927,7 +1927,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           )}
 
           {/* Stat rows */}
-          <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {STAT_KEYS.map((key) => {
               const baseVal = selectedPreset?.stats[key] ?? 0;
               const bonus = bonusStats[key] ?? 0;
