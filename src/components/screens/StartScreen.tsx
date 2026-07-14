@@ -807,6 +807,22 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
   // Campaign state
   const [activeCampaign, setActiveCampaign] = useState<CampaignResponse | null>(null);
+  // 단일화(arch/71 후속): 마운트 시 활성 여정(캠페인) 로딩 — "여정 계속" 여부 판단
+  useEffect(() => {
+    if (authToken) {
+      getActiveCampaign().then(setActiveCampaign).catch(() => setActiveCampaign(null));
+    } else {
+      setActiveCampaign(null);
+    }
+  }, [authToken]);
+  // 현재 여정의 완주 시나리오 수 (0이면 아직 첫 캐릭터 미생성 = "새 게임")
+  const journeyProgress = Array.isArray(
+    (activeCampaign?.carryOverState as { completedScenarios?: unknown[] } | null)
+      ?.completedScenarios,
+  )
+    ? (activeCampaign!.carryOverState as { completedScenarios: unknown[] })
+        .completedScenarios.length
+    : 0;
   const [campaignName, setCampaignName] = useState("");
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignError, setCampaignError] = useState<string | null>(null);
@@ -936,6 +952,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const [showNewGameChoice, setShowNewGameChoice] = useState(false);
   const [showAbortConfirm, setShowAbortConfirm] = useState(false);
   const [showNewGameWarn, setShowNewGameWarn] = useState(false);
+  const [showNewJourneyConfirm, setShowNewJourneyConfirm] = useState(false);
   const [aborting, setAborting] = useState(false);
 
   const handleAbortActiveRun = async () => {
@@ -998,12 +1015,55 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     }
   };
 
-  const proceedNewGame = () => {
-    if (lastCharacter) {
-      setShowNewGameChoice(true);
-    } else {
-      void enterScenarioGate("CREATE");
+  // 단일화(arch/71 후속): 모든 캐릭터 생성 = 캠페인(여정). "새 게임"/"여정 계속" 모두
+  // 활성 여정을 확보(없으면 생성)한 뒤 시나리오 선택으로 진입. 첫 시나리오는 6단계 생성,
+  // 이후는 이월. → 솔로/캠페인 이원 구조 폐기.
+  const handleStartOrContinueJourney = async () => {
+    setCampaignLoading(true);
+    setCampaignError(null);
+    try {
+      let campaign = activeCampaign;
+      if (!campaign) {
+        campaign = await createCampaign("나의 여정");
+        setActiveCampaign(campaign);
+      }
+      const scenarioList = await getAvailableScenarios(campaign.id);
+      setScenarios(scenarioList);
+      setScreenPhase("CAMPAIGN_SCENARIO");
+    } catch {
+      setCampaignError("여정을 시작할 수 없습니다.");
+    } finally {
+      setCampaignLoading(false);
     }
+  };
+
+  // 새 캐릭터로 새 여정 시작 — 기존 여정은 보관(서버가 ACTIVE→COMPLETED). 활성 런은 포기.
+  const handleNewJourney = async () => {
+    setCampaignLoading(true);
+    setCampaignError(null);
+    try {
+      if (activeRunInfo) {
+        try {
+          await abortActiveRun();
+        } catch {
+          /* ignore */
+        }
+      }
+      const campaign = await createCampaign("나의 여정");
+      setActiveCampaign(campaign);
+      const scenarioList = await getAvailableScenarios(campaign.id);
+      setScenarios(scenarioList);
+      setShowNewJourneyConfirm(false);
+      setScreenPhase("CAMPAIGN_SCENARIO");
+    } catch {
+      setCampaignError("새 여정을 시작할 수 없습니다.");
+    } finally {
+      setCampaignLoading(false);
+    }
+  };
+
+  const proceedNewGame = () => {
+    void handleStartOrContinueJourney();
   };
 
   const handleNewGameClick = () => {
@@ -1137,20 +1197,6 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   };
 
   // Campaign handlers
-  const handleEnterCampaign = async () => {
-    setCampaignLoading(true);
-    setCampaignError(null);
-    try {
-      const campaign = await getActiveCampaign();
-      setActiveCampaign(campaign);
-      setScreenPhase("CAMPAIGN");
-    } catch {
-      setCampaignError("캠페인 조회에 실패했습니다.");
-    } finally {
-      setCampaignLoading(false);
-    }
-  };
-
   const handleCreateCampaign = async () => {
     if (!campaignName.trim()) return;
     setCampaignLoading(true);
@@ -1367,22 +1413,28 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                 >
                   <button
                     onClick={handleNewGameClick}
-                    disabled={isLoading}
-                    className="flex h-14 w-full items-center justify-center border border-[var(--gold)] bg-transparent font-display text-lg tracking-[3px] text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
-                  >
-                    새 게임
-                  </button>
-                </div>
-                {/* 캠페인 — 한 캐릭터로 여러 시나리오 (arch/70) */}
-                <div className="w-full max-w-64" style={entryStyle(activeRunInfo ? "0.3s" : "0.2s")}>
-                  <button
-                    onClick={() => void handleEnterCampaign()}
                     disabled={isLoading || campaignLoading}
-                    className="flex h-14 w-full flex-col items-center justify-center border border-[var(--gold)]/60 bg-transparent font-display text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
+                    className="flex h-14 w-full flex-col items-center justify-center border border-[var(--gold)] bg-transparent font-display text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
                   >
-                    <span className="text-lg tracking-[3px]">캠페인</span>
-                    <span className="text-xs opacity-70">한 캐릭터로 여러 시나리오</span>
+                    <span className="text-lg tracking-[3px]">
+                      {!activeRunInfo && journeyProgress > 0 ? "여정 계속" : "새 게임"}
+                    </span>
+                    <span className="text-xs opacity-70">
+                      {!activeRunInfo && journeyProgress > 0
+                        ? `${journeyProgress}개 시나리오 완주 · 같은 캐릭터로 이어서`
+                        : "한 캐릭터로 여러 시나리오"}
+                    </span>
                   </button>
+                  {/* 진행 중 여정이 있을 때만 — 새 캐릭터로 다시 시작 (기존 여정 보관) */}
+                  {(journeyProgress > 0 || activeRunInfo) && (
+                    <button
+                      onClick={() => setShowNewJourneyConfirm(true)}
+                      disabled={isLoading || campaignLoading}
+                      className="mt-1.5 w-full text-center text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--gold)] disabled:opacity-50"
+                    >
+                      새 캐릭터로 다시 시작
+                    </button>
+                  )}
                 </div>
                 {onParty && (
                   <div className="w-full max-w-64" style={entryStyle(activeRunInfo ? "0.35s" : "0.25s")}>
@@ -1482,6 +1534,34 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                         <button
                           onClick={() => setShowNewGameWarn(false)}
                           disabled={aborting}
+                          className="h-12 w-full rounded border border-[var(--border-primary)] font-display tracking-wider text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 새 캐릭터로 새 여정 시작 확인 (기존 여정은 여정 기록에 보관) */}
+                {showNewJourneyConfirm && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => !campaignLoading && setShowNewJourneyConfirm(false)}>
+                    <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
+                      <h3 className="mb-4 text-center font-display text-lg text-[var(--gold)]">새 캐릭터로 시작</h3>
+                      <p className="mb-5 text-center text-sm text-[var(--text-secondary)]">
+                        새 캐릭터의 여정을 시작합니다. <span className="text-[var(--color-danger)]">지금 캐릭터의 여정은 여기서 마무리</span>되고, 진행 중인 게임이 있으면 중단됩니다. 계속할까요?
+                      </p>
+                      <div className="flex flex-col gap-3">
+                        <button
+                          onClick={() => void handleNewJourney()}
+                          disabled={campaignLoading}
+                          className="h-12 w-full rounded border border-[var(--gold)] bg-[var(--gold)] font-display tracking-wider text-[var(--bg-primary)] transition-all hover:shadow-[0_0_15px_rgba(201,169,98,0.3)] disabled:opacity-50"
+                        >
+                          {campaignLoading ? "처리 중…" : "새 캐릭터로 시작"}
+                        </button>
+                        <button
+                          onClick={() => setShowNewJourneyConfirm(false)}
+                          disabled={campaignLoading}
                           className="h-12 w-full rounded border border-[var(--border-primary)] font-display tracking-wider text-[var(--text-secondary)] transition-all hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
                         >
                           취소
