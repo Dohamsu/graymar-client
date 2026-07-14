@@ -358,7 +358,10 @@ export function createCampaign(name: string) {
 /** GET /v1/campaigns — fetch active campaign (or null). */
 export async function getActiveCampaign(): Promise<CampaignResponse | null> {
   try {
-    return await request<CampaignResponse>('/v1/campaigns');
+    // 캠페인 없으면 서버가 빈 body(200)를 반환 → request가 {}로 폴백하므로
+    // id 없는 응답은 null로 정규화(단일화 진입 로직이 !campaign 으로 판정).
+    const c = await request<CampaignResponse>('/v1/campaigns');
+    return c && c.id ? c : null;
   } catch {
     return null;
   }
