@@ -161,7 +161,7 @@ export interface GameState {
   resumeRun: () => Promise<void>;
   abortActiveRun: () => Promise<void>;
   startNewGame: (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string; scenarioId?: string }) => Promise<void>;
-  startCampaignRun: (campaignId: string, scenarioId: string, presetId?: string, gender?: 'male' | 'female') => Promise<void>;
+  startCampaignRun: (campaignId: string, scenarioId: string, presetId?: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string }) => Promise<void>;
   submitAction: (text: string) => Promise<void>;
   submitChoice: (choiceId: string) => Promise<void>;
   flushPending: () => void;
@@ -1610,11 +1610,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   // -----------------------------------------------------------------------
   // startCampaignRun
   // -----------------------------------------------------------------------
-  startCampaignRun: async (campaignId: string, scenarioId: string, presetId?: string, gender?: 'male' | 'female') => {
+  startCampaignRun: async (campaignId: string, scenarioId: string, presetId?: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string }) => {
     set({ phase: 'LOADING', error: null, campaignId });
 
     try {
-      const data = (await createRun(presetId, gender, { campaignId, scenarioId })) as Record<string, unknown>;
+      // architecture/71 §4.3: 첫 시나리오 캐릭터 생성의 identity 필드 전달
+      const data = (await createRun(presetId, gender, { campaignId, scenarioId, ...options })) as Record<string, unknown>;
 
       const run = data.run as Record<string, unknown>;
       const runId = run.id as string;

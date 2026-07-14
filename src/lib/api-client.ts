@@ -312,8 +312,39 @@ export interface ScenarioInfo {
   description: string;
   order: number;
   prerequisites: string[];
-  /** 캠페인 진행 상태 (architecture/70). 솔로 목록(GET /v1/scenarios)에는 없음. */
-  status?: 'COMPLETED' | 'CURRENT' | 'LOCKED';
+  /** 캠페인 진행 상태 (architecture/71 자유 선택 모델). 솔로 목록(GET /v1/scenarios)에는 없음. */
+  status?: 'COMPLETED' | 'IN_PROGRESS' | 'AVAILABLE';
+}
+
+/** GET /v1/scenarios/:id/creation-bundle 응답 (architecture/71 §4.2) */
+export interface CreationBundle {
+  scenarioId: string;
+  name: string;
+  presets: Array<{
+    presetId: string;
+    name: string;
+    subtitle: string;
+    description: string;
+    playstyleHint: string;
+    stats: Record<string, number>;
+    startingGold: number;
+    startingItems: Array<{ name: string; qty: number }>;
+  }>;
+  traits: Array<{
+    traitId: string;
+    name: string;
+    icon: string;
+    description: string;
+    effects: Record<string, unknown>;
+  }>;
+  hub: { name: string; returnLabel?: string } | null;
+}
+
+/** GET /v1/scenarios/:id/creation-bundle — 팩 프리셋·특성 (architecture/71). */
+export function getCreationBundle(scenarioId: string) {
+  return request<CreationBundle>(
+    `/v1/scenarios/${encodeURIComponent(scenarioId)}/creation-bundle`,
+  );
 }
 
 /** POST /v1/campaigns — create a new campaign. */

@@ -7,17 +7,19 @@ import { korParticleRo } from "@/lib/korean";
 import { getScenarioBannerImage } from "@/data/location-images";
 import { STAT_COLORS } from "@/data/stat-descriptions";
 import { useAuthStore } from "@/store/auth-store";
-import { PRESETS, adaptPresetsForScenario } from "@/data/presets";
-import { TRAITS } from "@/data/traits";
+import { PRESETS, adaptPresetsForScenario, PRESET_PORTRAITS } from "@/data/presets";
+import { TRAITS, formatPackTrait } from "@/data/traits";
 import {
   getActiveCampaign,
   createCampaign,
   getAvailableScenarios,
   getScenarios,
+  getCreationBundle,
   generatePortrait,
   uploadPortrait,
   type CampaignResponse,
   type ScenarioInfo,
+  type CreationBundle,
 } from "@/lib/api-client";
 import PortraitCropModal from "@/components/ui/PortraitCropModal";
 import { DimtaleLogoAnimated } from "@/components/brand/DimtaleLogoAnimated";
@@ -52,8 +54,7 @@ type ScreenPhase =
   | "CHARACTER_TRAIT"
   | "CHARACTER_CONFIRM"
   | "CAMPAIGN"
-  | "CAMPAIGN_SCENARIO"
-  | "CAMPAIGN_PRESET";
+  | "CAMPAIGN_SCENARIO";
 type AuthTab = "login" | "register";
 type Gender = "male" | "female";
 
@@ -810,7 +811,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignError, setCampaignError] = useState<string | null>(null);
   const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
-  const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
+  // 선택 시나리오 ID는 campaignCreation/soloScenarioId가 대체 (architecture/71) — setter만 유지
+  const [, setSelectedScenarioId] = useState<string | null>(null);
 
   // architecture/63 ⑥ — 솔로 런 시나리오 선택 (캠페인 플로우와 분리)
   const [soloScenarios, setSoloScenarios] = useState<ScenarioInfo[]>([]);
@@ -818,10 +820,28 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   /** 시나리오 선택 후 진행할 다음 동작 — 새 캐릭터 생성 or 이전 캐릭터 퀵스타트 */
   const [scenarioNext, setScenarioNext] = useState<"CREATE" | "QUICK">("CREATE");
 
-  // architecture/63 ⑥: 선택 시나리오에 맞춘 프리셋 배경 텍스트
-  const scenarioPresets = useMemo(
-    () => adaptPresetsForScenario(soloScenarioId),
-    [soloScenarioId],
+  // architecture/71 §4.2: 서버 creation-bundle — 선택 팩의 프리셋·특성 정본.
+  // 로드 실패/미로드 시 기존 클라 하드코딩(graymar 기준 + 텍스트 치환) 폴백.
+  const [creationBundle, setCreationBundle] = useState<CreationBundle | null>(null);
+  // 캠페인 첫 시나리오 캐릭터 생성 컨텍스트 — 6단계 완료 시 startCampaignRun 경로
+  const [campaignCreation, setCampaignCreation] = useState<{
+    campaignId: string;
+    scenarioId: string;
+  } | null>(null);
+
+  const scenarioPresets = useMemo<CharacterPreset[]>(() => {
+    if (creationBundle) {
+      return creationBundle.presets.map((p) => ({
+        ...p,
+        portraits: PRESET_PORTRAITS[p.presetId],
+      }));
+    }
+    // 폴백 (architecture/63 ⑥): 선택 시나리오에 맞춘 프리셋 배경 텍스트
+    return adaptPresetsForScenario(soloScenarioId);
+  }, [creationBundle, soloScenarioId]);
+  const availableTraits = useMemo(
+    () => (creationBundle ? creationBundle.traits.map(formatPackTrait) : TRAITS),
+    [creationBundle],
   );
   const selectedPreset = useMemo(
     () => scenarioPresets.find((p) => p.presetId === selectedPresetId) ?? null,
@@ -888,6 +908,22 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         portraitUrl: opts.portraitUrl,
       }));
     } catch { /* ignore */ }
+    // architecture/71 §4.3: 캠페인 첫 시나리오 — 동일 6단계 생성 후 캠페인 경로로 시작
+    if (campaignCreation) {
+      startCampaignRun(
+        campaignCreation.campaignId,
+        campaignCreation.scenarioId,
+        selectedPresetId,
+        effectiveGender,
+        {
+          characterName: opts.characterName,
+          bonusStats: opts.bonusStats,
+          traitId: opts.traitId,
+          portraitUrl: opts.portraitUrl,
+        },
+      );
+      return;
+    }
     startNewGame(selectedPresetId, effectiveGender, Object.keys(opts).length > 0 ? opts : undefined);
   };
 
@@ -919,27 +955,43 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     } catch { /* ignore */ }
   }, []);
 
-  // architecture/63 ⑥: 새 여정 진입 시 시나리오 목록을 확인하고, 2개 이상이면
-  // 선택 화면을 먼저 보여준다. 1개(또는 조회 실패)면 기본 시나리오로 기존 흐름.
+  // 선택 시나리오의 creation-bundle 로드 (architecture/71 §4.2).
+  // 실패해도 흐름은 계속 — scenarioPresets가 클라 폴백으로 동작.
+  const loadCreationBundle = async (scenarioId: string | null) => {
+    if (!scenarioId) {
+      setCreationBundle(null);
+      return null;
+    }
+    try {
+      const bundle = await getCreationBundle(scenarioId);
+      setCreationBundle(bundle);
+      return bundle;
+    } catch {
+      setCreationBundle(null);
+      return null;
+    }
+  };
+
+  // architecture/71: 새 여정 진입 — 어느 시나리오든 첫 시나리오로 선택 가능
+  // (arch/70 델타 1의 원점 한정 정책 폐기). 2개 이상이면 선택 화면.
   const enterScenarioGate = async (next: "CREATE" | "QUICK") => {
     setScenarioNext(next);
+    setCampaignCreation(null);
     let list: ScenarioInfo[] = [];
     try {
       list = await getScenarios();
     } catch {
       /* 조회 실패 → 기본 시나리오로 진행 */
     }
-    // arch/70 델타 1: 신규 캐릭터 생성은 원점(최소 order=1) 시나리오에서만.
-    // 나머지 시나리오는 캠페인에서 캐릭터를 이월해 자유 순서로 진입한다.
-    const originList = list.filter((s) => s.order === 1);
-    const originId = originList[0]?.scenarioId ?? null;
-    if (originList.length > 1) {
-      setSoloScenarios(originList);
+    if (list.length > 1) {
+      setSoloScenarios(list);
       setScreenPhase("SELECT_SCENARIO");
     } else {
-      setSoloScenarioId(originId);
+      const onlyId = list[0]?.scenarioId ?? null;
+      setSoloScenarioId(onlyId);
+      void loadCreationBundle(onlyId);
       if (next === "QUICK") {
-        quickStartWith(originId);
+        quickStartWith(onlyId);
       } else {
         setScreenPhase("SELECT_PRESET");
       }
@@ -974,10 +1026,20 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     }
   };
 
-  const handleSelectSoloScenario = (scenarioId: string) => {
+  const handleSelectSoloScenario = async (scenarioId: string) => {
     setSoloScenarioId(scenarioId);
+    const bundle = await loadCreationBundle(scenarioId);
     if (scenarioNext === "QUICK") {
-      quickStartWith(scenarioId);
+      // architecture/71: 이전 캐릭터의 프리셋이 이 팩에 없으면(다른 팩 ID)
+      // 빠른 시작 불가 — 생성 흐름으로 유도.
+      const quickPresetOk =
+        !!lastCharacter &&
+        (!bundle || bundle.presets.some((p) => p.presetId === lastCharacter.presetId));
+      if (quickPresetOk) {
+        quickStartWith(scenarioId);
+      } else {
+        setScreenPhase("SELECT_PRESET");
+      }
     } else {
       setScreenPhase("SELECT_PRESET");
     }
@@ -1018,6 +1080,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     setCampaignName("");
     setScenarios([]);
     setSelectedScenarioId(null);
+    setCampaignCreation(null);
+    setCreationBundle(null);
     setScreenPhase("TITLE");
     resetCreationState();
   };
@@ -1120,29 +1184,31 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     }
   };
 
-  const handleSelectScenario = (scenarioId: string) => {
+  const handleSelectScenario = async (scenarioId: string) => {
     const scenario = scenarios.find((s) => s.scenarioId === scenarioId);
-    // 진행 가능한(CURRENT) 시나리오만 선택 (architecture/70 — 되돌아가기/건너뛰기 차단)
-    if (!scenario || (scenario.status && scenario.status !== "CURRENT")) return;
+    // 진입 가능(AVAILABLE)만 선택 (architecture/71 — 완료 재진입/진행 중 중복 차단)
+    if (!scenario || (scenario.status && scenario.status !== "AVAILABLE")) return;
+    if (!activeCampaign) return;
     setSelectedScenarioId(scenarioId);
-    // 첫 플레이(완료 시나리오 없음) → 캐릭터 생성(프리셋 선택).
+    // 첫 플레이(완료 시나리오 없음) → 선택 팩 기준 6단계 캐릭터 생성 (architecture/71 §4.3).
     // 이후 시나리오 → 이월 캐릭터로 프리셋·성별 미전송(서버가 carryOver.identity 사용).
     const isFirstEver = !scenarios.some((s) => s.status === "COMPLETED");
     if (isFirstEver) {
-      setScreenPhase("CAMPAIGN_PRESET");
-    } else if (activeCampaign) {
+      setCampaignLoading(true);
+      try {
+        await loadCreationBundle(scenarioId);
+        setCampaignCreation({ campaignId: activeCampaign.id, scenarioId });
+        setSoloScenarioId(scenarioId); // 프리셋 텍스트 폴백 기준 공유
+        setSelectedPresetId(null);
+        setSelectedGenderState(null);
+        resetCreationState();
+        setScreenPhase("SELECT_PRESET");
+      } finally {
+        setCampaignLoading(false);
+      }
+    } else {
       startCampaignRun(activeCampaign.id, scenarioId);
     }
-  };
-
-  const handleStartCampaignWithPreset = () => {
-    if (!selectedPresetId || !activeCampaign || !selectedScenarioId) return;
-    startCampaignRun(
-      activeCampaign.id,
-      selectedScenarioId,
-      selectedPresetId,
-      effectiveGender,
-    );
   };
 
   // =========================================================================
@@ -1537,17 +1603,18 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
               <p className="text-center text-sm text-[var(--text-muted)]">사용 가능한 시나리오가 없습니다.</p>
             ) : (
               scenarios.map((scenario) => {
-                // architecture/70: 진행 상태 기반 게이팅 (CURRENT만 진입 가능)
-                const status = scenario.status ?? "CURRENT";
-                const isCurrent = status === "CURRENT";
+                // architecture/71: 자유 선택 — 미완주(AVAILABLE)는 전부 진입 가능
+                const status = scenario.status ?? "AVAILABLE";
+                const isAvailable = status === "AVAILABLE";
                 const isCompleted = status === "COMPLETED";
+                const isInProgress = status === "IN_PROGRESS";
                 return (
                   <button
                     key={scenario.scenarioId}
-                    onClick={() => isCurrent && handleSelectScenario(scenario.scenarioId)}
-                    disabled={!isCurrent || isLoading}
+                    onClick={() => isAvailable && handleSelectScenario(scenario.scenarioId)}
+                    disabled={!isAvailable || isLoading || campaignLoading}
                     className={`flex flex-col gap-2 rounded-lg border p-4 text-left transition-all ${
-                      isCurrent
+                      isAvailable
                         ? "border-[var(--border-primary)] bg-[var(--bg-card)] hover:border-[var(--gold)] hover:bg-[rgba(201,169,98,0.04)]"
                         : "cursor-not-allowed border-[var(--border-primary)] bg-[var(--bg-secondary)] opacity-50"
                     }`}
@@ -1560,13 +1627,13 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                       {isCompleted && (
                         <span className="rounded-full border border-[var(--gold)] px-2 py-0.5 text-xs text-[var(--gold)]">완료</span>
                       )}
-                      {status === "LOCKED" && (
-                        <span className="rounded-full border border-[var(--border-primary)] px-2 py-0.5 text-xs text-[var(--text-muted)]">잠금</span>
+                      {isInProgress && (
+                        <span className="rounded-full border border-[var(--border-primary)] px-2 py-0.5 text-xs text-[var(--text-secondary)]">진행 중</span>
                       )}
                     </div>
                     <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{scenario.description}</p>
-                    {status === "LOCKED" && (
-                      <p className="text-xs text-[var(--text-muted)]">이전 시나리오를 먼저 완료해야 합니다.</p>
+                    {isInProgress && (
+                      <p className="text-xs text-[var(--text-muted)]">진행 중인 여정입니다. 시작 화면의 이어하기로 계속하세요.</p>
                     )}
                     {isCompleted && (
                       <p className="text-xs text-[var(--text-muted)]">완료한 시나리오는 다시 진입할 수 없습니다.</p>
@@ -1581,82 +1648,6 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     );
   }
 
-  // =========================================================================
-  // CAMPAIGN_PRESET
-  // =========================================================================
-  if (screenPhase === "CAMPAIGN_PRESET") {
-    return (
-      <div className="flex h-full flex-col bg-[var(--bg-primary)]">
-        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
-          <button
-            onClick={() => { setScreenPhase("CAMPAIGN_SCENARIO"); setSelectedPresetId(null); setSelectedGenderState(null); }}
-            className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
-          >
-            &larr; 뒤로
-          </button>
-          <h2 className="font-display text-base text-[var(--text-primary)]">용병의 과거를 선택하세요</h2>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-          <div className="mx-auto grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-            {PRESETS.map((preset) => (
-              <PresetCard
-                key={preset.presetId}
-                preset={preset}
-                selected={selectedPresetId === preset.presetId}
-                onSelect={() => handlePresetSelect(preset.presetId)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Gender selection bar for campaign */}
-        <div className="border-t-2 border-[var(--gold)]/30 bg-[var(--bg-card)] px-4 py-3 sm:px-6">
-          <div className="mx-auto flex max-w-3xl items-center gap-3">
-            <span className="shrink-0 text-sm font-bold text-[var(--text-secondary)]">성별 <span className="text-[var(--hp-red)] text-xs">*필수</span></span>
-            <div className="flex flex-1 gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedGenderState("male")}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-all ${
-                  selectedGender === "male"
-                    ? "border-[#60A5FA] bg-[rgba(96,165,250,0.15)] text-[#60A5FA] shadow-[0_0_10px_rgba(96,165,250,0.2)]"
-                    : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[#60A5FA]/50 hover:text-[#60A5FA]/70"
-                }`}
-              >
-                <span className="text-lg">♂</span> 남성
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedGenderState("female")}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-all ${
-                  selectedGender === "female"
-                    ? "border-[#F472B6] bg-[rgba(244,114,182,0.15)] text-[#F472B6] shadow-[0_0_10px_rgba(244,114,182,0.2)]"
-                    : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[#F472B6]/50 hover:text-[#F472B6]/70"
-                }`}
-              >
-                <span className="text-lg">♀</span> 여성
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-[var(--border-primary)] px-4 py-4 sm:px-6">
-          <div className="mx-auto max-w-3xl">
-            <button
-              onClick={handleStartCampaignWithPreset}
-              disabled={!presetStepComplete || isLoading}
-              className="flex h-12 w-full items-center justify-center border border-[var(--gold)] font-display text-lg tracking-[4px] transition-all disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-[var(--gold)] enabled:text-[var(--bg-primary)] enabled:hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
-            >
-              {isLoading ? "불러오는 중..." : "캠페인 시작"}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // =========================================================================
   // =========================================================================
   // SELECT_SCENARIO — 솔로 런 시나리오 선택 (architecture/63 ⑥)
   // =========================================================================
@@ -1727,7 +1718,17 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       <div className="flex h-full flex-col bg-[var(--bg-primary)]">
         <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
           <button
-            onClick={() => { setScreenPhase("TITLE"); setSelectedPresetId(null); setSelectedGenderState(null); resetCreationState(); }}
+            onClick={() => {
+              // architecture/71: 캠페인 생성 흐름이면 시나리오 선택으로 복귀
+              if (campaignCreation) {
+                setCampaignCreation(null);
+                setCreationBundle(null);
+                setScreenPhase("CAMPAIGN_SCENARIO");
+              } else {
+                setScreenPhase("TITLE");
+              }
+              setSelectedPresetId(null); setSelectedGenderState(null); resetCreationState();
+            }}
             className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
           >
             <ChevronLeft size={18} className="inline" /> 뒤로
@@ -2183,7 +2184,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             캐릭터에게 부여할 특성을 하나 선택하세요. 특성은 판정과 게임플레이에 영향을 줍니다.
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {TRAITS.map((trait) => {
+            {availableTraits.map((trait) => {
               const isSelected = selectedTraitId === trait.traitId;
               const IconComp = TRAIT_ICON_MAP[trait.icon];
               return (
@@ -2238,7 +2239,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   // =========================================================================
   if (screenPhase === "CHARACTER_CONFIRM") {
     const preset = selectedPreset;
-    const trait = TRAITS.find((t) => t.traitId === selectedTraitId);
+    const trait = availableTraits.find((t) => t.traitId === selectedTraitId);
     const displayName = characterName.trim() || "이름 없는 용병";
     const displayPortrait = portraitUrl || preset?.portraits?.[effectiveGender];
     const itemsText = preset?.startingItems.map((i) => (i.qty > 1 ? `${i.name} x${i.qty}` : i.name)).join(", ") ?? "";

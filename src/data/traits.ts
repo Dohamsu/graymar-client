@@ -7,6 +7,30 @@ export interface TraitDefinition {
   effectDetails: string[];
 }
 
+/** 서버 creation-bundle의 팩 특성 원형 (architecture/71 §4.2) */
+export interface PackTrait {
+  traitId: string;
+  name: string;
+  icon: string;
+  description: string;
+  effects: Record<string, unknown>;
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  FIGHT: "전투",
+  THREATEN: "위협",
+  SNEAK: "잠입",
+  STEAL: "절도",
+  OBSERVE: "관찰",
+  INVESTIGATE: "조사",
+  SEARCH: "수색",
+  PERSUADE: "설득",
+  BRIBE: "매수",
+  TALK: "대화",
+  TRADE: "거래",
+  HELP: "조력",
+};
+
 export const TRAITS: TraitDefinition[] = [
   {
     traitId: "BATTLE_MEMORY",
@@ -79,3 +103,73 @@ export const TRAITS: TraitDefinition[] = [
     ],
   },
 ];
+
+/**
+ * 팩 특성(effects) → 표시용 TraitDefinition 변환 (architecture/71 §4.3).
+ * graymar 특성은 큐레이션된 TRAITS 사본을 우선 사용하고,
+ * 다른 팩 특성은 effects에서 요약/상세 문구를 파생한다.
+ */
+export function formatPackTrait(t: PackTrait): TraitDefinition {
+  const curated = TRAITS.find((x) => x.traitId === t.traitId);
+  if (curated) return curated;
+
+  const eff = t.effects ?? {};
+  const details: string[] = [];
+  const summaryParts: string[] = [];
+  const num = (v: unknown): number | null =>
+    typeof v === "number" && v !== 0 ? v : null;
+
+  const ab = eff.actionBonuses as Record<string, number> | undefined;
+  if (ab && Object.keys(ab).length > 0) {
+    const parts = Object.entries(ab).map(
+      ([k, v]) => `${ACTION_LABELS[k] ?? k} ${v > 0 ? "+" : ""}${v}`,
+    );
+    details.push(`🎲 ${parts.join(", ")} 주사위 보정`);
+    summaryParts.push(`${parts.join("·")} 주사위`);
+  }
+  const maxHpBonus = num(eff.maxHpBonus);
+  if (maxHpBonus) {
+    details.push(`❤️ 최대 체력 +${maxHpBonus}`);
+    summaryParts.push(`최대 체력 +${maxHpBonus}`);
+  }
+  const maxHpPenalty = num(eff.maxHpPenalty);
+  if (maxHpPenalty) {
+    details.push(`💔 최대 체력 ${maxHpPenalty}`);
+    summaryParts.push(`최대 체력 ${maxHpPenalty}`);
+  }
+  const goldBonus = num(eff.goldBonus);
+  if (goldBonus) {
+    details.push(`💰 시작 골드 +${goldBonus}`);
+    summaryParts.push(`시작 골드 +${goldBonus}`);
+  }
+  const trust = num(eff.globalTrustBonus);
+  if (trust) {
+    details.push(`🤝 모든 NPC 호감도 +${trust}`);
+    summaryParts.push(`NPC 호감도 +${trust}`);
+  }
+  const ftp = num(eff.failToPartialChance);
+  if (ftp) {
+    const pct = ftp > 1 ? ftp : Math.round(ftp * 100);
+    details.push(`🎲 실패의 ${pct}%가 부분 성공으로 전환`);
+  }
+  if (eff.criticalDisabled) details.push("⚠️ 크리티컬이 발동하지 않습니다");
+  if (eff.lowHpBonus) details.push("🔥 체력이 낮을수록 판정 보너스");
+  const heal = num(eff.healingReduction);
+  if (heal) {
+    const pct = heal > 1 ? heal : Math.round(heal * 100);
+    details.push(`💔 치료 효과 ${pct}% 감소`);
+  }
+  const night = num(eff.nightBonus);
+  if (night) details.push(`🌙 밤 판정 +${night}`);
+  const day = num(eff.dayPenalty);
+  if (day) details.push(`☀️ 낮 판정 ${day}`);
+
+  return {
+    traitId: t.traitId,
+    name: t.name,
+    icon: t.icon,
+    description: t.description,
+    effectSummary: summaryParts.slice(0, 2).join(", ") || "특수 효과",
+    effectDetails: details.length > 0 ? details : ["특수 효과"],
+  };
+}

@@ -174,7 +174,18 @@ export const SCENARIO_UI_LABELS: Record<
 > = {
   graymar_v1: { hubName: "그레이마르 거점", fallbackLocation: "그레이마르 항만" },
   silverdeen_v1: { hubName: "실버딘 거점", fallbackLocation: "실버딘 광산 마을" },
+  star_sand_v1: { hubName: "꿈잠 여관", fallbackLocation: "극야해안" },
 };
+
+/**
+ * architecture/71 §4.3 — 프리셋 초상화는 클라 정적 에셋이라 creation-bundle에
+ * 없다. 알려진 presetId만 매핑하고, 미지 프리셋(SS_* 등)은 undefined →
+ * PresetCard가 그라데이션 폴백 렌더.
+ */
+export const PRESET_PORTRAITS: Record<
+  string,
+  { male: string; female: string } | undefined
+> = Object.fromEntries(PRESETS.map((p) => [p.presetId, p.portraits]));
 
 export function scenarioUiLabels(scenarioId: string | null) {
   return SCENARIO_UI_LABELS[scenarioId ?? "graymar_v1"] ?? SCENARIO_UI_LABELS.graymar_v1;
