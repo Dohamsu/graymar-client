@@ -929,13 +929,17 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     } catch {
       /* 조회 실패 → 기본 시나리오로 진행 */
     }
-    if (list.length > 1) {
-      setSoloScenarios(list);
+    // arch/70 델타 1: 신규 캐릭터 생성은 원점(최소 order=1) 시나리오에서만.
+    // 나머지 시나리오는 캠페인에서 캐릭터를 이월해 자유 순서로 진입한다.
+    const originList = list.filter((s) => s.order === 1);
+    const originId = originList[0]?.scenarioId ?? null;
+    if (originList.length > 1) {
+      setSoloScenarios(originList);
       setScreenPhase("SELECT_SCENARIO");
     } else {
-      setSoloScenarioId(null);
+      setSoloScenarioId(originId);
       if (next === "QUICK") {
-        quickStartWith(null);
+        quickStartWith(originId);
       } else {
         setScreenPhase("SELECT_PRESET");
       }
@@ -1069,7 +1073,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   };
 
   // Campaign handlers
-  const _handleEnterCampaign = async () => {
+  const handleEnterCampaign = async () => {
     setCampaignLoading(true);
     setCampaignError(null);
     try {
@@ -1303,7 +1307,17 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                     새 게임
                   </button>
                 </div>
-                {/* 캠페인 버튼 — 시나리오 2+ 준비될 때까지 숨김 */}
+                {/* 캠페인 — 한 캐릭터로 여러 시나리오 (arch/70) */}
+                <div className="w-full max-w-64" style={entryStyle(activeRunInfo ? "0.3s" : "0.2s")}>
+                  <button
+                    onClick={() => void handleEnterCampaign()}
+                    disabled={isLoading || campaignLoading}
+                    className="flex h-14 w-full flex-col items-center justify-center border border-[var(--gold)]/60 bg-transparent font-display text-[var(--gold)] transition-all hover:bg-[var(--gold)] hover:text-[var(--bg-primary)] disabled:opacity-50"
+                  >
+                    <span className="text-lg tracking-[3px]">캠페인</span>
+                    <span className="text-xs opacity-70">한 캐릭터로 여러 시나리오</span>
+                  </button>
+                </div>
                 {onParty && (
                   <div className="w-full max-w-64" style={entryStyle(activeRunInfo ? "0.35s" : "0.25s")}>
                     <button
