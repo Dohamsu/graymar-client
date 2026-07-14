@@ -160,7 +160,7 @@ export interface GameState {
   checkActiveRun: () => Promise<void>;
   resumeRun: () => Promise<void>;
   startNewGame: (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string; scenarioId?: string }) => Promise<void>;
-  startCampaignRun: (campaignId: string, scenarioId: string, presetId: string, gender?: 'male' | 'female') => Promise<void>;
+  startCampaignRun: (campaignId: string, scenarioId: string, presetId?: string, gender?: 'male' | 'female') => Promise<void>;
   submitAction: (text: string) => Promise<void>;
   submitChoice: (choiceId: string) => Promise<void>;
   flushPending: () => void;
@@ -272,7 +272,7 @@ function mapEquipmentBag(
 }
 
 function buildCharacterInfo(
-  presetId: string,
+  presetId: string | undefined,
   gender: 'male' | 'female' = 'male',
   options?: { characterName?: string; portraitUrl?: string; bonusStats?: Record<string, number> },
   // architecture/63 ⑥: 시나리오별 프리셋 표기 (subtitle 등)
@@ -1599,7 +1599,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   // -----------------------------------------------------------------------
   // startCampaignRun
   // -----------------------------------------------------------------------
-  startCampaignRun: async (campaignId: string, scenarioId: string, presetId: string, gender?: 'male' | 'female') => {
+  startCampaignRun: async (campaignId: string, scenarioId: string, presetId?: string, gender?: 'male' | 'female') => {
     set({ phase: 'LOADING', error: null, campaignId });
 
     try {

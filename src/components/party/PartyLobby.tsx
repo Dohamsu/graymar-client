@@ -11,7 +11,7 @@ import { PartyChatInput } from "./PartyChatInput";
 interface PartyMember {
   userId: string;
   nickname: string;
-  presetId: string;
+  presetId: string | null;
   presetLabel: string;
   level: number;
   hp: number;

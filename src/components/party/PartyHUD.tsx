@@ -9,7 +9,7 @@ type TurnStatus = "CHOOSING" | "SUBMITTED" | "AI_ACTING";
 interface PartyHUDMember {
   userId: string;
   nickname: string;
-  presetId: string;
+  presetId: string | null;
   portraitUrl?: string | null;
   hp: number;
   maxHp: number;
@@ -33,7 +33,9 @@ const STATUS_COLOR: Record<TurnStatus, string> = {
   AI_ACTING: "var(--info-blue)",
 };
 
-function defaultPortrait(presetId: string): string {
+function defaultPortrait(presetId: string | null): string {
+  // 이월 캐릭터 등 프리셋이 없으면 제네릭 실루엣(콘텐츠 ID 리터럴 폴백 금지, arch/70)
+  if (!presetId) return "/images/presets/_silhouette.webp";
   return `/images/presets/${presetId.toLowerCase()}.webp`;
 }
 

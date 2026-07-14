@@ -55,7 +55,7 @@ function adaptMembers(
   return members.map((m) => ({
     userId: m.userId,
     nickname: m.nickname,
-    presetId: m.presetId ?? "DOCKWORKER",
+    presetId: m.presetId ?? null,
     presetLabel: m.presetId ?? "",
     level: 1,
     hp: m.hp ?? 0,

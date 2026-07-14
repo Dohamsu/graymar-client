@@ -373,7 +373,7 @@ export default function GameClient() {
             members={partyMembers.map((m) => ({
               userId: m.userId,
               nickname: m.nickname,
-              presetId: m.presetId ?? "DOCKWORKER",
+              presetId: m.presetId ?? null,
               portraitUrl: null,
               hp: m.hp ?? 0,
               maxHp: m.maxHp ?? 0,

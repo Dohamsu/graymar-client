@@ -74,8 +74,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 /** POST /v1/runs — create a new run and return the full run response. */
 export function createRun(
-  presetId: string,
-  gender: 'male' | 'female' = 'male',
+  presetId?: string,
+  gender?: 'male' | 'female',
   options?: {
     campaignId?: string;
     scenarioId?: string;
@@ -85,6 +85,7 @@ export function createRun(
     portraitUrl?: string;
   },
 ) {
+  // presetId/gender가 undefined면 JSON.stringify가 자동 생략 → 이월 캐릭터는 서버가 carryOver 사용
   return request<Record<string, unknown>>('/v1/runs', {
     method: 'POST',
     body: JSON.stringify({ presetId, gender, ...options }),
@@ -303,6 +304,8 @@ export interface ScenarioInfo {
   description: string;
   order: number;
   prerequisites: string[];
+  /** 캠페인 진행 상태 (architecture/70). 솔로 목록(GET /v1/scenarios)에는 없음. */
+  status?: 'COMPLETED' | 'CURRENT' | 'LOCKED';
 }
 
 /** POST /v1/campaigns — create a new campaign. */

@@ -1083,14 +1083,17 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   };
 
   const handleSelectScenario = (scenarioId: string) => {
-    setSelectedScenarioId(scenarioId);
     const scenario = scenarios.find((s) => s.scenarioId === scenarioId);
-    if (scenario && scenario.order === 1) {
+    // 진행 가능한(CURRENT) 시나리오만 선택 (architecture/70 — 되돌아가기/건너뛰기 차단)
+    if (!scenario || (scenario.status && scenario.status !== "CURRENT")) return;
+    setSelectedScenarioId(scenarioId);
+    // 첫 플레이(완료 시나리오 없음) → 캐릭터 생성(프리셋 선택).
+    // 이후 시나리오 → 이월 캐릭터로 프리셋·성별 미전송(서버가 carryOver.identity 사용).
+    const isFirstEver = !scenarios.some((s) => s.status === "COMPLETED");
+    if (isFirstEver) {
       setScreenPhase("CAMPAIGN_PRESET");
-    } else {
-      if (activeCampaign) {
-        startCampaignRun(activeCampaign.id, scenarioId, "DOCKWORKER", "male");
-      }
+    } else if (activeCampaign) {
+      startCampaignRun(activeCampaign.id, scenarioId);
     }
   };
 
@@ -1423,14 +1426,17 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
               <p className="text-center text-sm text-[var(--text-muted)]">사용 가능한 시나리오가 없습니다.</p>
             ) : (
               scenarios.map((scenario) => {
-                const isAvailable = scenario.prerequisites.length === 0;
+                // architecture/70: 진행 상태 기반 게이팅 (CURRENT만 진입 가능)
+                const status = scenario.status ?? "CURRENT";
+                const isCurrent = status === "CURRENT";
+                const isCompleted = status === "COMPLETED";
                 return (
                   <button
                     key={scenario.scenarioId}
-                    onClick={() => isAvailable && handleSelectScenario(scenario.scenarioId)}
-                    disabled={!isAvailable || isLoading}
+                    onClick={() => isCurrent && handleSelectScenario(scenario.scenarioId)}
+                    disabled={!isCurrent || isLoading}
                     className={`flex flex-col gap-2 rounded-lg border p-4 text-left transition-all ${
-                      isAvailable
+                      isCurrent
                         ? "border-[var(--border-primary)] bg-[var(--bg-card)] hover:border-[var(--gold)] hover:bg-[rgba(201,169,98,0.04)]"
                         : "cursor-not-allowed border-[var(--border-primary)] bg-[var(--bg-secondary)] opacity-50"
                     }`}
@@ -1439,11 +1445,20 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                       <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--gold)] font-display text-sm text-[var(--gold)]">
                         {scenario.order}
                       </span>
-                      <h3 className="font-display text-lg text-[var(--text-primary)]">{scenario.name}</h3>
+                      <h3 className="flex-1 font-display text-lg text-[var(--text-primary)]">{scenario.name}</h3>
+                      {isCompleted && (
+                        <span className="rounded-full border border-[var(--gold)] px-2 py-0.5 text-xs text-[var(--gold)]">완료</span>
+                      )}
+                      {status === "LOCKED" && (
+                        <span className="rounded-full border border-[var(--border-primary)] px-2 py-0.5 text-xs text-[var(--text-muted)]">잠금</span>
+                      )}
                     </div>
                     <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{scenario.description}</p>
-                    {!isAvailable && (
-                      <p className="text-xs text-[var(--text-muted)]">선행 시나리오를 먼저 완료해야 합니다.</p>
+                    {status === "LOCKED" && (
+                      <p className="text-xs text-[var(--text-muted)]">이전 시나리오를 먼저 완료해야 합니다.</p>
+                    )}
+                    {isCompleted && (
+                      <p className="text-xs text-[var(--text-muted)]">완료한 시나리오는 다시 진입할 수 없습니다.</p>
                     )}
                   </button>
                 );

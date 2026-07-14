@@ -8,7 +8,7 @@ import Image from "next/image";
 interface PartyMember {
   userId: string;
   nickname: string;
-  presetId: string;
+  presetId: string | null;
   presetLabel: string;
   level: number;
   hp: number;
@@ -25,7 +25,8 @@ interface PartyMemberCardProps {
 }
 
 /** Map preset ID to a default portrait path */
-function defaultPortrait(presetId: string): string {
+function defaultPortrait(presetId: string | null): string {
+  if (!presetId) return "/_silhouette.webp";
   return `/${presetId.toLowerCase()}_m.webp`;
 }
 
