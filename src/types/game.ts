@@ -270,6 +270,14 @@ export interface PlayerGoalUI {
   relatedLocations: string[];
 }
 
+export interface PackMeterUI {
+  id: string;
+  name: string;
+  value: number;
+  max: number;
+  warnAt?: number;
+}
+
 export interface WorldStateUI {
   hubHeat: number;
   hubSafety: 'SAFE' | 'ALERT' | 'DANGER';
@@ -280,6 +288,8 @@ export interface WorldStateUI {
   locationDynamicStates?: Record<string, LocationDynamicStateUI>;
   playerGoals?: PlayerGoalUI[];
   reputation?: Record<string, number>;
+  /** [P2 — 73 B1] 팩 세계축 게이지 (미선언 팩은 빈 배열/부재) */
+  packMeters?: PackMeterUI[];
 }
 
 export type ResolveOutcome = 'SUCCESS' | 'PARTIAL' | 'FAIL';

@@ -6,6 +6,7 @@ import type { PlayerHud, WorldStateUI } from "@/types/game";
 import type { LlmTokenStats } from "@/lib/api-client";
 import { LlmSettingsModal } from "@/components/ui/LlmSettingsModal";
 import { HeatGauge } from "@/components/hub/HeatGauge";
+import { PackMeterGauge } from "@/components/hub/PackMeterGauge";
 import { TimePhaseIndicator } from "@/components/hub/TimePhaseIndicator";
 import { useGameStore } from "@/store/game-store";
 
@@ -87,6 +88,7 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
               <div className="h-4 w-px bg-[var(--border-primary)]" />
               <TimePhaseIndicator timePhase={worldState.timePhase} />
               <HeatGauge worldState={worldState} />
+              <PackMeterGauge meters={worldState.packMeters} />
             </>
           )}
         </div>
