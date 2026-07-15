@@ -51,12 +51,12 @@ export function LocationImage({
     // graceful degradation: 그라디언트 배경만 표시
     // (architecture/63 ⑥ — 이미지 에셋이 없는 시나리오 팩은 imagePath가 null)
     return (
-      <div className="relative h-[140px] w-full shrink-0 bg-gradient-to-b from-[var(--bg-secondary)] to-[var(--bg-primary)] lg:h-[220px]" />
+      <div className="relative h-[180px] w-full shrink-0 bg-gradient-to-b from-[var(--bg-secondary)] to-[var(--bg-primary)] lg:h-[300px]" />
     );
   }
 
   return (
-    <div className="relative h-[140px] w-full shrink-0 overflow-hidden lg:h-[220px]">
+    <div className="relative h-[180px] w-full shrink-0 overflow-hidden lg:h-[300px]">
       {/* 현재 이미지 */}
       <Image
         src={currentSrc}
