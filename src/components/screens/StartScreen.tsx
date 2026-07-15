@@ -1317,6 +1317,17 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         {/* 어두운 오버레이 — 텍스트/메뉴 가독성 확보. 입력 이벤트는 메뉴 버튼에 통과시킨다. */}
         <div className="pointer-events-none absolute inset-0 bg-black/45" aria-hidden />
 
+        {/* 인트로 스킵 — 로고 드로잉 애니메이션 중 화면 아무 곳이나 누르면 즉시 완료.
+            준비되면 언마운트되어 실제 메뉴 버튼 클릭을 막지 않는다. */}
+        {!logoReady && (
+          <button
+            type="button"
+            aria-label="인트로 건너뛰기"
+            onClick={handleLogoReady}
+            className="absolute inset-0 z-20 cursor-default"
+          />
+        )}
+
         <div className="relative z-10 flex flex-col items-center gap-3">
           <DimtaleLogoAnimated width={320} height={128} onReady={handleLogoReady} readyAfterMs={3200} skipAnimation={hasPlayedOpening} />
           <h1 className="sr-only">DimTale</h1>
