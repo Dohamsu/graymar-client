@@ -462,6 +462,7 @@ function EmailInput({
         autoCapitalize="off"
         spellCheck={false}
         required
+        autoFocus
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
@@ -1341,6 +1342,9 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             className="flex w-full flex-col items-center gap-4 px-6 pt-12"
             style={{
               opacity: logoReady ? 1 : 0,
+              // 로고 인트로 애니메이션(logoReady=false) 동안 CTA가 투명해도
+              // 클릭되던 버그 방지: 보이기 전엔 포인터 이벤트 차단
+              pointerEvents: logoReady ? "auto" : "none",
               transition: "opacity 1.2s ease 0.2s",
             }}
           >
@@ -1673,7 +1677,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             &larr; 뒤로
           </button>
           <h2 className="font-display text-base text-[var(--text-primary)]">
-            시나리오 선택 -- {activeCampaign?.name}
+            시나리오 선택 — {activeCampaign?.name}
           </h2>
         </div>
 
@@ -1970,7 +1974,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             onClick={() => setScreenPhase("CHARACTER_NAME")}
             className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
           >
-            {portraitUrl ? "이 초상화로 진행" : "이 초상화로 진행"} <ChevronRight size={18} className="ml-1" />
+            이 초상화로 진행 <ChevronRight size={18} className="ml-1" />
           </button>
         }
       >

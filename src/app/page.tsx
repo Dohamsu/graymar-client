@@ -759,7 +759,7 @@ export default function HomePage() {
             aria-hidden="true"
           />
           <h2
-            className="text-4xl sm:text-5xl md:text-6xl mb-8 sm:mb-12 text-center max-w-2xl px-4"
+            className="text-4xl sm:text-5xl md:text-6xl mb-8 sm:mb-12 text-center max-w-2xl px-4 break-keep"
             style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#e5e2e1" }}
           >
             잿빛 항구의 첫 밤이 열려 있다.
