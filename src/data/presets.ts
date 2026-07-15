@@ -182,10 +182,27 @@ export const SCENARIO_UI_LABELS: Record<
  * 없다. 알려진 presetId만 매핑하고, 미지 프리셋(SS_* 등)은 undefined →
  * PresetCard가 그라데이션 폴백 렌더.
  */
+/**
+ * 시나리오 팩 프리셋 초상화 — 클라 정적 에셋(public/preset-portraits/<pack>/).
+ * content JSON의 presets.portraits는 null이라 presetId로 여기서 매핑한다.
+ */
+const PACK_PRESET_PORTRAITS: Record<string, { male: string; female: string }> = {
+  // star_sand_v1 (극야해안과 별고래의 무덤)
+  SS_DOCKHAND: { male: "/preset-portraits/star_sand_v1/ss_dockhand_m.webp", female: "/preset-portraits/star_sand_v1/ss_dockhand_f.webp" },
+  SS_PILGRIM: { male: "/preset-portraits/star_sand_v1/ss_pilgrim_m.webp", female: "/preset-portraits/star_sand_v1/ss_pilgrim_f.webp" },
+  SS_SMUGGLER: { male: "/preset-portraits/star_sand_v1/ss_smuggler_m.webp", female: "/preset-portraits/star_sand_v1/ss_smuggler_f.webp" },
+  SS_HEALER: { male: "/preset-portraits/star_sand_v1/ss_healer_m.webp", female: "/preset-portraits/star_sand_v1/ss_healer_f.webp" },
+  SS_OBSERVER: { male: "/preset-portraits/star_sand_v1/ss_observer_m.webp", female: "/preset-portraits/star_sand_v1/ss_observer_f.webp" },
+  SS_SURVIVOR: { male: "/preset-portraits/star_sand_v1/ss_survivor_m.webp", female: "/preset-portraits/star_sand_v1/ss_survivor_f.webp" },
+};
+
 export const PRESET_PORTRAITS: Record<
   string,
   { male: string; female: string } | undefined
-> = Object.fromEntries(PRESETS.map((p) => [p.presetId, p.portraits]));
+> = {
+  ...Object.fromEntries(PRESETS.map((p) => [p.presetId, p.portraits])),
+  ...PACK_PRESET_PORTRAITS,
+};
 
 export function scenarioUiLabels(scenarioId: string | null) {
   return SCENARIO_UI_LABELS[scenarioId ?? "graymar_v1"] ?? SCENARIO_UI_LABELS.graymar_v1;
