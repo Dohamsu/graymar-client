@@ -175,6 +175,7 @@ export const SCENARIO_UI_LABELS: Record<
   graymar_v1: { hubName: "그레이마르 거점", fallbackLocation: "그레이마르 항만" },
   silverdeen_v1: { hubName: "실버딘 거점", fallbackLocation: "실버딘 광산 마을" },
   star_sand_v1: { hubName: "꿈잠 여관", fallbackLocation: "극야해안" },
+  karnholt_v1: { hubName: "무너진 곡괭이", fallbackLocation: "카른홀트" },
 };
 
 /**
