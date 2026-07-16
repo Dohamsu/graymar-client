@@ -997,6 +997,18 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
     );
   }
 
+  // [D2-a — arch/76] FREE 자유 행동 → 주사위 스킵 안내 (판정 투명성)
+  if (message.type === "RESOLVE" && message.resolveSkipped) {
+    return (
+      <div className="flex items-center justify-center py-2">
+        <span className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+          <span role="img" aria-label="check">✓</span>
+          일상 행동 — 판정 불필요
+        </span>
+      </div>
+    );
+  }
+
   const labelColor = LABEL_COLORS[message.type] ?? "var(--text-muted)";
   const isPlayer = message.type === "PLAYER";
   const isNarrator = message.type === "NARRATOR";

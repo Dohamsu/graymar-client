@@ -178,6 +178,14 @@ export function mapResultToMessages(
       resolveOutcome: result.ui.resolveOutcome as StoryMessage['resolveOutcome'],
       resolveBreakdown: result.ui.resolveBreakdown ?? undefined,
     });
+  } else if (result.ui?.resolveSkipped) {
+    // [D2-a — arch/76] FREE 자유 행동 → 주사위 스킵 안내 (판정 투명성)
+    messages.push({
+      id: `resolve-skip-${result.turnNo}`,
+      type: 'RESOLVE',
+      text: '',
+      resolveSkipped: true,
+    });
   }
 
   // 3. Narrator summary (장면 묘사 — 시스템 이벤트 후)

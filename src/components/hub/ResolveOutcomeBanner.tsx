@@ -83,7 +83,7 @@ export function ResolveOutcomeInline({
             </span>
           </div>
           {showBreakdown && breakdown && (
-            <BreakdownFormula breakdown={breakdown} />
+            <BreakdownFormula breakdown={breakdown} outcome={outcome} />
           )}
         </>
       )}
@@ -92,13 +92,29 @@ export function ResolveOutcomeInline({
 }
 
 /** 주사위 분해 공식 — 묶음별 순차 fade-in */
-function BreakdownFormula({ breakdown }: { breakdown: ResolveBreakdown }) {
-  const { diceRoll, statKey, statBonus, baseMod, totalScore, traitBonus, gamblerLuckTriggered } = breakdown;
+function BreakdownFormula({
+  breakdown,
+  outcome,
+}: {
+  breakdown: ResolveBreakdown;
+  outcome: ResolveOutcome;
+}) {
+  const {
+    diceRoll,
+    statKey,
+    statBonus,
+    baseMod,
+    totalScore,
+    traitBonus,
+    gamblerLuckTriggered,
+    modifiers,
+    successThreshold,
+  } = breakdown;
   const statLabel = statKey ? (STAT_KOREAN_NAMES[statKey] ?? STAT_KEY_TO_LABEL[statKey] ?? statKey) : null;
   const statColorKey = statKey ? (STAT_KEY_TO_LABEL[statKey] ?? statKey.toUpperCase()) : null;
   const statColor = statColorKey ? (STAT_COLORS[statColorKey] ?? "var(--text-secondary)") : null;
 
-  // 표시할 묶음 구성 (순서: 스탯 → 주사위 → 보정 → 특성 → 도박꾼 → 합계)
+  // 표시할 묶음 구성 (순서: 스탯 → 주사위 → 보정(분해) → 특성 → 도박꾼 → 합계)
   const chunks: Array<{ key: string; node: React.ReactNode }> = [];
 
   if (statLabel) {
@@ -124,7 +140,24 @@ function BreakdownFormula({ breakdown }: { breakdown: ResolveBreakdown }) {
     ),
   });
 
-  if (baseMod != null && baseMod !== 0) {
+  // [D2-b — arch/76] 보정치 출처 분해: modifiers가 있으면 항목별로, 없으면 합산 fallback.
+  if (modifiers && modifiers.length > 0) {
+    for (const mod of modifiers) {
+      chunks.push({
+        key: `mod-${mod.label}`,
+        node: (
+          <span className="flex items-center gap-0.5">
+            <span
+              className="font-semibold"
+              style={{ color: mod.value > 0 ? "var(--success-green)" : "var(--hp-red)" }}
+            >
+              {mod.label} {mod.value > 0 ? `+${mod.value}` : mod.value}
+            </span>
+          </span>
+        ),
+      });
+    }
+  } else if (baseMod != null && baseMod !== 0) {
     chunks.push({
       key: 'mod',
       node: (
@@ -180,17 +213,30 @@ function BreakdownFormula({ breakdown }: { breakdown: ResolveBreakdown }) {
     return () => clearTimeout(timer);
   }, [visibleCount, chunks.length]);
 
+  // [D2-c — arch/76] FAIL 턴에 부족분 표시 — "필요 N · 부족 M". 모든 묶음 공개 후 노출.
+  const allShown = visibleCount >= chunks.length;
+  const showShortfall =
+    outcome === "FAIL" && successThreshold != null && totalScore < successThreshold;
+  const shortfall = successThreshold != null ? successThreshold - totalScore : 0;
+
   return (
-    <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
-      {chunks.slice(0, visibleCount).map((chunk, i) => (
-        <span
-          key={chunk.key}
-          className="animate-[fadeIn_0.3s_ease-out]"
-          style={{ animationDelay: `${i * 0.05}s` }}
-        >
-          {chunk.node}
-        </span>
-      ))}
+    <div className="flex flex-col items-center gap-0.5">
+      <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+        {chunks.slice(0, visibleCount).map((chunk, i) => (
+          <span
+            key={chunk.key}
+            className="animate-[fadeIn_0.3s_ease-out]"
+            style={{ animationDelay: `${i * 0.05}s` }}
+          >
+            {chunk.node}
+          </span>
+        ))}
+      </div>
+      {allShown && showShortfall && (
+        <div className="text-[11px] text-[var(--hp-red)] animate-[fadeIn_0.3s_ease-out]">
+          성공 필요 {successThreshold} · {shortfall}만큼 부족
+        </div>
+      )}
     </div>
   );
 }

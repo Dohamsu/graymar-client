@@ -7,6 +7,8 @@ export interface StoryMessage {
   selectedChoiceId?: string;
   resolveOutcome?: ResolveOutcome;
   resolveBreakdown?: ResolveBreakdown;
+  /** [D2-a — arch/76] FREE 자유 행동으로 주사위를 스킵한 턴 (판정 불필요 안내) */
+  resolveSkipped?: boolean;
   /** 이벤트 태그 (POSTURE_CHANGE 등 특수 스타일링용) */
   tags?: string[];
   /** 장소 진입 시 표시할 이미지 경로 */
@@ -200,6 +202,8 @@ export interface ServerResultV1 {
     worldState?: WorldStateUI;
     resolveOutcome?: 'SUCCESS' | 'PARTIAL' | 'FAIL';
     resolveBreakdown?: ResolveBreakdown;
+    // [D2-a — arch/76] FREE 자유 행동으로 주사위 스킵한 턴
+    resolveSkipped?: boolean;
     // Notification System 확장
     notifications?: GameNotification[];
     pinnedAlerts?: GameNotification[];
@@ -303,6 +307,10 @@ export interface ResolveBreakdown {
   totalScore: number;
   traitBonus?: number;
   gamblerLuckTriggered?: boolean;
+  // [D2 — arch/76] 판정 투명성: 보정치 출처 분해 + 임계값
+  modifiers?: Array<{ label: string; value: number }>;
+  successThreshold?: number;
+  partialThreshold?: number;
 }
 
 // --- Quest / Arc UI Types ---
