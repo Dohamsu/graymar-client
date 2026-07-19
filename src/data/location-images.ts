@@ -11,6 +11,8 @@
  * 1. 정확한 키 매칭 → 2. 같은 장소 + 시간대, SAFE 디그레이드 → 3. 같은 장소의 DAY_SAFE
  */
 
+import karnholtAssets from './pack-assets/karnholt_v1.json';
+
 type TimeNorm = 'DAY' | 'NIGHT';
 type Safety = 'SAFE' | 'ALERT' | 'DANGER';
 
@@ -106,6 +108,47 @@ function packFor(locationId: string | null | undefined): PackImages {
   return GRAYMAR_IMAGES;
 }
 
+// arch/80: 팩 에셋 풀 — 매니페스트(sync_pack_assets.py 산출) 기반 장소 이미지.
+// 소유자가 content/<pack>/assets/locations/ 에 이미지를 넣으면 파일명 키워드가
+// locationId 토큰과 매칭된다 (day/night 키워드는 시간대 필터). 동률은 locationId
+// 해시 결정론 — 같은 장소는 항상 같은 이미지. 풀이 비면 null (이미지 생략 —
+// 타 팩 이미지 fallback 금지, 세계관 오염 방지).
+interface PoolEntry {
+  url: string;
+  keywords?: string[];
+}
+
+function poolLocationImage(
+  entries: PoolEntry[],
+  locationId: string,
+  time: TimeNorm,
+): string | null {
+  if (entries.length === 0) return null;
+  const idLow = locationId.toLowerCase();
+  const scored = entries
+    .map((e) => {
+      let s = 0;
+      for (const raw of e.keywords ?? []) {
+        const k = raw.toLowerCase();
+        if (k === 'day' || k === 'night') {
+          s += k === time.toLowerCase() ? 1 : -5;
+          continue;
+        }
+        if (idLow.includes(k)) s += 2;
+      }
+      return { url: e.url, s };
+    })
+    .filter((x) => x.s >= 0);
+  if (scored.length === 0) return null;
+  const best = Math.max(...scored.map((x) => x.s));
+  const top = scored.filter((x) => x.s === best);
+  let h = 5381;
+  for (let i = 0; i < locationId.length; i++) {
+    h = ((h << 5) + h + locationId.charCodeAt(i)) >>> 0;
+  }
+  return top[h % top.length]!.url;
+}
+
 function normalizeTime(phaseV2?: string, timePhase?: string): TimeNorm {
   if (phaseV2) {
     return phaseV2 === 'DAWN' || phaseV2 === 'DAY' ? 'DAY' : 'NIGHT';
@@ -120,6 +163,15 @@ export function getLocationImagePath(
   hubSafety?: string,
   phaseV2?: string,
 ): string | null {
+  // arch/80: 카른홀트는 에셋 풀 매니페스트로 해석 (정적 imageMap 없음)
+  if (locationId && locationId.startsWith('LOC_KH_')) {
+    return poolLocationImage(
+      (karnholtAssets.locations ?? []) as PoolEntry[],
+      locationId,
+      normalizeTime(phaseV2, timePhase),
+    );
+  }
+
   const pack = packFor(locationId);
 
   // HUB (locationId 없음)
@@ -151,6 +203,9 @@ const SCENARIO_BANNERS: Record<string, string | null> = {
   graymar_v1: '/locations/graymar_overview.webp',
   silverdeen_v1: null,
   star_sand_v1: '/locations/star_sand_v1/winter_harbor_ghost_whale.webp',
+  // arch/80: 카른홀트는 에셋 풀 첫 장소 이미지를 배너로 (풀 비면 그라데이션 fallback)
+  karnholt_v1:
+    ((karnholtAssets.locations ?? []) as PoolEntry[])[0]?.url ?? null,
 };
 
 export function getScenarioBannerImage(scenarioId: string): string | null {
