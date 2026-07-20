@@ -86,7 +86,11 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
           {worldState && (
             <>
               <div className="h-4 w-px bg-[var(--border-primary)]" />
-              <TimePhaseIndicator timePhase={worldState.timePhase} />
+              <TimePhaseIndicator
+                timePhase={worldState.timePhase}
+                phaseV2={worldState.phaseV2}
+                day={worldState.day}
+              />
               <HeatGauge worldState={worldState} />
               <PackMeterGauge meters={worldState.packMeters} />
             </>
@@ -173,7 +177,13 @@ function MobileStatusRow({ hud, worldState }: { hud: PlayerHud; worldState?: Wor
           {(hud.gold ?? 0).toLocaleString()}
         </span>
       </div>
-      {worldState && <TimePhaseIndicator timePhase={worldState.timePhase} />}
+      {worldState && (
+        <TimePhaseIndicator
+          timePhase={worldState.timePhase}
+          phaseV2={worldState.phaseV2}
+          day={worldState.day}
+        />
+      )}
     </div>
   );
 }

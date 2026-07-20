@@ -354,7 +354,9 @@ export default function GameClient() {
       {/* Error banner */}
       <ErrorBanner />
       {/* 시간대 전환 알림 */}
-      {worldState && <TimePhaseTransition timePhase={worldState.timePhase} />}
+      {worldState && (
+        <TimePhaseTransition timePhase={worldState.timePhase} phaseV2={worldState.phaseV2} />
+      )}
       {/* LLM failure modal */}
       <LlmFailureModal />
       {/* 그레이마르 호외 — 새 시그널 알림 */}
