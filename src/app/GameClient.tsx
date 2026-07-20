@@ -227,6 +227,7 @@ export default function GameClient() {
                 style={{ animationDelay: `${i * 150}ms` }}
               >
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--gold)]/40 bg-[var(--bg-secondary)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- 64px 로컬 webp + onError 폴백, next/image 이득 없음 */}
                   <img
                     src={`/images/presets/${(m.presetId ?? "dockworker").toLowerCase()}.webp`}
                     alt={m.nickname}

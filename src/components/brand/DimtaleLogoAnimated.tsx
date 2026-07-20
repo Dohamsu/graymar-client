@@ -42,6 +42,7 @@ export function DimtaleLogoAnimated({
   }, [onReady, readyAfterMs, skipAnimation]);
 
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- 로컬 SVG는 next/image 최적화 대상 아님
     <img
       src={skipAnimation ? "/brand/dimtale-logo-gold.svg" : "/brand/dimtale-logo-v2.svg"}
       width={width}

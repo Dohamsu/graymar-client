@@ -58,6 +58,7 @@ export default function InstallPrompt() {
       <div className="rounded-xl border border-[var(--gold)]/20 bg-[var(--bg-secondary)] p-4 shadow-lg shadow-black/40">
         <div className="mb-3 flex items-start justify-between">
           <div className="flex items-center gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element -- 40px PWA 아이콘, next/image 이득 없음 */}
             <img
               src="/icon-192.png"
               alt="DimTale"
