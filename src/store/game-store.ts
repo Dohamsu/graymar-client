@@ -475,6 +475,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           id: c.id,
           label: c.label,
           affordance: c.action?.payload?.affordance as string | undefined,
+          hint: c.hint,
         }));
       }
 
@@ -590,6 +591,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           id: c.id,
           label: c.label,
           affordance: c.action?.payload?.affordance as string | undefined,
+          hint: c.hint,
         }));
       }
 
@@ -718,6 +720,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           id: c.id,
           label: c.label,
           affordance: c.action?.payload?.affordance as string | undefined,
+          hint: c.hint,
         }));
       }
 

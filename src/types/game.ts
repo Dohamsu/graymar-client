@@ -45,6 +45,8 @@ export interface Choice {
   affordance?: string;
   /** 예상 판정 보정치 (matchPolicy + friction + preset bonus + riskLevel) */
   modifier?: number;
+  /** 선택지 보조 설명 (HUB 이동 선택지의 hubHint 등) — 라벨 아래 병기 */
+  hint?: string;
 }
 
 export interface PlayerHud {

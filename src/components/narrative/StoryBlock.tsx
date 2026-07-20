@@ -636,6 +636,11 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
                       {choice.modifier > 0 ? `+${choice.modifier}` : choice.modifier}
                     </span>
                   )}
+                  {choice.hint && (
+                    <span className="mt-0.5 block text-xs font-normal leading-snug text-[var(--text-muted)]">
+                      {choice.hint}
+                    </span>
+                  )}
                 </button>
                 );
               })}

@@ -215,6 +215,7 @@ export function mapResultToMessages(
       label: c.label,
       affordance: c.action?.payload?.affordance as string | undefined,
       modifier: c.modifier,
+      hint: c.hint,
     }));
 
     messages.push({
