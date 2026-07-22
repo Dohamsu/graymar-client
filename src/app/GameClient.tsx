@@ -164,20 +164,20 @@ export default function GameClient() {
     }
   }, [phase]);
 
-  // --- Party dungeon countdown → game load ---
-  const checkActiveRun = useGameStore((s) => s.checkActiveRun);
-  const resumeRun = useGameStore((s) => s.resumeRun);
+  // --- Party dungeon countdown → game load (arch/84) ---
+  // 리더/멤버 공통으로 파티 경로(getPartyRunState)로 로드한다. 멤버는 리더 소유
+  // 런을 솔로 getRun/resumeRun으로 못 읽으므로 resumePartyRun을 사용.
+  const resumePartyRun = useGameStore((s) => s.resumePartyRun);
   const loadGameRef = useRef(false);
   useEffect(() => {
-    if (dungeonCountdown === 0 && partyRunId && !loadGameRef.current) {
+    if (dungeonCountdown === 0 && partyRunId && partyInfo && !loadGameRef.current) {
       loadGameRef.current = true;
-      // 파티 런 시작 — checkActiveRun(런 감지) → resumeRun(게임 로드)
-      void (async () => {
-        await checkActiveRun();
-        await resumeRun();
-      })();
+      void resumePartyRun(partyInfo.id, partyRunId);
+    } else if (!partyRunId) {
+      // 던전 종료 → 가드 리셋(다음 던전 재진입 허용)
+      loadGameRef.current = false;
     }
-  }, [dungeonCountdown, partyRunId, checkActiveRun, resumeRun]);
+  }, [dungeonCountdown, partyRunId, partyInfo, resumePartyRun]);
 
   // --- 스플래시 페이드아웃 관리 ---
   const [splashExiting, setSplashExiting] = useState(false);

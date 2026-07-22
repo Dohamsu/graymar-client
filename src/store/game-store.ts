@@ -26,9 +26,10 @@ import type {
   EndingSummary,
   EndingSummaryCard,
 } from '@/types/game';
-import { createRun, getActiveRun, getRun, abortRun as apiAbortRun, submitTurn, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, equipItem as apiEquipItem, unequipItem as apiUnequipItem, useItem as apiUseItem, getEndings, getEndingDetail, type LlmTokenStats } from '@/lib/api-client';
+import { createRun, getActiveRun, getRun, abortRun as apiAbortRun, submitTurn, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, equipItem as apiEquipItem, unequipItem as apiUnequipItem, useItem as apiUseItem, getEndings, getEndingDetail, submitPartyAction as apiSubmitPartyAction, getPartyRunState, type LlmTokenStats } from '@/lib/api-client';
+import { usePartyStore } from '@/store/party-store';
 import { useAuthStore } from '@/store/auth-store';
-import { mapResultToMessages, mapTurnHistoryToMessages, stripNarratorChoices, type TurnHistoryItem } from '@/lib/result-mapper';
+import { mapResultToMessages } from '@/lib/result-mapper';
 import { ApiError } from '@/lib/api-errors';
 import { type StreamOutput } from '@/lib/stream-parser';
 import { uiLog } from '@/lib/ui-logger';
@@ -51,6 +52,8 @@ export interface GameState {
     | 'ENDINGS_LIST'
     | 'ENDINGS_DETAIL';
   runId: string | null;
+  /** 파티 던전 컨텍스트 (arch/84) — 세팅되면 턴 제출을 파티 엔드포인트로 라우팅. */
+  partyContext: { partyId: string; partyRunId: string } | null;
   currentNodeType: string | null;
   currentNodeIndex: number;
   currentTurnNo: number;
@@ -157,6 +160,10 @@ export interface GameState {
   // actions
   checkActiveRun: () => Promise<void>;
   resumeRun: () => Promise<void>;
+  /** 파티 던전 진입/재접속 — 리더 소유 런 상태를 파티 경로로 복원 (arch/84). */
+  resumePartyRun: (partyId: string, partyRunId: string) => Promise<void>;
+  /** 파티 통합 판정 결과(dungeon:turn_resolved) 반영 (arch/84). */
+  applyPartyTurnResult: (payload: { turnNo: number; serverResult: unknown; llmStatus?: string }) => void;
   abortActiveRun: () => Promise<void>;
   startNewGame: (presetId: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string; scenarioId?: string }) => Promise<void>;
   startCampaignRun: (campaignId: string, scenarioId: string, presetId?: string, gender?: 'male' | 'female', options?: { characterName?: string; bonusStats?: Record<string, number>; traitId?: string; portraitUrl?: string }) => Promise<void>;
@@ -207,13 +214,44 @@ import {
   flushNarrator,
   requestNarrative,
   processTurnResponse,
+  applyRunSnapshot,
+  applyPartyTurnResult as applyPartyTurnResultHelper,
   type RunStateSnapshot,
 } from './game-store.helpers';
+import type { PartyActionResponse } from '@/lib/api-client';
+
+// arch/84 — 파티 엔드포인트 응답 케이스 처리. 화면 갱신은 dungeon:turn_resolved
+// SSE(applyPartyTurnResult)가 담당하므로, 여기서는 투표/거부/대기 상태만 관리한다.
+// isSubmitting은 SSE 도착 시 해제되므로 대기 케이스에서는 유지(중복 제출·입력 잠금).
+function handlePartyActionResponse(
+  resp: PartyActionResponse,
+  set: (partial: Partial<GameState>) => void,
+): void {
+  if (resp.voteCreated) {
+    if (resp.vote) usePartyStore.setState({ currentVote: resp.vote });
+    set({ isSubmitting: false });
+    return;
+  }
+  if (resp.leaderOnly) {
+    set({
+      isSubmitting: false,
+      error: resp.message ?? '이 행동은 파티 리더만 진행할 수 있습니다.',
+    });
+    return;
+  }
+  // leaderChoice / allSubmitted / accepted(대기) — SSE 대기 (isSubmitting 유지).
+}
+
+/** 파티 던전 행동 제출 idempotencyKey 생성. */
+function partyIdemKey(runId: string): string {
+  return `${runId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 export const useGameStore = create<GameState>((set, get) => ({
   // --- initial state ---
   phase: 'TITLE',
   runId: null,
+  partyContext: null,
   currentNodeType: null,
   currentNodeIndex: 0,
   currentTurnNo: 1,
@@ -407,164 +445,51 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     try {
       const data = (await getRun(activeRunInfo.runId, { turnsLimit: 50 })) as Record<string, unknown>;
-      const run = data.run as Record<string, unknown>;
-      const runId = run.id as string;
-      set({ scenarioId: (run.scenarioId as string | undefined) ?? null });
-      const currentNode = data.currentNode as Record<string, unknown> | undefined;
-      const lastResult = data.lastResult as ServerResultV1 | undefined;
-      const battleState = data.battleState as unknown | undefined;
-      const runState = data.runState as
-        | RunStateSnapshot
-        | undefined;
-      const turnsArr = data.turns as TurnHistoryItem[] | undefined;
-
-      // HUD 복원
-      const hud: PlayerHud = runState
-        ? {
-            hp: runState.hp,
-            maxHp: runState.maxHp,
-            stamina: runState.stamina,
-            maxStamina: runState.maxStamina,
-            gold: runState.gold,
-          }
-        : { ...INITIAL_HUD };
-
-      const restoredInventory: InventoryItem[] = (runState?.inventory ?? []).map((i) => ({
-        itemId: i.itemId,
-        qty: i.qty,
-      }));
-
-      // ── 대화 이력 복원 ──
-      let restoredMessages: StoryMessage[] = [];
-      let restoredChoices: Choice[] = [];
-
-      // 서버는 newest-first → 시간순으로 뒤집기
-      const chronological = turnsArr && turnsArr.length > 0 ? [...turnsArr].reverse() : [];
-
-      if (chronological.length > 1) {
-        // 마지막 턴 제외한 과거 턴으로 이력 구성
-        const pastTurns = chronological.slice(0, -1);
-        restoredMessages = mapTurnHistoryToMessages(pastTurns);
-      }
-
-      // 마지막 턴: 기존 lastResult 기반 복원 유지
-      if (lastResult) {
-        const lastTurnMessages = mapResultToMessages(lastResult);
-        const lastTurn = chronological.length > 0 ? chronological[chronological.length - 1] : undefined;
-
-        // 마지막 턴의 플레이어 입력도 복원 (mapResultToMessages는 서버 결과만 포함)
-        if (lastTurn) {
-          if (lastTurn.inputType === 'ACTION' && lastTurn.rawInput) {
-            restoredMessages.push({
-              id: `history-player-${lastTurn.turnNo}`,
-              type: 'PLAYER',
-              text: lastTurn.rawInput,
-            });
-          } else if (lastTurn.inputType === 'CHOICE' && lastTurn.rawInput) {
-            const prevTurn = chronological.length > 1 ? chronological[chronological.length - 2] : undefined;
-            const prevChoices = prevTurn?.choices ?? [];
-            const label = prevChoices.find((c: { id: string; label: string }) => c.id === lastTurn.rawInput)?.label ?? lastTurn.rawInput;
-            restoredMessages.push({
-              id: `history-player-${lastTurn.turnNo}`,
-              type: 'PLAYER',
-              text: label,
-            });
-          }
-        }
-
-        // LLM 내러티브 교체 (선택지 잔여물 제거)
-        // DONE이 아닌 마지막 턴(턴 0 프롤로그 SKIPPED, LLM FAILED 등)은
-        // 과거 턴 복원(mapTurnHistoryToMessages)과 동일하게 summary.display로 fallback —
-        // 비워두면 빈 내레이터 블록으로 복원되는 회귀가 있었다.
-        const finalLastMessages = lastTurn?.llmOutput && lastTurn.llmStatus === 'DONE'
-          ? lastTurnMessages.map((msg) =>
-              msg.type === 'NARRATOR' ? { ...msg, text: stripNarratorChoices(lastTurn.llmOutput!), loading: false } : msg,
-            )
-          : lastTurnMessages.map((msg) =>
-              msg.type === 'NARRATOR'
-                ? {
-                    ...msg,
-                    text:
-                      msg.text ||
-                      stripNarratorChoices(
-                        lastResult.summary?.display || lastResult.summary?.short || '',
-                      ),
-                    loading: false,
-                  }
-                : msg,
-            );
-
-        restoredMessages = [...restoredMessages, ...finalLastMessages];
-        restoredChoices = (lastResult.choices ?? []).map((c) => ({
-          id: c.id,
-          label: c.label,
-          affordance: c.action?.payload?.affordance as string | undefined,
-          hint: c.hint,
-        }));
-      }
-
-      const nodeType = (currentNode?.nodeType as string) ?? null;
-      const resumePhase = derivePhase(nodeType);
-      const resumeWs = lastResult?.ui?.worldState as import('@/types/game').WorldStateUI | undefined;
-
-      // Quest / Arc State 복원 (runState에서 추출)
-      const rsAny = runState as Record<string, unknown> | undefined;
-      const wsObj = (rsAny?.worldState ?? {}) as Record<string, unknown>;
-
-      set({
-        phase: resumePhase,
-        runId,
-        currentNodeType: nodeType,
-        currentNodeIndex: (currentNode?.nodeIndex as number) ?? 0,
-        currentTurnNo: (run.currentTurnNo as number) + 1,
-        hud,
-        inventory: restoredInventory,
-        battleState: battleState ?? null,
-        messages: restoredMessages,
-        pendingMessages: [],
-        choices: restoredChoices,
-        pendingChoices: [],
-        isSubmitting: false,
-        activeRunInfo: null,
-        characterInfo: {
-          ...buildCharacterInfo(
-            (run.presetId as string) ?? activeRunInfo.presetId,
-            ((run.gender as string) ?? activeRunInfo.gender ?? 'male') as 'male' | 'female',
-            {
-              characterName: (runState as Record<string, unknown>)?.characterName as string | undefined,
-              portraitUrl: (runState as Record<string, unknown>)?.portraitUrl as string | undefined,
-            },
-            (run.scenarioId as string | undefined) ?? null,
-            (data.stats as Record<string, number> | null | undefined) ?? undefined,
-          ),
-          equipment: mapEquippedToDisplay(runState?.equipped),
-        },
-        equipmentBag: mapEquipmentBag(runState?.equipmentBag),
-        setDefinitions: (data.setDefinitions as GameState['setDefinitions']) ?? [],
-        worldState: resumeWs ?? null,
-        resolveOutcome: null,
-        locationName: null,
-        // Quest / Arc State
-        arcState: (rsAny?.arcState as ArcStateUI) ?? null,
-        narrativeMarks: (wsObj?.narrativeMarks as NarrativeMarkUI[]) ?? [],
-        mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
-        playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
-        day: (wsObj?.day as number) ?? 1,
-        playerGoals: (wsObj?.playerGoals as PlayerGoalUI[]) ?? (resumeWs?.playerGoals ?? []),
-        locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (resumeWs?.locationDynamicStates ?? {}),
-        // NPC 도감 복원 — 서버가 runState.npcStates에서 조립해 내려줌
-        npcEmotional: (data.npcEmotional as import('@/types/game').NpcEmotionalUI[] | undefined) ?? [],
-        // 상점 진열 복원 — 마지막 턴 ui 번들 기준 (현 장소 종속)
-        shops: ((lastResult?.ui as Record<string, unknown> | undefined)?.shops as import('@/types/game').ShopDisplayUI[] | undefined) ?? [],
-      });
-      // 기존 씬 이미지 복원
-      get().fetchSceneImageStatus();
+      applyRunSnapshot(
+        data,
+        { presetId: activeRunInfo.presetId, gender: activeRunInfo.gender },
+        {},
+        get,
+        set,
+      );
     } catch (err) {
       set({
         phase: 'ERROR',
         error: extractErrorMessage(err),
       });
     }
+  },
+
+  // -----------------------------------------------------------------------
+  // resumePartyRun (arch/84) — 파티 던전 진입/재접속. 멤버는 리더 소유 런을
+  // 솔로 getRun으로 못 읽어 파티 경로(getPartyRunState)로 복원한다.
+  // -----------------------------------------------------------------------
+  resumePartyRun: async (partyId: string, partyRunId: string) => {
+    set({ phase: 'LOADING', error: null });
+    try {
+      const data = (await getPartyRunState(partyId, partyRunId, {
+        turnsLimit: 50,
+      })) as Record<string, unknown>;
+      applyRunSnapshot(data, null, { partyContext: { partyId, partyRunId } }, get, set);
+    } catch (err) {
+      set({ phase: 'ERROR', error: extractErrorMessage(err) });
+    }
+  },
+
+  // -----------------------------------------------------------------------
+  // applyPartyTurnResult (arch/84) — dungeon:turn_resolved SSE 반영.
+  // party-store 핸들러에서 호출 (단방향 store 참조).
+  // -----------------------------------------------------------------------
+  applyPartyTurnResult: (payload) => {
+    const { partyContext } = get();
+    if (!partyContext) return;
+    applyPartyTurnResultHelper(
+      partyContext.partyId,
+      partyContext.partyRunId,
+      payload,
+      get,
+      set,
+    );
   },
 
   // -----------------------------------------------------------------------
@@ -859,6 +784,24 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
     set({ messages: [...get().messages, playerMsg] });
 
+    // arch/84 — 파티 던전이면 파티 엔드포인트로 라우팅 (리더/멤버 공통).
+    const partyCtx = get().partyContext;
+    if (partyCtx) {
+      try {
+        const resp = await apiSubmitPartyAction(
+          partyCtx.partyId,
+          partyCtx.partyRunId,
+          'ACTION',
+          text,
+          partyIdemKey(partyCtx.partyRunId),
+        );
+        handlePartyActionResponse(resp, set);
+      } catch (err) {
+        set({ isSubmitting: false, error: extractErrorMessage(err) });
+      }
+      return;
+    }
+
     try {
       const { currentNodeType } = get();
       const turnRes = await submitTurn(runId, {
@@ -931,6 +874,25 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     set({ isSubmitting: true, error: null, choices: [], messages: updatedMessages });
+
+    // arch/84 — 파티 던전이면 파티 엔드포인트로 라우팅. CHOICE는 rawInput에
+    // choiceId 문자열을 넣는다(서버가 inputType==='CHOICE'로 구분, go_ 접두 검사).
+    const partyCtx = get().partyContext;
+    if (partyCtx) {
+      try {
+        const resp = await apiSubmitPartyAction(
+          partyCtx.partyId,
+          partyCtx.partyRunId,
+          'CHOICE',
+          choiceId,
+          partyIdemKey(partyCtx.partyRunId),
+        );
+        handlePartyActionResponse(resp, set);
+      } catch (err) {
+        set({ isSubmitting: false, error: extractErrorMessage(err) });
+      }
+      return;
+    }
 
     try {
       const { currentNodeType } = get();
@@ -1183,6 +1145,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       phase: 'TITLE',
       runId: null,
+      partyContext: null,
       currentNodeType: null,
       currentNodeIndex: 0,
       currentTurnNo: 1,

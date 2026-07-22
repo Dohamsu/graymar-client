@@ -664,7 +664,24 @@ export function inviteToRun(partyId: string) {
   );
 }
 
-/** POST /v1/parties/:partyId/runs/:runId/turns — submit party action. */
+/** POST /v1/parties/:partyId/runs/:runId/turns — submit party action (arch/84). */
+export interface PartyActionResponse {
+  accepted: boolean;
+  /** 전원 제출 완료 (일반 LOCATION 턴) — 결과는 dungeon:turn_resolved SSE로 옴. */
+  allSubmitted?: boolean;
+  actions?: Array<{ userId: string; rawInput: string; isAutoAction?: boolean }>;
+  /** go_ HUB CHOICE → 이동 투표 생성. */
+  voteCreated?: boolean;
+  vote?: PartyVoteDTO;
+  /** 화이트리스트 HUB CHOICE(accept_quest 등) → 리더 대표 통과 응답. */
+  leaderChoice?: boolean;
+  serverResult?: unknown;
+  llmStatus?: string;
+  /** 멤버가 리더 전용 HUB CHOICE를 시도 — 안내만. */
+  leaderOnly?: boolean;
+  message?: string;
+}
+
 export function submitPartyAction(
   partyId: string,
   runId: string,
@@ -672,12 +689,59 @@ export function submitPartyAction(
   rawInput: string,
   idempotencyKey: string,
 ) {
-  return request<{ accepted: boolean; allSubmitted: boolean }>(
+  return request<PartyActionResponse>(
     `/v1/parties/${partyId}/runs/${runId}/turns`,
     {
       method: 'POST',
       body: JSON.stringify({ inputType, rawInput, idempotencyKey }),
     },
+  );
+}
+
+/**
+ * GET /v1/parties/:partyId/runs/:runId/turns/:turnNo — 파티 턴 상세 (arch/84).
+ * 멤버는 리더 소유 런을 솔로 getTurnDetail로 못 읽어 이 경로로 서사/선택지 폴링.
+ */
+export function getPartyTurnDetail(
+  partyId: string,
+  runId: string,
+  turnNo: number,
+) {
+  return request<{
+    turnNo: number;
+    partyActions: Array<{
+      userId: string;
+      rawInput: string;
+      isAutoAction: boolean;
+      submittedAt: string;
+    }>;
+    serverResult: unknown;
+    llm: {
+      status: string | null;
+      output: string | null;
+      choices?: Array<{
+        id: string;
+        label: string;
+        hint?: string;
+        action: { type: string; payload: Record<string, unknown> };
+      }> | null;
+    };
+  }>(`/v1/parties/${partyId}/runs/${runId}/turns/${turnNo}`);
+}
+
+/**
+ * GET /v1/parties/:partyId/runs/:runId/state — 파티 런 상태 (arch/84).
+ * 솔로 getRun과 동일 구조. 멤버 진입·재접속·새로고침 초기 복원용
+ * (멤버는 소유권이 없어 솔로 getRun/resumeRun 불가).
+ */
+export function getPartyRunState(
+  partyId: string,
+  runId: string,
+  options?: { turnsLimit?: number },
+) {
+  const params = options?.turnsLimit ? `?turnsLimit=${options.turnsLimit}` : '';
+  return request<Record<string, unknown>>(
+    `/v1/parties/${partyId}/runs/${runId}/state${params}`,
   );
 }
 

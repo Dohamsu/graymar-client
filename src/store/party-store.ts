@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useAuthStore } from '@/store/auth-store';
+import { useGameStore } from '@/store/game-store';
 import * as api from '@/lib/api-client';
 import * as sse from '@/lib/sse-client';
 import type {
@@ -415,8 +416,15 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     });
     sse.onEvent('dungeon:turn_resolved', (data) => {
       set({ turnStatus: null });
-      // 런 종료 체크
       const d = data as Record<string, unknown>;
+      // arch/84 C8 — 통합 판정 결과를 게임 화면(HUD/서사/선택지)에 반영.
+      // 서사·선택지는 game-store가 getPartyTurnDetail로 폴링해 채운다.
+      useGameStore.getState().applyPartyTurnResult({
+        turnNo: (d.turnNo as number) ?? 0,
+        serverResult: d.serverResult,
+        llmStatus: d.llmStatus as string | undefined,
+      });
+      // 런 종료 체크
       const sr = d.serverResult as Record<string, unknown> | undefined;
       if (sr?.nodeOutcome === 'RUN_ENDED') {
         // 던전 종료 → 파티 상태 리셋 + 파티 정보 재조회
@@ -431,7 +439,11 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       // 골드 분배 알림 — 추후 UI 연동
     });
     sse.onEvent('dungeon:location_changed', () => {
-      // 게임 스토어가 자동으로 런 상태를 폴링하여 새 장소 반영
+      // arch/84 C9 — 투표 통과로 장소 이동 시 게임 화면을 새 장소로 재복원.
+      const { party, partyRunId } = get();
+      if (party && partyRunId) {
+        void useGameStore.getState().resumePartyRun(party.id, partyRunId);
+      }
     });
     sse.onEvent('vote:proposed', (data) => {
       set({ currentVote: data as PartyVoteDTO });

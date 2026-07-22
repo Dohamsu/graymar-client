@@ -16,15 +16,27 @@ import type {
   MainArcClockUI,
   PlayerThreadSummaryUI,
   EquipmentBagItem,
+  StoryMessage,
+  InventoryItem,
+  PlayerHud,
+  ServerResultV1,
+  IncidentSummaryUI,
+  SignalFeedItemUI,
+  PlayerGoalUI,
+  LocationDynamicStateUI,
+  NpcEmotionalUI,
+  ShopDisplayUI,
 } from '@/types/game';
 import { useAuthStore } from '@/store/auth-store';
-import { getRun, getTurnDetail } from '@/lib/api-client';
+import { getRun, getTurnDetail, getPartyTurnDetail } from '@/lib/api-client';
 import { adaptPresetsForScenario } from '@/data/presets';
 import { ITEM_CATALOG } from '@/data/items';
 import { STAT_COLORS } from '@/data/stat-descriptions';
 import {
   mapResultToMessages,
+  mapTurnHistoryToMessages,
   stripNarratorChoices,
+  type TurnHistoryItem,
 } from '@/lib/result-mapper';
 import {
   applyDiffToHud,
@@ -756,82 +768,7 @@ export function processTurnResponse(
     });
   }
 
-  // diff.enemies로 battleState.enemies HP/status/distance/angle 갱신
-  const currentBattle = get().battleState as { enemies: BattleEnemy[] } | null;
-  if (currentBattle?.enemies && result.diff?.enemies?.length > 0) {
-    const updatedEnemies = applyEnemyDiffs(currentBattle.enemies, result.diff.enemies as Parameters<typeof applyEnemyDiffs>[1]);
-    set({ battleState: { ...currentBattle, enemies: updatedEnemies } });
-  }
-
-  // WorldState 업데이트
-  const wsUI = result.ui?.worldState as WorldStateUI | undefined;
-  if (wsUI) {
-    set({ worldState: wsUI });
-    if (wsUI.playerGoals) set({ playerGoals: wsUI.playerGoals });
-    if (wsUI.locationDynamicStates) set({ locationDynamicStates: wsUI.locationDynamicStates });
-  }
-
-  // Narrative Engine v1 UI 업데이트
-  const uiBundle = result.ui as Record<string, unknown> | undefined;
-  if (uiBundle) {
-    const sf = uiBundle.signalFeed as import('@/types/game').SignalFeedItemUI[] | undefined;
-    const ai = uiBundle.activeIncidents as import('@/types/game').IncidentSummaryUI[] | undefined;
-    const op = uiBundle.operationProgress as import('@/types/game').OperationProgressUI | undefined;
-    const ne = uiBundle.npcEmotional as import('@/types/game').NpcEmotionalUI[] | undefined;
-    if (sf) {
-      // 이전 시그널 ID 목록과 비교하여 새로 추가된 중요 시그널 감지
-      const prevIds = new Set(get().signalFeed.map(s => s.id));
-      const newImportant = sf.filter(s => !prevIds.has(s.id) && s.severity >= 3);
-      set({ signalFeed: sf });
-      if (newImportant.length > 0) {
-        // nano 변환 헤드라인이 있으면 텍스트 교체
-        const headlines = uiBundle.newsHeadlines as string[] | undefined;
-        if (headlines && headlines.length > 0) {
-          // severity 3+ 시그널 전체에 대해 헤드라인 매핑
-          const allImportant = sf.filter(s => s.severity >= 3);
-          const newsItems = allImportant.map((s, i) => ({
-            ...s,
-            text: headlines[i] ?? s.text,
-          }));
-          // 새로 추가된 것만 필터
-          const newsNew = newsItems.filter(s => !prevIds.has(s.id));
-          set({ pendingNewsSignals: newsNew.length > 0 ? newsNew : newImportant });
-        } else {
-          set({ pendingNewsSignals: newImportant });
-        }
-      }
-    }
-    if (ai) set({ activeIncidents: ai });
-    if (op !== undefined) set({ operationProgress: op ?? null });
-    if (ne) set({ npcEmotional: ne });
-    // 상점 진열 — 서버는 재고 있는 장소에서만 필드를 실으므로,
-    // 없으면 [] 로 클리어 (장소 이탈 시 이전 장소 상점 잔류 방지)
-    set({ shops: (uiBundle.shops as import('@/types/game').ShopDisplayUI[] | undefined) ?? [] });
-
-    // Notification System 업데이트
-    const notifs = uiBundle.notifications as GameNotification[] | undefined;
-    const pinned = uiBundle.pinnedAlerts as GameNotification[] | undefined;
-    const wds = uiBundle.worldDeltaSummary as WorldDeltaSummaryUI | undefined;
-    if (notifs) set({ notifications: notifs });
-    if (pinned) set({ pinnedAlerts: pinned });
-    if (wds !== undefined) set({ worldDeltaSummary: wds ?? null });
-
-    // Quest / Arc State 업데이트
-    const arc = uiBundle.arcState as ArcStateUI | undefined;
-    const marks = uiBundle.narrativeMarks as NarrativeMarkUI[] | undefined;
-    const clock = uiBundle.mainArcClock as MainArcClockUI | undefined;
-    const dayVal = uiBundle.day as number | undefined;
-    const threads = uiBundle.playerThreads as PlayerThreadSummaryUI[] | undefined;
-    if (arc) set({ arcState: arc });
-    if (marks) set({ narrativeMarks: marks });
-    if (clock) set({ mainArcClock: clock });
-    if (dayVal !== undefined) set({ day: dayVal });
-    if (threads) set({ playerThreads: threads });
-  }
-
-  // ResolveOutcome 업데이트
-  const resolveOutcome = result.ui?.resolveOutcome as ResolveOutcome | undefined;
-  set({ resolveOutcome: resolveOutcome ?? null });
+  applyServerResultUi(result, get, set);
 
   // Handle node / run outcome
   const outcome = turnRes.meta?.nodeOutcome;
@@ -952,6 +889,399 @@ export function processTurnResponse(
       }).catch(() => { /* silent — equipment sync is best-effort */ });
     }
   }
+}
+
+const SNAPSHOT_INITIAL_HUD: PlayerHud = {
+  hp: 100,
+  maxHp: 100,
+  stamina: 5,
+  maxStamina: 5,
+  gold: 50,
+};
+
+/**
+ * getRun/getPartyRunState 응답(동일 구조)을 게임 스토어 상태로 적용한다.
+ * 솔로 resumeRun과 파티 멤버 resumePartyRun이 공유한다 (arch/84 C8).
+ * - fallback: run.presetId/gender가 비었을 때의 프리셋·성별 (솔로는 activeRunInfo).
+ * - extra: 추가로 병합할 상태(파티는 partyContext). 최종 set에 얹는다.
+ */
+export function applyRunSnapshot(
+  data: Record<string, unknown>,
+  fallback: { presetId: string; gender: 'male' | 'female' } | null,
+  extra: Partial<GameState>,
+  get: () => GameState,
+  set: (partial: Partial<GameState>) => void,
+): void {
+  const run = data.run as Record<string, unknown>;
+  const runId = run.id as string;
+  set({ scenarioId: (run.scenarioId as string | undefined) ?? null });
+  const currentNode = data.currentNode as Record<string, unknown> | undefined;
+  const lastResult = data.lastResult as ServerResultV1 | undefined;
+  const battleState = data.battleState as unknown | undefined;
+  const runState = data.runState as RunStateSnapshot | undefined;
+  const turnsArr = data.turns as TurnHistoryItem[] | undefined;
+
+  const hud: PlayerHud = runState
+    ? {
+        hp: runState.hp,
+        maxHp: runState.maxHp,
+        stamina: runState.stamina,
+        maxStamina: runState.maxStamina,
+        gold: runState.gold,
+      }
+    : { ...SNAPSHOT_INITIAL_HUD };
+
+  const restoredInventory: InventoryItem[] = (runState?.inventory ?? []).map((i) => ({
+    itemId: i.itemId,
+    qty: i.qty,
+  }));
+
+  // ── 대화 이력 복원 ──
+  let restoredMessages: StoryMessage[] = [];
+  let restoredChoices: Choice[] = [];
+
+  // 서버는 newest-first → 시간순으로 뒤집기
+  const chronological = turnsArr && turnsArr.length > 0 ? [...turnsArr].reverse() : [];
+
+  if (chronological.length > 1) {
+    const pastTurns = chronological.slice(0, -1);
+    restoredMessages = mapTurnHistoryToMessages(pastTurns);
+  }
+
+  if (lastResult) {
+    const lastTurnMessages = mapResultToMessages(lastResult);
+    const lastTurn = chronological.length > 0 ? chronological[chronological.length - 1] : undefined;
+
+    if (lastTurn) {
+      if (lastTurn.inputType === 'ACTION' && lastTurn.rawInput) {
+        restoredMessages.push({
+          id: `history-player-${lastTurn.turnNo}`,
+          type: 'PLAYER',
+          text: lastTurn.rawInput,
+        });
+      } else if (lastTurn.inputType === 'CHOICE' && lastTurn.rawInput) {
+        const prevTurn = chronological.length > 1 ? chronological[chronological.length - 2] : undefined;
+        const prevChoices = prevTurn?.choices ?? [];
+        const label = prevChoices.find((c: { id: string; label: string }) => c.id === lastTurn.rawInput)?.label ?? lastTurn.rawInput;
+        restoredMessages.push({
+          id: `history-player-${lastTurn.turnNo}`,
+          type: 'PLAYER',
+          text: label,
+        });
+      }
+    }
+
+    const finalLastMessages = lastTurn?.llmOutput && lastTurn.llmStatus === 'DONE'
+      ? lastTurnMessages.map((msg) =>
+          msg.type === 'NARRATOR' ? { ...msg, text: stripNarratorChoices(lastTurn.llmOutput!), loading: false } : msg,
+        )
+      : lastTurnMessages.map((msg) =>
+          msg.type === 'NARRATOR'
+            ? {
+                ...msg,
+                text:
+                  msg.text ||
+                  stripNarratorChoices(
+                    lastResult.summary?.display || lastResult.summary?.short || '',
+                  ),
+                loading: false,
+              }
+            : msg,
+        );
+
+    restoredMessages = [...restoredMessages, ...finalLastMessages];
+    restoredChoices = (lastResult.choices ?? []).map((c) => ({
+      id: c.id,
+      label: c.label,
+      affordance: c.action?.payload?.affordance as string | undefined,
+      hint: c.hint,
+    }));
+  }
+
+  const nodeType = (currentNode?.nodeType as string) ?? null;
+  const resumePhase = derivePhase(nodeType);
+  const resumeWs = lastResult?.ui?.worldState as WorldStateUI | undefined;
+
+  const rsAny = runState as Record<string, unknown> | undefined;
+  const wsObj = (rsAny?.worldState ?? {}) as Record<string, unknown>;
+
+  set({
+    phase: resumePhase,
+    runId,
+    currentNodeType: nodeType,
+    currentNodeIndex: (currentNode?.nodeIndex as number) ?? 0,
+    currentTurnNo: (run.currentTurnNo as number) + 1,
+    hud,
+    inventory: restoredInventory,
+    battleState: battleState ?? null,
+    messages: restoredMessages,
+    pendingMessages: [],
+    choices: restoredChoices,
+    pendingChoices: [],
+    isSubmitting: false,
+    activeRunInfo: null,
+    characterInfo: {
+      ...buildCharacterInfo(
+        (run.presetId as string) ?? fallback?.presetId ?? 'dockworker',
+        ((run.gender as string) ?? fallback?.gender ?? 'male') as 'male' | 'female',
+        {
+          characterName: (runState as Record<string, unknown>)?.characterName as string | undefined,
+          portraitUrl: (runState as Record<string, unknown>)?.portraitUrl as string | undefined,
+        },
+        (run.scenarioId as string | undefined) ?? null,
+        (data.stats as Record<string, number> | null | undefined) ?? undefined,
+      ),
+      equipment: mapEquippedToDisplay(runState?.equipped),
+    },
+    equipmentBag: mapEquipmentBag(runState?.equipmentBag),
+    setDefinitions: (data.setDefinitions as GameState['setDefinitions']) ?? [],
+    worldState: resumeWs ?? null,
+    resolveOutcome: null,
+    locationName: null,
+    arcState: (rsAny?.arcState as ArcStateUI) ?? null,
+    narrativeMarks: (wsObj?.narrativeMarks as NarrativeMarkUI[]) ?? [],
+    mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
+    playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
+    day: (wsObj?.day as number) ?? 1,
+    playerGoals: (wsObj?.playerGoals as PlayerGoalUI[]) ?? (resumeWs?.playerGoals ?? []),
+    locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (resumeWs?.locationDynamicStates ?? {}),
+    npcEmotional: (data.npcEmotional as NpcEmotionalUI[] | undefined) ?? [],
+    shops: ((lastResult?.ui as Record<string, unknown> | undefined)?.shops as ShopDisplayUI[] | undefined) ?? [],
+    ...extra,
+  });
+  get().fetchSceneImageStatus();
+}
+
+/**
+ * serverResult의 UI 번들(worldState / 시그널 / 사건 / 알림 / 아크 / 상점 /
+ * 적 diff / resolveOutcome)을 스토어에 반영한다. 솔로 processTurnResponse와
+ * 파티 applyPartyTurnResult가 공유 (arch/84 C8). 순수 side-effect(set)만 수행.
+ */
+export function applyServerResultUi(
+  result: ServerResultV1,
+  get: () => GameState,
+  set: (partial: Partial<GameState>) => void,
+): void {
+  // diff.enemies로 battleState.enemies HP/status/distance/angle 갱신
+  const currentBattle = get().battleState as { enemies: BattleEnemy[] } | null;
+  if (currentBattle?.enemies && result.diff?.enemies?.length > 0) {
+    const updatedEnemies = applyEnemyDiffs(currentBattle.enemies, result.diff.enemies as Parameters<typeof applyEnemyDiffs>[1]);
+    set({ battleState: { ...currentBattle, enemies: updatedEnemies } });
+  }
+
+  // WorldState 업데이트
+  const wsUI = result.ui?.worldState as WorldStateUI | undefined;
+  if (wsUI) {
+    set({ worldState: wsUI });
+    if (wsUI.playerGoals) set({ playerGoals: wsUI.playerGoals });
+    if (wsUI.locationDynamicStates) set({ locationDynamicStates: wsUI.locationDynamicStates });
+  }
+
+  // Narrative Engine v1 UI 업데이트
+  const uiBundle = result.ui as Record<string, unknown> | undefined;
+  if (uiBundle) {
+    const sf = uiBundle.signalFeed as SignalFeedItemUI[] | undefined;
+    const ai = uiBundle.activeIncidents as IncidentSummaryUI[] | undefined;
+    const op = uiBundle.operationProgress as import('@/types/game').OperationProgressUI | undefined;
+    const ne = uiBundle.npcEmotional as NpcEmotionalUI[] | undefined;
+    if (sf) {
+      const prevIds = new Set(get().signalFeed.map(s => s.id));
+      const newImportant = sf.filter(s => !prevIds.has(s.id) && s.severity >= 3);
+      set({ signalFeed: sf });
+      if (newImportant.length > 0) {
+        const headlines = uiBundle.newsHeadlines as string[] | undefined;
+        if (headlines && headlines.length > 0) {
+          const allImportant = sf.filter(s => s.severity >= 3);
+          const newsItems = allImportant.map((s, i) => ({
+            ...s,
+            text: headlines[i] ?? s.text,
+          }));
+          const newsNew = newsItems.filter(s => !prevIds.has(s.id));
+          set({ pendingNewsSignals: newsNew.length > 0 ? newsNew : newImportant });
+        } else {
+          set({ pendingNewsSignals: newImportant });
+        }
+      }
+    }
+    if (ai) set({ activeIncidents: ai });
+    if (op !== undefined) set({ operationProgress: op ?? null });
+    if (ne) set({ npcEmotional: ne });
+    set({ shops: (uiBundle.shops as ShopDisplayUI[] | undefined) ?? [] });
+
+    const notifs = uiBundle.notifications as GameNotification[] | undefined;
+    const pinned = uiBundle.pinnedAlerts as GameNotification[] | undefined;
+    const wds = uiBundle.worldDeltaSummary as WorldDeltaSummaryUI | undefined;
+    if (notifs) set({ notifications: notifs });
+    if (pinned) set({ pinnedAlerts: pinned });
+    if (wds !== undefined) set({ worldDeltaSummary: wds ?? null });
+
+    const arc = uiBundle.arcState as ArcStateUI | undefined;
+    const marks = uiBundle.narrativeMarks as NarrativeMarkUI[] | undefined;
+    const clock = uiBundle.mainArcClock as MainArcClockUI | undefined;
+    const dayVal = uiBundle.day as number | undefined;
+    const threads = uiBundle.playerThreads as PlayerThreadSummaryUI[] | undefined;
+    if (arc) set({ arcState: arc });
+    if (marks) set({ narrativeMarks: marks });
+    if (clock) set({ mainArcClock: clock });
+    if (dayVal !== undefined) set({ day: dayVal });
+    if (threads) set({ playerThreads: threads });
+  }
+
+  // ResolveOutcome 업데이트
+  const resolveOutcome = result.ui?.resolveOutcome as ResolveOutcome | undefined;
+  set({ resolveOutcome: resolveOutcome ?? null });
+}
+
+/**
+ * 파티 던전 통합 판정 결과(dungeon:turn_resolved SSE)를 스토어에 반영 (arch/84 C8).
+ * serverResult는 즉시(HUD/UI/서사 뼈대) 반영하고, LLM 서사·선택지는
+ * getPartyTurnDetail 폴링으로 채운다(멤버는 솔로 getTurnDetail 접근 불가).
+ */
+export function applyPartyTurnResult(
+  partyId: string,
+  runId: string,
+  payload: { turnNo: number; serverResult: unknown; llmStatus?: string },
+  get: () => GameState,
+  set: (partial: Partial<GameState>) => void,
+): void {
+  const result = payload.serverResult as ServerResultV1 | undefined;
+  if (!result) {
+    set({ isSubmitting: false });
+    return;
+  }
+  // NARRATOR 메시지 id·턴 상세 조회는 serverResult.turnNo 기준(정본).
+  const turnNo = result.turnNo ?? payload.turnNo;
+
+  // 서사/판정/시스템 메시지 구성 (내레이터 로딩 상태)
+  const allMessages = mapResultToMessages(result, 'narrator', false);
+
+  // HUD / 인벤토리 diff 반영
+  const updatedHud = result.diff ? applyDiffToHud(get().hud, result.diff) : get().hud;
+  const updatedInventory = result.diff?.inventory
+    ? applyInventoryDiff(get().inventory, result.diff.inventory)
+    : get().inventory;
+
+  // 임시 선택지(serverResult) — LLM 선택지 도착 전까지의 placeholder
+  const srChoices: Choice[] = (result.choices ?? []).map((c) => ({
+    id: c.id,
+    label: c.label,
+    affordance: c.action?.payload?.affordance as string | undefined,
+  }));
+
+  // UI 번들 반영 (worldState / 시그널 / 알림 / 아크 / 상점 등)
+  applyServerResultUi(result, get, set);
+
+  // 런 종료 (nodeOutcome은 런타임 serverResult에만 존재 — TS 타입엔 없음)
+  const runEnded =
+    (payload.serverResult as Record<string, unknown>)?.nodeOutcome === 'RUN_ENDED';
+  if (runEnded) {
+    const endingData = (result.ui as Record<string, unknown> | undefined)?.endingResult as import('@/types/game').EndingResult | undefined;
+    set({
+      messages: [...get().messages, ...allMessages.filter((m) => m.type !== 'NARRATOR')],
+      hud: updatedHud,
+      inventory: updatedInventory,
+      choices: [],
+      pendingChoices: [],
+      isSubmitting: false,
+      isNarrating: false,
+      phase: 'RUN_ENDED',
+      endingResult: endingData ?? null,
+    });
+    return;
+  }
+
+  // 내레이터 + 판정 즉시 표시, 나머지는 내레이션 완료 후 flush
+  const immediateMsgs = allMessages.filter((m) => m.type === 'NARRATOR' || m.type === 'RESOLVE');
+  const otherMsgs = allMessages.filter((m) => m.type !== 'NARRATOR' && m.type !== 'RESOLVE' && m.type !== 'CHOICE');
+  const hasNarrator = immediateMsgs.some((m) => m.type === 'NARRATOR');
+
+  set({
+    messages: [...get().messages, ...immediateMsgs],
+    pendingMessages: otherMsgs,
+    hud: updatedHud,
+    inventory: updatedInventory,
+    inventoryChanges: null,
+    choices: [],
+    pendingChoices: srChoices,
+    currentTurnNo: turnNo + 1,
+    isSubmitting: false,
+    isNarrating: hasNarrator,
+  });
+
+  if (hasNarrator) {
+    pollPartyNarrative(
+      partyId,
+      runId,
+      turnNo,
+      result.summary?.display ?? result.summary?.short ?? '',
+      get,
+      set,
+    );
+  } else {
+    // 서사 없음 — 즉시 flush
+    get().flushPending();
+  }
+}
+
+/**
+ * 파티 턴 LLM 서술 폴링 — getPartyTurnDetail로 서사/선택지를 채운다 (arch/84 C8).
+ * pollForNarrative의 파티 버전(멤버는 솔로 getTurnDetail 접근 불가).
+ */
+export function pollPartyNarrative(
+  partyId: string,
+  runId: string,
+  turnNo: number,
+  fallbackText: string,
+  get: () => GameState,
+  set: (partial: Partial<GameState>) => void,
+): void {
+  let attempts = 0;
+
+  const timer = setInterval(async () => {
+    attempts++;
+    try {
+      const detail = await getPartyTurnDetail(partyId, runId, turnNo);
+      const status = detail.llm?.status;
+
+      if (status === 'DONE' && detail.llm.output) {
+        clearInterval(timer);
+        if (detail.llm.choices && detail.llm.choices.length > 0) {
+          set({
+            pendingChoices: detail.llm.choices.map((c) => ({
+              id: c.id,
+              label: c.label,
+              affordance: c.action?.payload?.affordance as string | undefined,
+            })),
+          });
+        }
+        flushNarrator(stripNarratorChoices(detail.llm.output!), turnNo, get, set);
+        return;
+      }
+
+      if (status === 'SKIPPED') {
+        clearInterval(timer);
+        flushNarrator(fallbackText, turnNo, get, set);
+        return;
+      }
+
+      if (status === 'FAILED') {
+        clearInterval(timer);
+        // 파티 턴 서술 실패 — fallback 텍스트로 표시하고 진행 (게임 정지 방지)
+        flushNarrator(fallbackText, turnNo, get, set);
+        return;
+      }
+
+      if (attempts >= LLM_POLL_MAX_ATTEMPTS) {
+        clearInterval(timer);
+        flushNarrator(fallbackText, turnNo, get, set);
+      }
+    } catch {
+      if (attempts >= LLM_POLL_MAX_ATTEMPTS) {
+        clearInterval(timer);
+        flushNarrator(fallbackText, turnNo, get, set);
+      }
+    }
+  }, LLM_POLL_INTERVAL_MS);
 }
 
 // ---------------------------------------------------------------------------
