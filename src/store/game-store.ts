@@ -63,7 +63,14 @@ export interface GameState {
   pendingChoices: Choice[];
   isSubmitting: boolean;
   error: string | null;
-  activeRunInfo: { runId: string; presetId: string; gender: 'male' | 'female'; currentTurnNo: number } | null;
+  activeRunInfo: {
+    runId: string;
+    presetId: string;
+    presetName?: string;
+    characterName?: string;
+    gender: 'male' | 'female';
+    currentTurnNo: number;
+  } | null;
   characterInfo: CharacterInfo | null;
   // HUB 전용 상태
   worldState: WorldStateUI | null;
@@ -365,6 +372,10 @@ export const useGameStore = create<GameState>((set, get) => ({
           ? {
               runId: info.runId,
               presetId: info.presetId,
+              // 이어하기 라벨용 — 서버 팩 인지 프리셋 이름·캐릭터 이름 (raw ID 노출 방지)
+              presetName: typeof info.presetName === 'string' ? info.presetName : undefined,
+              characterName:
+                typeof info.characterName === 'string' ? info.characterName : undefined,
               gender: info.gender,
               currentTurnNo: info.currentTurnNo,
             }
@@ -462,12 +473,25 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
 
         // LLM 내러티브 교체 (선택지 잔여물 제거)
+        // DONE이 아닌 마지막 턴(턴 0 프롤로그 SKIPPED, LLM FAILED 등)은
+        // 과거 턴 복원(mapTurnHistoryToMessages)과 동일하게 summary.display로 fallback —
+        // 비워두면 빈 내레이터 블록으로 복원되는 회귀가 있었다.
         const finalLastMessages = lastTurn?.llmOutput && lastTurn.llmStatus === 'DONE'
           ? lastTurnMessages.map((msg) =>
               msg.type === 'NARRATOR' ? { ...msg, text: stripNarratorChoices(lastTurn.llmOutput!), loading: false } : msg,
             )
           : lastTurnMessages.map((msg) =>
-              msg.type === 'NARRATOR' ? { ...msg, loading: false } : msg,
+              msg.type === 'NARRATOR'
+                ? {
+                    ...msg,
+                    text:
+                      msg.text ||
+                      stripNarratorChoices(
+                        lastResult.summary?.display || lastResult.summary?.short || '',
+                      ),
+                    loading: false,
+                  }
+                : msg,
             );
 
         restoredMessages = [...restoredMessages, ...finalLastMessages];

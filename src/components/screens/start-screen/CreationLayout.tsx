@@ -4,7 +4,15 @@ import { ChevronLeft } from "lucide-react";
 
 const STEP_LABELS = ["출신", "초상화", "이름", "스탯", "특성", "확인"];
 
-export function StepIndicator({ current, total }: { current: number; total: number }) {
+export function StepIndicator({
+  current,
+  total,
+  labels = STEP_LABELS,
+}: {
+  current: number;
+  total: number;
+  labels?: string[];
+}) {
   return (
     <div className="flex items-center gap-1">
       {Array.from({ length: total }, (_, i) => (
@@ -21,7 +29,7 @@ export function StepIndicator({ current, total }: { current: number; total: numb
           <span className={`text-[9px] leading-none ${
             i <= current ? "text-[var(--gold)]" : "text-[var(--text-muted)]"
           }`}>
-            {STEP_LABELS[i] ?? ""}
+            {labels[i] ?? ""}
           </span>
         </div>
       ))}
@@ -37,6 +45,7 @@ export function CreationLayout({
   title,
   step,
   totalSteps,
+  stepLabels,
   onBack,
   children,
   footer,
@@ -44,6 +53,7 @@ export function CreationLayout({
   title: string;
   step: number;
   totalSteps: number;
+  stepLabels?: string[];
   onBack: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
@@ -58,7 +68,7 @@ export function CreationLayout({
           <ChevronLeft size={18} className="inline" /> 뒤로
         </button>
         <h2 className="flex-1 font-display text-base text-[var(--text-primary)]">{title}</h2>
-        <StepIndicator current={step} total={totalSteps} />
+        <StepIndicator current={step} total={totalSteps} labels={stepLabels} />
       </div>
       <div className={`min-h-0 flex-1 overflow-y-auto px-4 pt-6 sm:px-6 ${footer ? "pb-28" : "pb-6"}`}>
         <div className="mx-auto max-w-3xl">{children}</div>

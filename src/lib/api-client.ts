@@ -141,6 +141,8 @@ export async function uploadPortrait(file: File): Promise<{
 export async function getActiveRun(): Promise<{
   runId?: string;
   presetId?: string;
+  presetName?: string;
+  characterName?: string;
   gender?: 'male' | 'female';
   currentTurnNo?: number;
   currentNodeIndex?: number;

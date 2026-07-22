@@ -221,6 +221,12 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     () => (creationBundle ? creationBundle.traits.map(formatPackTrait) : TRAITS),
     [creationBundle],
   );
+  // 특성 없는 팩은 특성 단계를 통째로 건너뛴다 (빈 목록 + 다음 비활성 데드엔드 방지)
+  const hasTraits = availableTraits.length > 0;
+  const totalCreationSteps = hasTraits ? 6 : 5;
+  const creationStepLabels = hasTraits
+    ? undefined
+    : ["출신", "초상화", "이름", "스탯", "확인"];
   const selectedPreset = useMemo(
     () => scenarioPresets.find((p) => p.presetId === selectedPresetId) ?? null,
     [scenarioPresets, selectedPresetId],
@@ -751,7 +757,10 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                     >
                       <span className="text-lg tracking-[3px]">이어하기</span>
                       <span className="text-xs opacity-70">
-                        {getPresetName(activeRunInfo.presetId)} · 턴 {activeRunInfo.currentTurnNo}
+                        {activeRunInfo.characterName ||
+                          activeRunInfo.presetName ||
+                          getPresetName(activeRunInfo.presetId)}{" "}
+                        · 턴 {activeRunInfo.currentTurnNo}
                       </span>
                     </button>
                     <button
@@ -1190,7 +1199,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             <ChevronLeft size={18} className="inline" /> 뒤로
           </button>
           <h2 className="flex-1 font-display text-base text-[var(--text-primary)]">용병의 과거를 선택하세요</h2>
-          <StepIndicator current={0} total={6} />
+          <StepIndicator current={0} total={totalCreationSteps} labels={creationStepLabels} />
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
@@ -1277,7 +1286,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       <CreationLayout
         title="캐릭터 이름"
         step={2}
-        totalSteps={6}
+        totalSteps={totalCreationSteps}
+        stepLabels={creationStepLabels}
         onBack={() => setScreenPhase("CHARACTER_PORTRAIT")}
         footer={
           <div className="flex gap-3">
@@ -1339,7 +1349,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       <CreationLayout
         title="초상화"
         step={1}
-        totalSteps={6}
+        totalSteps={totalCreationSteps}
+        stepLabels={creationStepLabels}
         onBack={() => setScreenPhase("SELECT_PRESET")}
         footer={
           <button
@@ -1466,7 +1477,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       <CreationLayout
         title="보너스 스탯 배분"
         step={3}
-        totalSteps={6}
+        totalSteps={totalCreationSteps}
+        stepLabels={creationStepLabels}
         onBack={() => setScreenPhase("CHARACTER_NAME")}
         footer={
           <div className="flex w-full flex-col gap-2">
@@ -1476,7 +1488,9 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
               </p>
             )}
             <button
-              onClick={() => setScreenPhase("CHARACTER_TRAIT")}
+              onClick={() =>
+                setScreenPhase(hasTraits ? "CHARACTER_TRAIT" : "CHARACTER_CONFIRM")
+              }
               disabled={bonusPointsRemaining > 0}
               className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:shadow-none"
             >
@@ -1615,7 +1629,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       <CreationLayout
         title="특성 선택"
         step={4}
-        totalSteps={6}
+        totalSteps={totalCreationSteps}
+        stepLabels={creationStepLabels}
         onBack={() => setScreenPhase("CHARACTER_STATS")}
         footer={
           <div className="flex gap-3">
@@ -1703,9 +1718,12 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     return (
       <CreationLayout
         title="캐릭터 확인"
-        step={5}
-        totalSteps={6}
-        onBack={() => setScreenPhase("CHARACTER_TRAIT")}
+        step={hasTraits ? 5 : 4}
+        totalSteps={totalCreationSteps}
+        stepLabels={creationStepLabels}
+        onBack={() =>
+          setScreenPhase(hasTraits ? "CHARACTER_TRAIT" : "CHARACTER_STATS")
+        }
         footer={
           <div className="flex flex-col gap-2">
             {bonusPointsRemaining > 0 && (
