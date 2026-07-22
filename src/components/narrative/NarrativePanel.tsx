@@ -100,8 +100,8 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
       id={scrollId}
       className={
         topInset
-          ? "flex flex-1 flex-col gap-4 overflow-y-auto px-3 pb-20 pt-[calc(env(safe-area-inset-top)+5rem)] md:px-6 md:pb-24 md:pt-[calc(env(safe-area-inset-top)+5rem)]"
-          : "flex flex-1 flex-col gap-4 overflow-y-auto p-3 pb-20 md:p-6 md:pb-24 lg:p-6 lg:pb-24"
+          ? "flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pb-20 pt-[calc(env(safe-area-inset-top)+5rem)] md:px-6 md:pb-24 md:pt-[calc(env(safe-area-inset-top)+5rem)]"
+          : "flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3 pb-20 md:p-6 md:pb-24 lg:p-6 lg:pb-24"
       }
     >
       {messages.map((msg) => (

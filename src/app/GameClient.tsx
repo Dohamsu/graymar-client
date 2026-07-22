@@ -407,7 +407,7 @@ export default function GameClient() {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Left Column - Narrative */}
-          <div className="flex flex-1 flex-col bg-[var(--bg-primary)]">
+          <div className="flex min-h-0 flex-1 flex-col bg-[var(--bg-primary)]">
             {/* Battle panel (COMBAT only) */}
             {phase === "COMBAT" &&
               enemies.length > 0 &&
@@ -460,7 +460,7 @@ export default function GameClient() {
         {/* 데드라인 임박/초과 배너 (모바일) */}
         <DeadlineBanner />
 
-        <div className="animate-phase-fade flex flex-1 flex-col overflow-hidden">
+        <div className="animate-phase-fade flex min-h-0 flex-1 flex-col overflow-hidden">
           {mobileTab === "story" && (
             <>
               {phase === "COMBAT" &&
