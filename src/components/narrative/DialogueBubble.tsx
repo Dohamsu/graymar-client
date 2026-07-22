@@ -1,6 +1,6 @@
 import { memo, useState, useCallback } from "react";
 import Image from "next/image";
-import { User, X } from "lucide-react";
+import { User, X, HelpCircle } from "lucide-react";
 
 interface DialogueBubbleProps {
   /** Dialogue text (may include surrounding quotes) */
@@ -92,9 +92,14 @@ function DialogueBubbleInner({ text, npcName, npcImageUrl, compact }: DialogueBu
   const [showLightbox, setShowLightbox] = useState(false);
   const [imgError, setImgError] = useState(false);
 
+  const hasPortrait = Boolean(npcImageUrl) && !imgError;
+  // 초상화 없는 화자 구분: 무명 인물(정체 미상)은 물음표+흐림,
+  // BACKGROUND 단역(역할은 알려짐)은 사람 실루엣+또렷 — arch/84 후속.
+  const isAnonymous = npcName === "무명 인물";
+
   const handlePortraitClick = useCallback(() => {
-    if (npcImageUrl && !imgError) setShowLightbox(true);
-  }, [npcImageUrl, imgError]);
+    if (hasPortrait) setShowLightbox(true);
+  }, [hasPortrait]);
 
   return (
     <>
@@ -102,15 +107,15 @@ function DialogueBubbleInner({ text, npcName, npcImageUrl, compact }: DialogueBu
         {/* Portrait column */}
         {!compact ? (
           <div
-            className={`flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full md:h-10 md:w-10 ${npcImageUrl ? "cursor-pointer transition-transform hover:scale-110 active:scale-95" : ""}`}
+            className={`flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full md:h-10 md:w-10 ${hasPortrait ? "cursor-pointer transition-transform hover:scale-110 active:scale-95" : ""} ${isAnonymous ? "opacity-70" : ""}`}
             style={{ backgroundColor: "var(--bg-secondary)" }}
             onClick={handlePortraitClick}
-            role={npcImageUrl ? "button" : undefined}
-            aria-label={npcImageUrl ? `${npcName} 초상화 보기` : undefined}
+            role={hasPortrait ? "button" : undefined}
+            aria-label={hasPortrait ? `${npcName} 초상화 보기` : undefined}
           >
-            {npcImageUrl && !imgError ? (
+            {hasPortrait ? (
               <Image
-                src={npcImageUrl}
+                src={npcImageUrl!}
                 alt={npcName}
                 width={40}
                 height={40}
@@ -118,10 +123,16 @@ function DialogueBubbleInner({ text, npcName, npcImageUrl, compact }: DialogueBu
                 className="h-full w-full object-cover"
                 onError={() => setImgError(true)}
               />
+            ) : isAnonymous ? (
+              <HelpCircle
+                size={18}
+                style={{ color: "var(--text-muted)" }}
+                aria-label={npcName}
+              />
             ) : (
               <User
                 size={18}
-                style={{ color: "var(--text-muted)" }}
+                style={{ color: "var(--text-secondary)" }}
                 aria-label={npcName}
               />
             )}
@@ -135,8 +146,14 @@ function DialogueBubbleInner({ text, npcName, npcImageUrl, compact }: DialogueBu
         <div className="min-w-0 flex-1">
           {!compact && (
             <span
-              className="mb-1 block text-[10px] font-semibold md:text-xs"
-              style={{ color: npcImageUrl ? "var(--gold)" : "var(--text-secondary)" }}
+              className={`mb-1 block text-[10px] font-semibold md:text-xs ${isAnonymous ? "italic" : ""}`}
+              style={{
+                color: hasPortrait
+                  ? "var(--gold)"
+                  : isAnonymous
+                    ? "var(--text-muted)"
+                    : "var(--text-secondary)",
+              }}
             >
               {npcName}
             </span>
