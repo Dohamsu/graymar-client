@@ -195,6 +195,12 @@ const PACK_PRESET_PORTRAITS: Record<string, { male: string; female: string }> = 
   SS_HEALER: { male: "/preset-portraits/star_sand_v1/ss_healer_m.webp", female: "/preset-portraits/star_sand_v1/ss_healer_f.webp" },
   SS_OBSERVER: { male: "/preset-portraits/star_sand_v1/ss_observer_m.webp", female: "/preset-portraits/star_sand_v1/ss_observer_f.webp" },
   SS_SURVIVOR: { male: "/preset-portraits/star_sand_v1/ss_survivor_m.webp", female: "/preset-portraits/star_sand_v1/ss_survivor_f.webp" },
+
+  // karnholt_v1 (북부 산악 은광·주조 도시)
+  KH_MINER: { male: "/preset-portraits/karnholt_v1/kh_miner_m.webp", female: "/preset-portraits/karnholt_v1/kh_miner_f.webp" },
+  KH_RUNNER: { male: "/preset-portraits/karnholt_v1/kh_runner_m.webp", female: "/preset-portraits/karnholt_v1/kh_runner_f.webp" },
+  KH_CLERK: { male: "/preset-portraits/karnholt_v1/kh_clerk_m.webp", female: "/preset-portraits/karnholt_v1/kh_clerk_f.webp" },
+  KH_SELLSWORD: { male: "/preset-portraits/karnholt_v1/kh_sellsword_m.webp", female: "/preset-portraits/karnholt_v1/kh_sellsword_f.webp" },
 };
 
 export const PRESET_PORTRAITS: Record<
