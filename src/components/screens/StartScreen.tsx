@@ -1067,42 +1067,62 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             {scenarios.length === 0 ? (
               <p className="text-center text-sm text-[var(--text-muted)]">사용 가능한 시나리오가 없습니다.</p>
             ) : (
-              scenarios.map((scenario) => {
+              scenarios.map((scenario, idx) => {
                 // architecture/71: 자유 선택 — 미완주(AVAILABLE)는 전부 진입 가능
                 const status = scenario.status ?? "AVAILABLE";
                 const isAvailable = status === "AVAILABLE";
                 const isCompleted = status === "COMPLETED";
                 const isInProgress = status === "IN_PROGRESS";
+                // 솔로 여정 선택과 동일한 팩 대표 배너 (arch/68 C-3)
+                const banner = getScenarioBannerImage(scenario.scenarioId);
                 return (
                   <button
                     key={scenario.scenarioId}
                     onClick={() => isAvailable && handleSelectScenario(scenario.scenarioId)}
                     disabled={!isAvailable || isLoading || campaignLoading}
-                    className={`flex flex-col gap-2 rounded-lg border p-4 text-left transition-all ${
+                    className={`group flex flex-col overflow-hidden rounded-lg border text-left transition-all ${
                       isAvailable
                         ? "border-[var(--border-primary)] bg-[var(--bg-card)] hover:border-[var(--gold)] hover:bg-[rgba(201,169,98,0.04)]"
                         : "cursor-not-allowed border-[var(--border-primary)] bg-[var(--bg-secondary)] opacity-50"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--gold)] font-display text-sm text-[var(--gold)]">
-                        {scenario.order}
-                      </span>
-                      <h3 className="flex-1 font-display text-lg text-[var(--text-primary)]">{scenario.name}</h3>
-                      {isCompleted && (
-                        <span className="rounded-full border border-[var(--gold)] px-2 py-0.5 text-xs text-[var(--gold)]">완료</span>
+                    <div className="relative h-36 w-full overflow-hidden sm:h-44">
+                      {banner ? (
+                        <Image
+                          src={banner}
+                          alt={scenario.name}
+                          fill
+                          sizes="(max-width: 672px) 100vw, 672px"
+                          className={`object-cover opacity-80 transition-all duration-500 ${
+                            isAvailable ? "group-hover:scale-[1.03] group-hover:opacity-100" : "grayscale"
+                          }`}
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-gradient-to-br from-[#2a2318] via-[var(--bg-secondary)] to-[#141210]" />
                       )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] via-transparent to-transparent" />
+                    </div>
+                    <div className="flex flex-col gap-2 p-4 pt-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--gold)] font-display text-sm text-[var(--gold)]">
+                          {idx + 1}
+                        </span>
+                        <h3 className="flex-1 font-display text-lg text-[var(--text-primary)]">{scenario.name}</h3>
+                        {isCompleted && (
+                          <span className="rounded-full border border-[var(--gold)] px-2 py-0.5 text-xs text-[var(--gold)]">완료</span>
+                        )}
+                        {isInProgress && (
+                          <span className="rounded-full border border-[var(--border-primary)] px-2 py-0.5 text-xs text-[var(--text-secondary)]">진행 중</span>
+                        )}
+                      </div>
+                      <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{scenario.description}</p>
                       {isInProgress && (
-                        <span className="rounded-full border border-[var(--border-primary)] px-2 py-0.5 text-xs text-[var(--text-secondary)]">진행 중</span>
+                        <p className="text-xs text-[var(--text-muted)]">진행 중인 여정입니다. 시작 화면의 이어하기로 계속하세요.</p>
+                      )}
+                      {isCompleted && (
+                        <p className="text-xs text-[var(--text-muted)]">완료한 시나리오는 다시 진입할 수 없습니다.</p>
                       )}
                     </div>
-                    <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{scenario.description}</p>
-                    {isInProgress && (
-                      <p className="text-xs text-[var(--text-muted)]">진행 중인 여정입니다. 시작 화면의 이어하기로 계속하세요.</p>
-                    )}
-                    {isCompleted && (
-                      <p className="text-xs text-[var(--text-muted)]">완료한 시나리오는 다시 진입할 수 없습니다.</p>
-                    )}
                   </button>
                 );
               })
@@ -1134,7 +1154,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             <p className="text-center text-sm text-[var(--text-muted)]">
               어느 땅에서 이야기를 시작하시겠습니까?
             </p>
-            {soloScenarios.map((scenario) => {
+            {soloScenarios.map((scenario, idx) => {
               const banner = getScenarioBannerImage(scenario.scenarioId);
               return (
               <button
@@ -1161,7 +1181,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                 <div className="flex flex-col gap-2 p-4 pt-3">
                   <div className="flex items-center gap-3">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--gold)] font-display text-sm text-[var(--gold)]">
-                      {scenario.order}
+                      {idx + 1}
                     </span>
                     <h3 className="font-display text-lg text-[var(--text-primary)]">{scenario.name}</h3>
                   </div>
@@ -1357,14 +1377,17 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             onClick={() => setScreenPhase("CHARACTER_NAME")}
             className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
           >
-            이 초상화로 진행 <ChevronRight size={18} className="ml-1" />
+            {displayPortrait ? "이 초상화로 진행" : "초상화 없이 진행"}{" "}
+            <ChevronRight size={18} className="ml-1" />
           </button>
         }
       >
         <div className="flex flex-col items-center gap-6 py-4">
-          {/* Description text */}
+          {/* Description text — 기본 초상화 없는 팩 프리셋은 안내 문구 분기 */}
           <p className="text-center text-sm text-[var(--text-secondary)]">
-            당신의 모습입니다. 원한다면 새로운 모습을 만들 수 있습니다.
+            {displayPortrait
+              ? "당신의 모습입니다. 원한다면 새로운 모습을 만들 수 있습니다."
+              : "이 출신은 기본 초상화가 준비되지 않았습니다. 내 이미지를 올리거나, 그대로 진행할 수 있습니다."}
           </p>
 
           {/* Portrait display -- 4:5 비율, 상단 정렬 */}
@@ -1377,8 +1400,14 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                 <Image src={displayPortrait} alt="캐릭터 초상화" fill sizes="288px" className="object-cover object-top" />
               )
             ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <ImageIcon size={48} className="text-[var(--text-muted)]" />
+              /* 캐릭터 확인 화면의 이니셜 타일과 동일한 톤 */
+              <div className="flex h-full w-full flex-col items-center justify-center gap-3">
+                <span className="font-display text-6xl text-[var(--text-muted)]">
+                  {selectedPreset?.name?.charAt(0) ?? "?"}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                  <ImageIcon size={13} /> 기본 초상화 없음
+                </span>
               </div>
             )}
             {portraitLoading && <PortraitLoadingOverlay />}
