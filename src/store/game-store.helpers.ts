@@ -303,7 +303,7 @@ export function pollForNarrative(
         }
         // LLM 맥락 선택지로 교체
         if (detail.llm.choices && detail.llm.choices.length > 0) {
-          set({ pendingChoices: detail.llm.choices.map(c => ({ id: c.id, label: c.label, affordance: c.action?.payload?.affordance as string | undefined })) });
+          set({ pendingChoices: detail.llm.choices.map(c => ({ id: c.id, label: c.label, affordance: c.action?.payload?.affordance as string | undefined, hint: c.hint })) });
         }
         flushNarrator(stripNarratorChoices(detail.llm.output!), turnNo, get, set);
         return;
@@ -593,6 +593,7 @@ export function streamNarrative(
             id: c.id,
             label: c.label,
             affordance: c.action?.payload?.affordance as string | undefined,
+            hint: c.hint,
           })),
         });
       }
@@ -727,6 +728,7 @@ export function processTurnResponse(
     id: c.id,
     label: c.label,
     affordance: c.action?.payload?.affordance as string | undefined,
+    hint: c.hint,
   }));
 
   const hasLlmPending = turnRes.llm?.status === 'PENDING' && !hasTransition;
@@ -792,7 +794,7 @@ export function processTurnResponse(
       const enterMessages = mapResultToMessages(t.enterResult);
       const enterChoices: Choice[] = (
         t.enterResult.choices ?? []
-      ).map((c) => ({ id: c.id, label: c.label, affordance: c.action?.payload?.affordance as string | undefined }));
+      ).map((c) => ({ id: c.id, label: c.label, affordance: c.action?.payload?.affordance as string | undefined, hint: c.hint }));
 
       const narratorMsgs = enterMessages.filter((m) => m.type === 'NARRATOR');
       const systemMsgs = enterMessages.filter((m) => m.type === 'SYSTEM');
@@ -1171,6 +1173,7 @@ export function applyPartyTurnResult(
     id: c.id,
     label: c.label,
     affordance: c.action?.payload?.affordance as string | undefined,
+    hint: c.hint,
   }));
 
   // UI 번들 반영 (worldState / 시그널 / 알림 / 아크 / 상점 등)

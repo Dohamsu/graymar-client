@@ -32,7 +32,7 @@ export interface LlmDialogueEvent {
 export interface LlmDoneEvent {
   type: 'done';
   narrative: string;
-  choices?: Array<{ id: string; label: string; action?: { payload?: { affordance?: string } } }>;
+  choices?: Array<{ id: string; label: string; hint?: string; action?: { payload?: { affordance?: string } } }>;
 }
 
 export interface LlmErrorEvent {
