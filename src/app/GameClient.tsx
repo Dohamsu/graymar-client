@@ -12,6 +12,7 @@ import { NarrativePanel } from "@/components/narrative/NarrativePanel";
 import { InputSection, MobileInputSection } from "@/components/input/InputSection";
 import { SidePanel } from "@/components/side-panel/SidePanel";
 import { CharacterTab } from "@/components/side-panel/CharacterTab";
+import { EquipmentTab } from "@/components/side-panel/EquipmentTab";
 import { InventoryTab } from "@/components/side-panel/InventoryTab";
 import { NpcDossierTab } from "@/components/side-panel/NpcDossierTab";
 import { BattlePanel } from "@/components/battle/BattlePanel";
@@ -501,6 +502,11 @@ export default function GameClient() {
           {mobileTab === "character" && !characterInfo && (
             <div className="flex flex-1 items-center justify-center">
               <p className="text-sm text-[var(--text-muted)]">캐릭터 정보 없음</p>
+            </div>
+          )}
+          {mobileTab === "equipment" && (
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+              <EquipmentTab />
             </div>
           )}
           {mobileTab === "inventory" && (

@@ -308,6 +308,7 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange,
             {([
               { id: "story", label: "이야기", Icon: BookOpen },
               { id: "character", label: "캐릭터", Icon: User },
+              { id: "equipment", label: "장비", Icon: Shield },
               { id: "inventory", label: "소지품", Icon: Backpack },
               { id: "npcs", label: "인물", Icon: Users },
               { id: "quests", label: "퀘스트", Icon: ScrollText },

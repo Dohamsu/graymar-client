@@ -29,7 +29,7 @@ import type {
 } from '@/types/game';
 import { useAuthStore } from '@/store/auth-store';
 import { getRun, getTurnDetail, getPartyTurnDetail } from '@/lib/api-client';
-import { adaptPresetsForScenario } from '@/data/presets';
+import { adaptPresetsForScenario, PRESET_PORTRAITS } from '@/data/presets';
 import { ITEM_CATALOG } from '@/data/items';
 import { STAT_COLORS } from '@/data/stat-descriptions';
 import {
@@ -153,7 +153,12 @@ export function buildCharacterInfo(
   return {
     name: options?.characterName || preset?.name || '용병',
     class: preset?.subtitle || '방랑 검사',
-    portrait: options?.portraitUrl || preset?.portraits?.[gender],
+    // 팩 프리셋(SS_*/KH_*) 초상화는 adaptPresetsForScenario 목록에 없으므로
+    // 전 팩 통합 맵 PRESET_PORTRAITS로 조회 (graymar는 preset.portraits와 동일).
+    portrait:
+      options?.portraitUrl ||
+      PRESET_PORTRAITS[presetId ?? '']?.[gender] ||
+      preset?.portraits?.[gender],
     level: 1,
     exp: 0,
     maxExp: 100,
