@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Coins, Gem, Menu, Settings, Home, BookOpen, User, Backpack, Users, ScrollText } from "lucide-react";
+import { MapPin, Coins, Gem, Shield, Heart, Menu, Settings, Home, BookOpen, User, Backpack, Users, ScrollText } from "lucide-react";
 import { usePointsStore } from "@/store/points-store";
 import type { PlayerHud, WorldStateUI } from "@/types/game";
 import type { LlmTokenStats } from "@/lib/api-client";
@@ -171,51 +171,93 @@ interface MobileHeaderProps {
   worldState?: WorldStateUI | null;
 }
 
-/** 모바일 헤더 2행 — 핵심 상태(HP/STA/골드/시간대) 컴팩트 표시 */
+const SAFETY_ROW: Record<string, { label: string; color: string }> = {
+  SAFE: { label: "안전", color: "text-[var(--success-green)]" },
+  ALERT: { label: "경계", color: "text-[var(--gold)]" },
+  DANGER: { label: "위험", color: "text-[var(--hp-red)]" },
+};
+
+/**
+ * 모바일 헤더 2행 — 맥락별 컴팩트 상태 (arch/85 §6).
+ * 전투: HP·STA(생존) / 비전투: 치안(Heat)·시간대(탐험). 골드·💎는 공통.
+ * 비전투에서도 부상 시(hp<maxHp) HP를 경고로 노출.
+ */
 function MobileStatusRow({ hud, worldState }: { hud: PlayerHud; worldState?: WorldStateUI | null }) {
   const hpPct = hud.maxHp > 0 ? Math.round((hud.hp / hud.maxHp) * 100) : 0;
   const staPct = hud.maxStamina > 0 ? Math.round((hud.stamina / hud.maxStamina) * 100) : 0;
   const pointsEnabled = usePointsStore((s) => s.enabled);
   const points = usePointsStore((s) => s.balance);
   const openPoints = usePointsStore((s) => s.openModal);
+  const isCombat = useGameStore((s) => s.phase) === "COMBAT";
+  const wounded = hud.hp < hud.maxHp;
+
+  // 공통 요소 (배타 분기라 중복 렌더 아님)
+  const goldEl = (
+    <div className="flex items-center gap-1">
+      <Coins size={11} className="text-[var(--gold)]" />
+      <span className="text-[11px] font-semibold text-[var(--gold)]">
+        {(hud.gold ?? 0).toLocaleString()}
+      </span>
+    </div>
+  );
+  const pointsEl = pointsEnabled ? (
+    <button onClick={() => openPoints("redeem")} className="flex items-center gap-1" aria-label="포인트 충전">
+      <Gem size={11} className="text-[var(--gold)]" />
+      <span className="text-[11px] font-semibold text-[var(--gold)]">{points}P</span>
+    </button>
+  ) : null;
+  const hpEl = (
+    <div className="flex items-center gap-1">
+      <span className="text-[10px] font-semibold text-[var(--hp-red)]">HP</span>
+      <div className="h-1.5 w-[52px] overflow-hidden rounded-full bg-[var(--border-primary)]">
+        <div className="h-full rounded-full bg-[var(--hp-red)]" style={{ width: `${hpPct}%` }} />
+      </div>
+      <span className="text-[10px] text-[var(--text-secondary)]">{hud.hp}</span>
+    </div>
+  );
+
   return (
     <div className="flex h-8 w-full items-center justify-between gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-4">
-      <div className="flex items-center gap-1">
-        <span className="text-[10px] font-semibold text-[var(--hp-red)]">HP</span>
-        <div className="h-1.5 w-[52px] overflow-hidden rounded-full bg-[var(--border-primary)]">
-          <div className="h-full rounded-full bg-[var(--hp-red)]" style={{ width: `${hpPct}%` }} />
-        </div>
-        <span className="text-[10px] text-[var(--text-secondary)]">{hud.hp}</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="text-[10px] font-semibold text-[var(--stamina-green)]">STA</span>
-        <div className="h-1.5 w-[40px] overflow-hidden rounded-full bg-[var(--border-primary)]">
-          <div className="h-full rounded-full bg-[var(--stamina-green)]" style={{ width: `${staPct}%` }} />
-        </div>
-        <span className="text-[10px] text-[var(--text-secondary)]">{hud.stamina}</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <Coins size={11} className="text-[var(--gold)]" />
-        <span className="text-[11px] font-semibold text-[var(--gold)]">
-          {(hud.gold ?? 0).toLocaleString()}
-        </span>
-      </div>
-      {pointsEnabled && (
-        <button
-          onClick={() => openPoints("redeem")}
-          className="flex items-center gap-1"
-          aria-label="포인트 충전"
-        >
-          <Gem size={11} className="text-[var(--gold)]" />
-          <span className="text-[11px] font-semibold text-[var(--gold)]">{points}P</span>
-        </button>
-      )}
-      {worldState && (
-        <TimePhaseIndicator
-          timePhase={worldState.timePhase}
-          phaseV2={worldState.phaseV2}
-          day={worldState.day}
-        />
+      {isCombat ? (
+        <>
+          {hpEl}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-semibold text-[var(--stamina-green)]">STA</span>
+            <div className="h-1.5 w-[40px] overflow-hidden rounded-full bg-[var(--border-primary)]">
+              <div className="h-full rounded-full bg-[var(--stamina-green)]" style={{ width: `${staPct}%` }} />
+            </div>
+            <span className="text-[10px] text-[var(--text-secondary)]">{hud.stamina}</span>
+          </div>
+          {goldEl}
+          {pointsEl}
+        </>
+      ) : (
+        <>
+          {goldEl}
+          {pointsEl}
+          {worldState && (
+            <div className="flex items-center gap-1" title={`치안 ${worldState.hubHeat}`}>
+              <Shield size={11} className={SAFETY_ROW[worldState.hubSafety]?.color ?? "text-[var(--text-muted)]"} />
+              <span className={`text-[10px] font-semibold ${SAFETY_ROW[worldState.hubSafety]?.color ?? "text-[var(--text-secondary)]"}`}>
+                {SAFETY_ROW[worldState.hubSafety]?.label ?? worldState.hubSafety}
+              </span>
+              <span className="text-[10px] text-[var(--text-secondary)]">{worldState.hubHeat}</span>
+            </div>
+          )}
+          {wounded && (
+            <div className="flex items-center gap-0.5" title="부상 — 휴식 고려">
+              <Heart size={10} className="text-[var(--hp-red)]" />
+              <span className="text-[10px] font-semibold text-[var(--hp-red)]">{hud.hp}</span>
+            </div>
+          )}
+          {worldState && (
+            <TimePhaseIndicator
+              timePhase={worldState.timePhase}
+              phaseV2={worldState.phaseV2}
+              day={worldState.day}
+            />
+          )}
+        </>
       )}
     </div>
   );
