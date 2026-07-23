@@ -48,7 +48,8 @@ export const usePointsStore = create<PointsState>((set) => ({
   redeem: async (code) => {
     try {
       const res = await redeemPointCode(code.trim());
-      set({ balance: res.balance, modalReason: null });
+      // 잔액만 갱신 — 모달은 열어둔 채로 성공 피드백을 노출한다(닫기는 모달이 담당).
+      set({ balance: res.balance });
       return res.granted;
     } catch (err) {
       // 서버가 이미 한국어 메시지 반환 (존재하지 않는/만료된/소진된/이미 사용한 코드)
