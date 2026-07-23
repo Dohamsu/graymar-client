@@ -772,7 +772,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   // submitAction
   // -----------------------------------------------------------------------
   submitAction: async (text: string) => {
-    const { runId, currentTurnNo, isSubmitting } = get();
+    const { runId, currentTurnNo, isSubmitting, choices: prevChoices } = get();
     if (!runId || isSubmitting) return;
 
     set({ isSubmitting: true, error: null, choices: [] });
@@ -837,10 +837,16 @@ export const useGameStore = create<GameState>((set, get) => ({
           return;
         }
       }
-      // arch/85 — 포인트 부족(402): 충전 모달 유도 (에러 배너 대신)
+      // arch/85 — 포인트 부족(402): 충전 모달 유도 (에러 배너 대신).
+      // 턴이 커밋되지 않았으므로 선택지·낙관적 플레이어 메시지를 복원해야
+      // 모달을 닫아도 게임을 이어갈 수 있다 (미복원 시 진행 불능 실보고).
       if (err instanceof ApiError && err.status === 402) {
         usePointsStore.getState().openModal('insufficient');
-        set({ isSubmitting: false });
+        set({
+          isSubmitting: false,
+          choices: prevChoices,
+          messages: get().messages.filter((m) => m.id !== playerMsg.id),
+        });
         return;
       }
       set({
@@ -856,6 +862,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   submitChoice: async (choiceId: string) => {
     const { runId, currentTurnNo, isSubmitting, choices, messages } = get();
     if (!runId || isSubmitting) return;
+    // 402 등 제출 실패 시 복원용 — 턴 미커밋이면 클릭 전 상태로 되돌린다
+    const prevChoices = choices;
+    const prevMessages = messages;
 
     // 선택한 선택지만 표시되도록 CHOICE 메시지 업데이트
     let updatedMessages = messages.map((msg) =>
@@ -935,10 +944,16 @@ export const useGameStore = create<GameState>((set, get) => ({
           return;
         }
       }
-      // arch/85 — 포인트 부족(402): 충전 모달 유도 (에러 배너 대신)
+      // arch/85 — 포인트 부족(402): 충전 모달 유도 (에러 배너 대신).
+      // submit 직전에 choices를 비우고 selectedChoiceId를 박아두므로,
+      // 복원하지 않으면 모달을 닫은 뒤 선택지를 다시 누를 수 없다 (실보고).
       if (err instanceof ApiError && err.status === 402) {
         usePointsStore.getState().openModal('insufficient');
-        set({ isSubmitting: false });
+        set({
+          isSubmitting: false,
+          choices: prevChoices,
+          messages: prevMessages,
+        });
         return;
       }
       set({
