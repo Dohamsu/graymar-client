@@ -218,4 +218,67 @@ export const ITEM_CATALOG: Record<string, ItemMeta> = {
     statBonus: { eva: 2, speed: 1 },
     setId: 'SET_HARBOR_SHADOW',
   },
+
+  // --- star_sand_v1 (별빛모래) ---
+  // 이미지: client/public/items/item_ss_*·eq_ss_*.webp (getItemImagePath 규약).
+  // usableInHub: 서버 items.json combat.effect가 HEAL_HP/RESTORE_STAMINA일 때만 true.
+  ITEM_SS_MINOR_HEALING: {
+    name: '하급 심장액 물약',
+    type: 'CONSUMABLE',
+    description: '별고래 심장액을 옅게 희석한 치료약. 극야해안 어디서나 구할 수 있는 기본 회복제.',
+    usableInHub: true,
+  },
+  ITEM_SS_SUPERIOR_HEALING: {
+    name: '정제 심장액 물약',
+    type: 'CONSUMABLE',
+    description: '심장 웅덩이에서 걸러낸 고농도 심장액. 상처를 빠르게 아물게 하지만 오래 마시면 꿈에 물든다.',
+    usableInHub: true,
+  },
+  ITEM_SS_STAMINA: {
+    name: '별기름 강장제',
+    type: 'CONSUMABLE',
+    description: '별고래 기름을 정제한 강장제. 언 몸에 온기를 돌려 기력을 회복시킨다.',
+    usableInHub: true,
+  },
+  ITEM_SS_DREAM_WARD: {
+    name: '꿈 방호 부적',
+    type: 'CONSUMABLE',
+    description: '등불수녀원에서 엮은 별소금 부적. 지니면 오염된 꿈이 스며드는 것을 한동안 막아준다.',
+  },
+  ITEM_SS_SMOKE_VIAL: {
+    name: '연막 유리병',
+    type: 'CONSUMABLE',
+    description: '깨뜨리면 짙은 흰 안개가 피어오르는 유리병. 추격을 따돌리거나 몸을 숨길 때 쓴다.',
+  },
+  ITEM_SS_STAR_CHART: {
+    name: '낡은 별자리 도표',
+    type: 'KEY_ITEM',
+    description: '오로라 관측탑에서 흘러나온 낡은 도표. 별고래가 하늘을 가른 궤적과 오로라 누출 지점이 표시돼 있다.',
+  },
+  ITEM_SS_DREAM_DRUG: {
+    name: '하얀 문 꿈약',
+    type: 'KEY_ITEM',
+    description: '검은얼음 시장에서만 도는 금지 꿈약. 복용자를 \'하얀 문\' 너머의 꿈으로 이끈다는 소문이 돈다.',
+  },
+  ITEM_SS_NAME_LEDGER: {
+    name: '이름 장부',
+    type: 'KEY_ITEM',
+    description: '떠돌이 서기관이 모은 명부. 이름을 잃고 돌아온 귀환자들의 본명과 사라진 날짜가 적혀 있다.',
+  },
+  EQ_SS_WHALEOIL_LAMP: {
+    name: '별기름 램프',
+    type: 'EQUIPMENT',
+    description: '부두 장인이 만든 푸른 불 램프. 별고래 배 속에서도 꺼지지 않아 어둠 속 시야와 판단을 밝힌다.',
+    rarity: 'RARE',
+    slot: 'TACTICAL',
+    statBonus: { acc: 3, eva: 1 },
+  },
+  EQ_SS_DREAM_COMPASS: {
+    name: '꿈 나침반',
+    type: 'EQUIPMENT',
+    description: '바늘이 별고래의 심장을 가리키는 기이한 나침반. 꿈과 현실의 경계에서 길을 잃지 않으며 오염된 꿈에 덜 흔들린다.',
+    rarity: 'UNIQUE',
+    slot: 'RELIC',
+    statBonus: { acc: 3, resist: 3, speed: 2 },
+  },
 };
