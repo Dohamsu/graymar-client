@@ -175,6 +175,9 @@ interface MobileHeaderProps {
 function MobileStatusRow({ hud, worldState }: { hud: PlayerHud; worldState?: WorldStateUI | null }) {
   const hpPct = hud.maxHp > 0 ? Math.round((hud.hp / hud.maxHp) * 100) : 0;
   const staPct = hud.maxStamina > 0 ? Math.round((hud.stamina / hud.maxStamina) * 100) : 0;
+  const pointsEnabled = usePointsStore((s) => s.enabled);
+  const points = usePointsStore((s) => s.balance);
+  const openPoints = usePointsStore((s) => s.openModal);
   return (
     <div className="flex h-8 w-full items-center justify-between gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-4">
       <div className="flex items-center gap-1">
@@ -197,6 +200,16 @@ function MobileStatusRow({ hud, worldState }: { hud: PlayerHud; worldState?: Wor
           {(hud.gold ?? 0).toLocaleString()}
         </span>
       </div>
+      {pointsEnabled && (
+        <button
+          onClick={() => openPoints("redeem")}
+          className="flex items-center gap-1"
+          aria-label="포인트 충전"
+        >
+          <Gem size={11} className="text-[var(--gold)]" />
+          <span className="text-[11px] font-semibold text-[var(--gold)]">{points}P</span>
+        </button>
+      )}
       {worldState && (
         <TimePhaseIndicator
           timePhase={worldState.timePhase}
@@ -213,6 +226,9 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange,
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const reset = useGameStore((s) => s.reset);
+  const pointsEnabled = usePointsStore((s) => s.enabled);
+  const pointsBalance = usePointsStore((s) => s.balance);
+  const openPoints = usePointsStore((s) => s.openModal);
 
   return (
     <>
@@ -267,6 +283,19 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange,
                 <span>{item.label}</span>
               </button>
             ))}
+            {pointsEnabled && (
+              <>
+                <div className="mx-2 my-1 border-t border-[var(--border-primary)]" />
+                <button
+                  onClick={() => { setMenuOpen(false); openPoints("redeem"); }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm font-semibold text-[var(--gold)] transition-colors"
+                  aria-label="포인트 충전"
+                >
+                  <Gem size={15} className="text-[var(--gold)]" />
+                  <span>충전 ({pointsBalance}P)</span>
+                </button>
+              </>
+            )}
             <div className="mx-2 my-1 border-t border-[var(--border-primary)]" />
             <button
               onClick={() => { setMenuOpen(false); setConfirmOpen(true); }}
