@@ -672,14 +672,14 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
         /* ── 일반 메시지 (PLAYER, SYSTEM) ── */
         <>
           {message.locationImage && (
-            <div className="relative mb-2 h-[120px] w-full overflow-hidden rounded lg:h-[160px]">
+            <div className="relative mb-2 h-[220px] w-full overflow-hidden rounded lg:h-[320px]">
               {/* 켄 번스 효과: 서서히 줌인 + 미세 패닝 */}
               <div className="absolute inset-0 animate-[kenBurns_8s_ease-in-out_forwards]">
                 <Image
                   src={message.locationImage}
                   alt="장소"
                   fill
-                  sizes="(max-width: 768px) 100vw, 600px"
+                  sizes="(max-width: 768px) 100vw, 800px"
                   className="object-cover"
                 />
               </div>
