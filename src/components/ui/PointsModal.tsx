@@ -12,6 +12,7 @@ export function PointsModal() {
   const modalReason = usePointsStore((s) => s.modalReason);
   const balance = usePointsStore((s) => s.balance);
   const closeModal = usePointsStore((s) => s.closeModal);
+  const chatCost = usePointsStore((s) => s.chatCost);
   const redeem = usePointsStore((s) => s.redeem);
 
   const [code, setCode] = useState("");
@@ -68,10 +69,16 @@ export function PointsModal() {
           </p>
         )}
 
-        <p className="mb-3 text-sm text-[var(--text-muted)]">
-          현재 잔액{" "}
-          <span className="font-semibold text-[var(--gold)]">{balance}P</span>
-        </p>
+        <div className="mb-3 flex items-center justify-between text-sm text-[var(--text-muted)]">
+          <span>
+            현재 잔액{" "}
+            <span className="font-semibold text-[var(--gold)]">{balance}P</span>
+          </span>
+          <span>
+            채팅 1회 ={" "}
+            <span className="font-semibold text-[var(--gold)]">{chatCost}P</span>
+          </span>
+        </div>
 
         <input
           value={code}
