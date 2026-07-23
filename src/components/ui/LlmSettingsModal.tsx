@@ -180,30 +180,32 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
                 </div>
               )}
 
-              {/* Max Tokens */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)]">
-                    AI 출력 길이
-                  </label>
-                  <span className="text-xs font-mono text-[var(--gold)]">
-                    {maxTokens}
-                  </span>
+              {/* Max Tokens — 개발 빌드 전용 (일반 유저에게 비노출, 2026-07-23) */}
+              {process.env.NODE_ENV !== "production" && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-xs font-semibold text-[var(--text-secondary)]">
+                      AI 출력 길이
+                    </label>
+                    <span className="text-xs font-mono text-[var(--gold)]">
+                      {maxTokens}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={256}
+                    max={4096}
+                    step={128}
+                    value={maxTokens}
+                    onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                    className="w-full accent-[var(--gold)]"
+                  />
+                  <div className="mt-1 flex justify-between text-[10px] text-[var(--text-muted)]">
+                    <span>짧게</span>
+                    <span>길게</span>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min={256}
-                  max={4096}
-                  step={128}
-                  value={maxTokens}
-                  onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-                  className="w-full accent-[var(--gold)]"
-                />
-                <div className="mt-1 flex justify-between text-[10px] text-[var(--text-muted)]">
-                  <span>짧게</span>
-                  <span>길게</span>
-                </div>
-              </div>
+              )}
 
               {/* Text Speed */}
               <div>
@@ -410,18 +412,22 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
             >
               닫기
             </button>
-            <button
-              onClick={handleSave}
-              disabled={saving || !hasChanges}
-              className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-semibold transition-colors ${
-                hasChanges
-                  ? "bg-[var(--gold)] text-[var(--bg-primary)] hover:bg-[var(--gold)]/90"
-                  : "cursor-not-allowed bg-[var(--border-primary)] text-[var(--text-muted)]"
-              }`}
-            >
-              {saving && <Loader2 size={12} className="animate-spin" />}
-              저장
-            </button>
+            {/* 저장은 maxTokens 전용 — 출력 길이 슬라이더와 함께 dev 게이트
+                (프로덕션에서 항상 비활성인 죽은 버튼 노출 방지) */}
+            {process.env.NODE_ENV !== "production" && (
+              <button
+                onClick={handleSave}
+                disabled={saving || !hasChanges}
+                className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-semibold transition-colors ${
+                  hasChanges
+                    ? "bg-[var(--gold)] text-[var(--bg-primary)] hover:bg-[var(--gold)]/90"
+                    : "cursor-not-allowed bg-[var(--border-primary)] text-[var(--text-muted)]"
+                }`}
+              >
+                {saving && <Loader2 size={12} className="animate-spin" />}
+                저장
+              </button>
+            )}
           </div>
         )}
       </div>

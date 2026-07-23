@@ -15,6 +15,7 @@ import type {
   NarrativeMarkUI,
   MainArcClockUI,
   PlayerThreadSummaryUI,
+  QuestStatusUI,
   EquipmentBagItem,
   StoryMessage,
   InventoryItem,
@@ -1050,6 +1051,7 @@ export function applyRunSnapshot(
     mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
     playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
     day: (wsObj?.day as number) ?? 1,
+    questStatus: (data.questStatus as QuestStatusUI | null) ?? null,
     playerGoals: (wsObj?.playerGoals as PlayerGoalUI[]) ?? (resumeWs?.playerGoals ?? []),
     locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (resumeWs?.locationDynamicStates ?? {}),
     npcEmotional: (data.npcEmotional as NpcEmotionalUI[] | undefined) ?? [],
@@ -1132,6 +1134,8 @@ export function applyServerResultUi(
     if (clock) set({ mainArcClock: clock });
     if (dayVal !== undefined) set({ day: dayVal });
     if (threads) set({ playerThreads: threads });
+    const qs = uiBundle.questStatus as QuestStatusUI | null | undefined;
+    if (qs !== undefined) set({ questStatus: qs ?? null });
   }
 
   // ResolveOutcome 업데이트

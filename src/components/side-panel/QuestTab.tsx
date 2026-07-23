@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Clock, AlertTriangle, Award, GitBranch, Target, Shield, Sparkles } from "lucide-react";
+import { Compass, Clock, AlertTriangle, Award, GitBranch, Target, Shield, Sparkles, ScrollText, MapPin, CheckCircle2 } from "lucide-react";
 import { useGameStore } from "@/store/game-store";
 import type { ArcRoute } from "@/types/game";
 
@@ -37,22 +37,30 @@ const INCIDENT_KIND_LABELS: Record<string, { label: string; color: string }> = {
   MILITARY: { label: "군사", color: "#f97316" },
 };
 
+// 서버 정본 enum (parsed-intent-v3.ts APPROACH_VECTOR)과 1:1 — drift 수정 2026-07-23
 const APPROACH_LABELS: Record<string, string> = {
-  SOCIAL: "외교적",
+  SOCIAL: "사교",
   STEALTH: "은밀",
-  FORCE: "무력",
-  TRADE: "거래",
-  INVESTIGATION: "조사",
-  COMBAT: "전투",
+  PRESSURE: "압박",
+  ECONOMIC: "거래",
+  OBSERVATIONAL: "관찰",
+  POLITICAL: "정치",
+  LOGISTICAL: "실무",
+  VIOLENT: "무력",
 };
 
+// 서버 정본 enum (parsed-intent-v3.ts INTENT_GOAL_CATEGORY)과 1:1
 const GOAL_LABELS: Record<string, string> = {
   GET_INFO: "정보 수집",
   GAIN_ACCESS: "접근 확보",
-  SECURE_ITEM: "물건 확보",
-  BUILD_ALLIANCE: "동맹 구축",
-  RESOLVE_CONFLICT: "분쟁 해결",
-  EARN_GOLD: "금화 벌기",
+  SHIFT_RELATION: "관계 변화",
+  ACQUIRE_RESOURCE: "자원 확보",
+  BLOCK_RIVAL: "경쟁자 견제",
+  CREATE_DISTRACTION: "교란",
+  HIDE_TRACE: "흔적 은폐",
+  ESCALATE_CONFLICT: "충돌 격화",
+  DEESCALATE_CONFLICT: "충돌 완화",
+  TEST_REACTION: "반응 떠보기",
 };
 
 const FACTION_LABELS: Record<string, string> = {
@@ -212,9 +220,17 @@ export function QuestTab() {
   const playerThreads = useGameStore((s) => s.playerThreads);
   const playerGoals = useGameStore((s) => s.playerGoals);
   const reputation = useGameStore((s) => s.worldState?.reputation);
+  const questStatus = useGameStore((s) => s.questStatus);
 
   const activeGoals = playerGoals.filter((g) => !g.completed);
   const reputationEntries = reputation ? Object.entries(reputation) : [];
+
+  // 이정표 — 미발견 단서의 발견 가능 지역 (중복 지역 병합)
+  const nextLocationNames = [
+    ...new Set(
+      (questStatus?.nextObjectives ?? []).flatMap((o) => o.locationNames),
+    ),
+  ];
 
   // ── 상단 요약 — 현재 데이터만 사용. 항목이 하나라도 있으면 카드 노출.
   const summaryRoute = arcState?.currentRoute ? ARC_ROUTE_LABELS[arcState.currentRoute] : null;
@@ -232,6 +248,94 @@ export function QuestTab() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* -1. 의뢰 현황판 (2026-07-23) — 단계·발견 단서·다음 행선지 이정표 */}
+      {questStatus && (
+        <section className="flex flex-col gap-2">
+          <SectionHeader
+            icon={ScrollText}
+            title="의뢰"
+            hint={`단계 ${questStatus.stateIndex + 1}/${questStatus.totalStates}`}
+          />
+          <div className={`flex flex-col gap-3 ${CARD_CLASS}`}>
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-[14px] font-bold leading-snug text-[var(--gold)]">
+                {questStatus.title}
+              </span>
+            </div>
+            <MiniBar
+              value={questStatus.stateIndex + 1}
+              max={questStatus.totalStates}
+              color="var(--gold)"
+            />
+            {questStatus.stateDescription && (
+              <p className="text-[12px] leading-relaxed text-[var(--text-primary)]/90">
+                {questStatus.stateDescription}
+              </p>
+            )}
+
+            {/* 다음 행선지 — 이정표 */}
+            {questStatus.terminal ? (
+              <div className="flex items-center gap-2 border-t border-white/15 pt-2.5">
+                <MapPin size={13} className="shrink-0 text-[var(--hp-red)]" />
+                <span className="text-[12px] font-semibold text-[var(--text-primary)]">
+                  최종 선택의 순간 — 더 모을 단서는 없다
+                </span>
+              </div>
+            ) : nextLocationNames.length > 0 ? (
+              <div className="flex flex-col gap-2 border-t border-white/15 pt-2.5">
+                <div className="flex items-center gap-1.5">
+                  <MapPin size={13} className="shrink-0 text-[var(--gold)]" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-primary)]/75">
+                    다음 단서가 있는 곳
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {nextLocationNames.map((name) => (
+                    <span
+                      key={name}
+                      className="rounded border border-[var(--gold)]/50 bg-[var(--gold)]/[0.12] px-2 py-0.5 text-[12px] font-semibold text-[var(--gold)]"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* 단서 방향 힌트 ([단서 방향]과 동일 소스) */}
+            {questStatus.directionHint && !questStatus.terminal && (
+              <p className="rounded bg-white/[0.05] px-2.5 py-2 text-[12px] italic leading-relaxed text-[var(--text-primary)]/85">
+                {questStatus.directionHint}
+              </p>
+            )}
+
+            {/* 발견한 단서 */}
+            <div className="flex flex-col gap-1.5 border-t border-white/15 pt-2.5">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="shrink-0 text-[var(--success-green)]" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-primary)]/75">
+                  발견한 단서 {questStatus.discoveredFacts.length}건
+                </span>
+              </div>
+              {questStatus.discoveredFacts.length > 0 ? (
+                questStatus.discoveredFacts.map((f) => (
+                  <div key={f.factId} className="flex items-start gap-1.5">
+                    <span className="mt-[3px] h-1 w-1 shrink-0 rounded-full bg-[var(--success-green)]" />
+                    <span className="text-[12px] leading-relaxed text-[var(--text-primary)]/90">
+                      {f.description}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <span className="text-[12px] text-[var(--text-primary)]/60">
+                  아직 단서를 찾지 못했다 — 위 지역에서 조사하거나 사람들에게 물어보자
+                </span>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 0. Top Summary — 현재 상황 한눈에 */}
       {showSummary && (
         <section className="flex flex-col gap-2">
@@ -369,7 +473,7 @@ export function QuestTab() {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-semibold text-[var(--text-primary)]">
-                    {FACTION_LABELS[factionId] ?? factionId}
+                    {questStatus?.factionNames?.[factionId] ?? FACTION_LABELS[factionId] ?? factionId}
                   </span>
                   <span
                     className="text-[12px] font-bold tabular-nums"
@@ -520,9 +624,14 @@ export function QuestTab() {
             {playerThreads
               .filter((t) => t.status === "ACTIVE" || t.status === "EMERGING")
               .map((thread) => {
-                const successRate = thread.actionCount > 0
-                  ? Math.round((thread.successRate ?? 0) * 100)
-                  : 0;
+                // 서버가 raw PlayerThread(successCount/failCount)를 보내는 경로
+                // 대응 — successRate 부재 시 successCount로 직접 계산 (0% 고정 버그 수정)
+                const rate =
+                  thread.successRate ??
+                  (thread.actionCount > 0
+                    ? (thread.successCount ?? 0) / thread.actionCount
+                    : 0);
+                const successRate = thread.actionCount > 0 ? Math.round(rate * 100) : 0;
                 return (
                   <div
                     key={thread.threadId}

@@ -20,6 +20,7 @@ import type {
   NarrativeMarkUI,
   MainArcClockUI,
   PlayerThreadSummaryUI,
+  QuestStatusUI,
   PlayerGoalUI,
   LocationDynamicStateUI,
   EquipmentBagItem,
@@ -104,6 +105,7 @@ export interface GameState {
   mainArcClock: MainArcClockUI | null;
   playerThreads: PlayerThreadSummaryUI[];
   day: number;
+  questStatus: QuestStatusUI | null;
   // Player Goals & Location Dynamic States
   playerGoals: PlayerGoalUI[];
   locationDynamicStates: Record<string, LocationDynamicStateUI>;
@@ -292,6 +294,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   mainArcClock: null,
   playerThreads: [],
   day: 1,
+  questStatus: null,
   // Player Goals & Location Dynamic States
   playerGoals: [],
   locationDynamicStates: {},
@@ -614,6 +617,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
         playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
         day: (wsObj?.day as number) ?? 1,
+        questStatus: (data.questStatus as QuestStatusUI | null) ?? null,
         playerGoals: (wsObj?.playerGoals as PlayerGoalUI[]) ?? (wsUI?.playerGoals ?? []),
         locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (wsUI?.locationDynamicStates ?? {}),
         // Narrative Engine 상태
@@ -745,6 +749,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
         playerThreads: (wsObj?.playerThreads as PlayerThreadSummaryUI[]) ?? [],
         day: (wsObj?.day as number) ?? 1,
+        questStatus: (data.questStatus as QuestStatusUI | null) ?? null,
         playerGoals: (wsObj?.playerGoals as PlayerGoalUI[]) ?? (wsUI?.playerGoals ?? []),
         locationDynamicStates: (wsObj?.locationDynamicStates as Record<string, LocationDynamicStateUI>) ?? (wsUI?.locationDynamicStates ?? {}),
         activeIncidents: (wsObj?.activeIncidents as IncidentSummaryUI[]) ?? [],
@@ -1213,6 +1218,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       mainArcClock: null,
       playerThreads: [],
       day: 1,
+      questStatus: null,
       playerGoals: [],
       locationDynamicStates: {},
       equipmentBag: [],

@@ -408,9 +408,29 @@ export interface PlayerThreadSummaryUI {
   approachVector: string;
   goalCategory: string;
   actionCount: number;
-  successRate: number;
+  /** 서버가 raw PlayerThread를 보내는 경로에서는 부재 — successCount로 계산 */
+  successRate?: number;
+  successCount?: number;
+  failCount?: number;
   status: 'EMERGING' | 'ACTIVE' | 'COMPLETED' | 'ABANDONED';
   summary?: string;
+}
+
+// --- Quest 현황판 (2026-07-23) ---
+
+export interface QuestStatusUI {
+  questId: string;
+  title: string;
+  state: string;
+  stateIndex: number;
+  totalStates: number;
+  stateDescription: string | null;
+  discoveredFacts: Array<{ factId: string; description: string }>;
+  /** 다음 전환에 필요한 미발견 단서의 발견 가능 지역 (이정표, 내용 비공개) */
+  nextObjectives: Array<{ locationIds: string[]; locationNames: string[] }>;
+  directionHint: string | null;
+  terminal: boolean;
+  factionNames: Record<string, string>;
 }
 
 // --- Notification System ---
