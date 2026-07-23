@@ -32,6 +32,8 @@ import { EndingsListScreen } from "@/components/screens/EndingsListScreen";
 import { JourneySummaryScreen } from "@/components/screens/JourneySummaryScreen";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { LlmFailureModal } from "@/components/ui/LlmFailureModal";
+import { PointsModal } from "@/components/ui/PointsModal";
+import { usePointsStore } from "@/store/points-store";
 import { BugReportButton } from "@/components/ui/BugReportButton";
 import { QuestTab } from "@/components/side-panel/QuestTab";
 import { LocationHeader } from "@/components/hub/LocationHeader";
@@ -67,6 +69,11 @@ export default function GameClient() {
   const hydrate = useAuthStore((s) => s.hydrate);
 
   useEffect(() => { hydrate(); }, [hydrate]);
+  // arch/85 — 로그인 시 포인트 잔액 로드
+  const fetchPointsBalance = usePointsStore((s) => s.fetchBalance);
+  useEffect(() => {
+    if (authToken) void fetchPointsBalance();
+  }, [authToken, fetchPointsBalance]);
 
   const phase = useGameStore((s) => s.phase);
   const messages = useGameStore((s) => s.messages);
@@ -360,6 +367,8 @@ export default function GameClient() {
       )}
       {/* LLM failure modal */}
       <LlmFailureModal />
+      {/* 포인트 충전 모달 (arch/85) */}
+      <PointsModal />
       {/* 그레이마르 호외 — 새 시그널 알림 */}
       {/* 호외 모달 — 판정 배너·서술 스트리밍이 끝난 뒤에 표시 (연출 가림 방지) */}
       {pendingNewsSignals.length > 0 && !isNarrating && !isSubmitting && !choicesLoading && (

@@ -767,3 +767,23 @@ export function castVote(
     },
   );
 }
+
+// ── 포인트 시스템 (arch/85) ──────────────────────────────
+export interface PointsBalance {
+  points: number;
+  chatCost: number;
+  enabled: boolean;
+}
+
+/** GET /v1/points/balance — 현재 포인트 잔액. */
+export function getPointsBalance() {
+  return request<PointsBalance>('/v1/points/balance');
+}
+
+/** POST /v1/points/redeem — 코드 충전. */
+export function redeemPointCode(code: string) {
+  return request<{ balance: number; granted: number }>('/v1/points/redeem', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+}

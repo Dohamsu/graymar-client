@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Coins, Menu, Settings, Home, BookOpen, User, Backpack, Users, ScrollText } from "lucide-react";
+import { MapPin, Coins, Gem, Menu, Settings, Home, BookOpen, User, Backpack, Users, ScrollText } from "lucide-react";
+import { usePointsStore } from "@/store/points-store";
 import type { PlayerHud, WorldStateUI } from "@/types/game";
 import type { LlmTokenStats } from "@/lib/api-client";
 import { LlmSettingsModal } from "@/components/ui/LlmSettingsModal";
@@ -50,6 +51,24 @@ function StaminaBar({ current, max }: { current: number; max: number }) {
         {current}/{max}
       </span>
     </div>
+  );
+}
+
+/** 💎 포인트 잔액 — 클릭 시 충전 모달. arch/85 §6 */
+function PointsIndicator() {
+  const enabled = usePointsStore((s) => s.enabled);
+  const balance = usePointsStore((s) => s.balance);
+  const openModal = usePointsStore((s) => s.openModal);
+  if (!enabled) return null;
+  return (
+    <button
+      onClick={() => openModal("redeem")}
+      title="포인트 충전"
+      className="flex items-center gap-1.5 rounded transition hover:brightness-125"
+    >
+      <Gem size={14} className="text-[var(--gold)]" />
+      <span className="text-sm font-semibold text-[var(--gold)]">{balance}P</span>
+    </button>
   );
 }
 
@@ -107,6 +126,7 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
               {(hud.gold ?? 0).toLocaleString()}
             </span>
           </div>
+          <PointsIndicator />
           {/* LLM 토큰/레이턴시 디버그 배지 — 개발 빌드 전용 */}
           {llmStats && process.env.NODE_ENV !== "production" && (
             <div className="flex items-center gap-1.5 rounded bg-[var(--bg-card)] px-2 py-1 font-mono text-[10px] text-[var(--text-muted)]" title={`model: ${llmStats.model ?? '?'}\nprompt: ${llmStats.prompt}\ncached: ${llmStats.cached}\ncompletion: ${llmStats.completion}\nlatency: ${llmStats.latencyMs}ms`}>

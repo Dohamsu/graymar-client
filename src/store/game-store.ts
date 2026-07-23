@@ -31,6 +31,7 @@ import { usePartyStore } from '@/store/party-store';
 import { useAuthStore } from '@/store/auth-store';
 import { mapResultToMessages } from '@/lib/result-mapper';
 import { ApiError } from '@/lib/api-errors';
+import { usePointsStore } from '@/store/points-store';
 import { type StreamOutput } from '@/lib/stream-parser';
 import { uiLog } from '@/lib/ui-logger';
 
@@ -812,6 +813,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
 
       processTurnResponse(turnRes, get, set);
+      void usePointsStore.getState().fetchBalance(); // arch/85 — 잔액 동기화
     } catch (err) {
       // PR-C: TURN_NO_MISMATCH 자동 복구 — 서버 turnNo 기준 재동기화 후 재시도
       if (err instanceof ApiError && err.code === 'TURN_NO_MISMATCH') {
@@ -834,6 +836,12 @@ export const useGameStore = create<GameState>((set, get) => ({
           set({ isSubmitting: false, error: extractErrorMessage(retryErr) });
           return;
         }
+      }
+      // arch/85 — 포인트 부족(402): 충전 모달 유도 (에러 배너 대신)
+      if (err instanceof ApiError && err.status === 402) {
+        usePointsStore.getState().openModal('insufficient');
+        set({ isSubmitting: false });
+        return;
       }
       set({
         isSubmitting: false,
@@ -904,6 +912,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
 
       processTurnResponse(turnRes, get, set);
+      void usePointsStore.getState().fetchBalance(); // arch/85 — 잔액 동기화
     } catch (err) {
       // PR-C: TURN_NO_MISMATCH 자동 복구
       if (err instanceof ApiError && err.code === 'TURN_NO_MISMATCH') {
@@ -925,6 +934,12 @@ export const useGameStore = create<GameState>((set, get) => ({
           set({ isSubmitting: false, error: extractErrorMessage(retryErr) });
           return;
         }
+      }
+      // arch/85 — 포인트 부족(402): 충전 모달 유도 (에러 배너 대신)
+      if (err instanceof ApiError && err.status === 402) {
+        usePointsStore.getState().openModal('insufficient');
+        set({ isSubmitting: false });
+        return;
       }
       set({
         isSubmitting: false,
