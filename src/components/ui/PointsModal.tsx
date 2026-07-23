@@ -86,8 +86,7 @@ export function PointsModal() {
           onKeyDown={(e) => e.key === "Enter" && onRedeem()}
           placeholder="코드 입력 (예: ABCD-2345)"
           autoFocus
-          // text-base(16px): iOS 입력 포커스 자동 확대 방지 (font-size<16px 시 확대)
-          className="mb-3 w-full rounded border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 py-2 font-mono text-base tracking-wider text-[var(--text-primary)] outline-none focus:border-[var(--gold)]"
+          className="mb-3 w-full rounded border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 py-2 font-mono text-sm tracking-wider text-[var(--text-primary)] outline-none focus:border-[var(--gold)]"
         />
 
         {error && <p className="mb-3 text-sm text-[var(--color-danger,#e05a5a)]">{error}</p>}

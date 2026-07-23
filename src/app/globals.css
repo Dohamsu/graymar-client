@@ -135,6 +135,18 @@
   }
 }
 
+/* ── iOS 입력 포커스 자동 확대 방지 ── */
+/* iOS Safari는 입력 font-size < 16px 시 포커스하면 화면을 확대한다.
+   모바일 레이아웃(<lg=1024px)에서 텍스트 입력을 최소 16px로 강제.
+   Tailwind text-* 유틸(클래스)을 이기려면 !important 필요 (모바일 한정). */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* ── Reduced Motion ── */
 
 @media (prefers-reduced-motion: reduce) {
