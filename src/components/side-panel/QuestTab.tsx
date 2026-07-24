@@ -69,6 +69,41 @@ const FACTION_LABELS: Record<string, string> = {
   MERCHANT_CONSORTIUM: "상인 연합",
 };
 
+// 레거시 영속 텍스트 번역 안전망 (2026-07-24) — 기존 런의 runState에 이미
+// 저장된 "talk 관련 활동을 계속하고 있다"류 목표 설명과 "ECONOMIC 접근 2회"류
+// 스레드 요약은 서버 수정만으로 안 바뀐다. 렌더 시점에 한글로 교정.
+const LEGACY_GOAL_RE = /^([a-z_]+) 관련 활동을 계속하고 있다$/;
+const ACTION_GOAL_KO: Record<string, string> = {
+  talk: "사람들과 대화하며 정보를 모으고 있다",
+  investigate: "단서를 파고들며 조사를 이어가고 있다",
+  observe: "주변을 관찰하며 상황을 살피고 있다",
+  search: "구석구석 뒤지며 수색하고 있다",
+  persuade: "설득으로 사람들을 움직이려 하고 있다",
+  bribe: "금전으로 입을 열게 하려 하고 있다",
+  threaten: "위협적인 방식으로 밀어붙이고 있다",
+  sneak: "은밀하게 움직이며 눈에 띄지 않으려 하고 있다",
+  steal: "남의 물건에 손을 대는 일이 잦다",
+  fight: "힘으로 부딪히는 일이 잦다",
+  help: "어려운 사람들을 도우며 신뢰를 쌓고 있다",
+  trade: "거래로 이득을 챙기고 있다",
+  rest: "휴식을 자주 취하며 때를 기다리고 있다",
+  shop: "물건을 사들이며 채비를 갖추고 있다",
+  move_location: "여러 지역을 오가며 발품을 팔고 있다",
+};
+
+function localizeGoalDescription(desc: string): string {
+  const m = LEGACY_GOAL_RE.exec(desc);
+  if (!m) return desc;
+  return ACTION_GOAL_KO[m[1]!] ?? "같은 방식의 행동을 반복하고 있다";
+}
+
+function localizeThreadSummary(summary: string): string {
+  return summary.replace(
+    /\b(SOCIAL|STEALTH|PRESSURE|ECONOMIC|OBSERVATIONAL|POLITICAL|LOGISTICAL|VIOLENT)\b/g,
+    (t) => APPROACH_LABELS[t] ?? t,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -232,8 +267,14 @@ export function QuestTab() {
     ),
   ];
 
+  // 노선 표시명 — 팩별 라벨(quest.json arcRoutes) 우선, 엔진 enum 기본명 fallback
+  const routeName = (route: ArcRoute) =>
+    questStatus?.arcRouteLabels?.[route] ?? ARC_ROUTE_LABELS[route].name;
+
   // ── 상단 요약 — 현재 데이터만 사용. 항목이 하나라도 있으면 카드 노출.
-  const summaryRoute = arcState?.currentRoute ? ARC_ROUTE_LABELS[arcState.currentRoute] : null;
+  const summaryRoute = arcState?.currentRoute
+    ? { name: routeName(arcState.currentRoute), color: ARC_ROUTE_LABELS[arcState.currentRoute].color }
+    : null;
   const summaryDeadline = mainArcClock
     ? mainArcClock.triggered
       ? { label: "시한 초과", urgent: true }
@@ -392,7 +433,7 @@ export function QuestTab() {
                     {summaryGoal.type === "EXPLICIT" ? "\u{1F4CB}" : "\u{1F50D}"}
                   </span>
                   <span className="text-[12px] font-semibold leading-snug text-[var(--text-primary)]">
-                    {summaryGoal.description}
+                    {localizeGoalDescription(summaryGoal.description)}
                   </span>
                 </div>
                 <StatRow
@@ -422,7 +463,7 @@ export function QuestTab() {
                 className="text-[14px] font-bold"
                 style={{ color: ARC_ROUTE_LABELS[arcState.currentRoute].color }}
               >
-                {ARC_ROUTE_LABELS[arcState.currentRoute].name}
+                {routeName(arcState.currentRoute)}
               </span>
               {arcState.commitment >= 3 && (
                 <span className="rounded border border-[var(--gold)]/60 bg-[var(--gold)]/30 px-2 py-0.5 text-[10px] font-bold tracking-wider text-[var(--gold)]">
@@ -655,7 +696,7 @@ export function QuestTab() {
                     </span>
                     {thread.summary && (
                       <span className="text-[12px] leading-relaxed text-[var(--text-primary)]/90">
-                        {thread.summary}
+                        {localizeThreadSummary(thread.summary)}
                       </span>
                     )}
                   </div>
@@ -682,7 +723,7 @@ export function QuestTab() {
                     {goal.type === "EXPLICIT" ? "\u{1F4CB}" : "\u{1F50D}"}
                   </span>
                   <span className="text-[13px] font-semibold leading-snug text-[var(--text-primary)]">
-                    {goal.description}
+                    {localizeGoalDescription(goal.description)}
                   </span>
                 </div>
                 <StatRow

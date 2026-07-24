@@ -431,6 +431,8 @@ export interface QuestStatusUI {
   directionHint: string | null;
   terminal: boolean;
   factionNames: Record<string, string>;
+  /** 아크 노선 팩별 라벨 (routeId → label) — graymar 하드코딩 대체 */
+  arcRouteLabels?: Record<string, string>;
 }
 
 // --- Notification System ---
