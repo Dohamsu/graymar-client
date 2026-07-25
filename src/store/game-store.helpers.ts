@@ -65,6 +65,8 @@ export type RunStateSnapshot = {
   inventory?: Array<{ itemId: string; qty: number }>;
   equipped?: Record<string, { instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }>;
   equipmentBag?: Array<{ instanceId: string; baseItemId: string; prefixAffixId?: string; suffixAffixId?: string; displayName: string }>;
+  /** arch/89 B′ — 미정산 사례금 (이어하기 복원용) */
+  pendingQuestReward?: { gold: number; equipment: string[]; sinceTurn: number } | null;
 };
 
 const SLOT_ICONS: Record<string, string> = {
@@ -697,9 +699,22 @@ export function processTurnResponse(
     : allMessages;
 
   // Apply diff to HUD
-  const updatedHud = result.diff
+  const baseHud = result.diff
     ? applyDiffToHud(get().hud, result.diff)
     : get().hud;
+
+  // [arch/89 B′] 미정산 사례금 — 서버가 값을 보내면 그대로, 정산 이벤트가 있으면 0으로,
+  // 둘 다 없으면(전투 등 무관 턴) 기존 잔액을 유지한다.
+  const uiPendingGold = (result.ui as { pendingQuestReward?: { gold?: number } } | undefined)
+    ?.pendingQuestReward?.gold;
+  const hasSettlement = (result.events ?? []).some((e) =>
+    (e.tags ?? []).includes('QUEST_REWARD_SETTLE'),
+  );
+  const updatedHud: PlayerHud = {
+    ...baseHud,
+    pendingQuestGold:
+      uiPendingGold ?? (hasSettlement ? 0 : (get().hud.pendingQuestGold ?? 0)),
+  };
 
   // Apply diff to inventory
   const updatedInventory = result.diff?.inventory
@@ -936,6 +951,7 @@ export function applyRunSnapshot(
         stamina: runState.stamina,
         maxStamina: runState.maxStamina,
         gold: runState.gold,
+        pendingQuestGold: runState.pendingQuestReward?.gold ?? 0,
       }
     : { ...SNAPSHOT_INITIAL_HUD };
 

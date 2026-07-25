@@ -55,6 +55,11 @@ export interface PlayerHud {
   stamina: number;
   maxStamina: number;
   gold: number;
+  /**
+   * 미정산 사례금 (arch/89 B′) — 단서를 캐서 적립됐지만 아직 받지 못한 몫.
+   * 의뢰인을 만나거나 거점으로 돌아가면 정산된다. 0/undefined면 표시하지 않는다.
+   */
+  pendingQuestGold?: number;
 }
 
 export interface CharacterInfo {

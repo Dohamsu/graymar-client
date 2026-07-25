@@ -125,6 +125,15 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
             <span className="text-sm font-semibold text-[var(--gold)]">
               {(hud.gold ?? 0).toLocaleString()}
             </span>
+            {/* arch/89 — 적립됐지만 아직 못 받은 사례금. 의뢰인 대면·거점 복귀 시 정산 */}
+            {(hud.pendingQuestGold ?? 0) > 0 && (
+              <span
+                className="text-xs font-medium text-[var(--text-muted)]"
+                title={`받을 사례금 ${hud.pendingQuestGold}골드 — 의뢰인을 만나거나 거점으로 돌아가면 정산됩니다.`}
+              >
+                (+{hud.pendingQuestGold})
+              </span>
+            )}
           </div>
           <PointsIndicator />
           {/* LLM 토큰/레이턴시 디버그 배지 — 개발 빌드 전용 */}
@@ -198,6 +207,12 @@ function MobileStatusRow({ hud, worldState }: { hud: PlayerHud; worldState?: Wor
       <span className="text-[11px] font-semibold text-[var(--gold)]">
         {(hud.gold ?? 0).toLocaleString()}
       </span>
+      {/* arch/89 — 미정산 사례금 (모바일 상태줄) */}
+      {(hud.pendingQuestGold ?? 0) > 0 && (
+        <span className="text-[10px] text-[var(--text-muted)]">
+          (+{hud.pendingQuestGold})
+        </span>
+      )}
     </div>
   );
   const pointsEl = pointsEnabled ? (
