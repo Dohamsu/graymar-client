@@ -4,6 +4,7 @@ import Image from "next/image";
 import { FeatureCard } from "./landing/FeatureCard";
 import { MobileNav } from "./landing/MobileNav";
 import { AuthRedirect } from "./landing/AuthRedirect";
+import { ScenarioCatalog } from "./landing/ScenarioCatalog";
 
 /* ─── SEO & AI SEO Metadata ─── */
 
@@ -358,6 +359,64 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* ─── Game Intro Video Section ─── */}
+        <section className="py-16 sm:py-24" aria-label="게임 소개 영상">
+          <div className="max-w-5xl mx-auto px-4 sm:px-8">
+            <div className="flex items-center gap-4 sm:gap-8 mb-10 sm:mb-16">
+              <div
+                className="flex-grow"
+                style={{
+                  height: "1px",
+                  background: "linear-gradient(90deg, transparent, #4e4639 50%, transparent)",
+                }}
+                aria-hidden="true"
+              />
+              <h2
+                className="text-2xl sm:text-4xl shrink-0 tracking-wide"
+                style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
+              >
+                일단 구경부터 하시죠
+              </h2>
+              <div
+                className="flex-grow"
+                style={{
+                  height: "1px",
+                  background: "linear-gradient(90deg, transparent, #4e4639 50%, transparent)",
+                }}
+                aria-hidden="true"
+              />
+            </div>
+            <div
+              className="relative overflow-hidden shadow-2xl"
+              style={{
+                border: "1px solid rgba(78, 70, 57, 0.3)",
+                backgroundColor: "#0e0e0e",
+              }}
+            >
+              <video
+                controls
+                playsInline
+                preload="metadata"
+                poster="/landing/hero.jpg"
+                className="w-full aspect-video"
+                style={{ backgroundColor: "#0e0e0e" }}
+              >
+                <source src="/videos/landing-hero-2.mp4" type="video/mp4" />
+                브라우저에서 영상을 재생할 수 없습니다.
+              </video>
+            </div>
+            <p
+              className="text-center mt-6 text-sm tracking-wide break-keep"
+              style={{ color: "#9a8f80" }}
+            >
+              영상 속 문장들도 AI가 그 자리에서 쓴 겁니다. 같은 장면은 두 번 안 나와요.
+            </p>
+          </div>
+        </section>
+
+        {/* ─── Scenario Catalog Section (arch/90 P2) ─── */}
+        <ScenarioCatalog />
+
         {/* ─── Features Section ─── */}
         <section id="features" className="max-w-7xl mx-auto px-4 sm:px-8 py-16 sm:py-24" aria-label="주요 특징">
           <div className="flex items-center gap-4 sm:gap-8 mb-12 sm:mb-20">
@@ -453,58 +512,76 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ─── Game Intro Video Section ─── */}
-        <section className="py-16 sm:py-24" aria-label="게임 소개 영상">
-          <div className="max-w-5xl mx-auto px-4 sm:px-8">
-            <div className="flex items-center gap-4 sm:gap-8 mb-10 sm:mb-16">
-              <div
-                className="flex-grow"
-                style={{
-                  height: "1px",
-                  background: "linear-gradient(90deg, transparent, #4e4639 50%, transparent)",
-                }}
-                aria-hidden="true"
-              />
+        {/* ─── Screenshot Section ─── */}
+        <section id="gameplay" className="py-20 sm:py-32" style={{ backgroundColor: "#0e0e0e" }} aria-label="게임 플레이 화면">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="text-center mb-12 sm:mb-16">
               <h2
-                className="text-2xl sm:text-4xl shrink-0 tracking-wide"
+                className="text-3xl sm:text-4xl mb-4"
                 style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
               >
-                일단 구경부터 하시죠
+                실제 화면
               </h2>
-              <div
-                className="flex-grow"
-                style={{
-                  height: "1px",
-                  background: "linear-gradient(90deg, transparent, #4e4639 50%, transparent)",
-                }}
-                aria-hidden="true"
-              />
+              <p className="text-lg break-keep" style={{ color: "#d1c5b4" }}>
+                문장을 적고, 주사위를 보고, 결과를 감당합니다. 화면은 이게 전부예요.
+              </p>
             </div>
-            <div
-              className="relative overflow-hidden shadow-2xl"
-              style={{
-                border: "1px solid rgba(78, 70, 57, 0.3)",
-                backgroundColor: "#0e0e0e",
-              }}
-            >
-              <video
-                controls
-                playsInline
-                preload="metadata"
-                poster="/landing/hero.jpg"
-                className="w-full aspect-video"
-                style={{ backgroundColor: "#0e0e0e" }}
-              >
-                <source src="/videos/landing-hero-2.mp4" type="video/mp4" />
-                브라우저에서 영상을 재생할 수 없습니다.
-              </video>
+
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
+              {/* Desktop screenshot */}
+              <div className="relative max-w-4xl flex-1">
+                <div
+                  className="absolute inset-0 -m-2 border hidden md:block"
+                  style={{ borderColor: "rgba(255, 222, 165, 0.15)" }}
+                  aria-hidden="true"
+                />
+                <Image
+                  src="/landing/screenshot-desktop.jpg"
+                  alt="DIMTALE 데스크톱 플레이 화면 — NPC 대화, 선택지, 캐릭터 정보 패널"
+                  width={1200}
+                  height={675}
+                  className="relative z-10 w-full border"
+                  style={{ borderColor: "rgba(78, 70, 57, 0.3)" }}
+                  sizes="(max-width: 1280px) 100vw, 900px"
+                  quality={90}
+                />
+                <p className="text-center mt-3 text-sm" style={{ color: "#9a8f80" }}>데스크톱</p>
+              </div>
+              {/* Mobile screenshot */}
+              <div className="relative w-48 sm:w-56 shrink-0">
+                <div
+                  className="absolute inset-0 -m-1.5 border rounded-2xl"
+                  style={{ borderColor: "rgba(255, 222, 165, 0.15)" }}
+                  aria-hidden="true"
+                />
+                <Image
+                  src="/landing/screenshot-mobile.jpg"
+                  alt="DIMTALE 모바일 플레이 화면 — 장면 이미지와 NPC 대화가 보이는 스마트폰 화면"
+                  width={390}
+                  height={844}
+                  className="relative z-10 w-full rounded-xl border"
+                  style={{ borderColor: "rgba(78, 70, 57, 0.3)" }}
+                  sizes="224px"
+                  quality={90}
+                />
+                <p className="text-center mt-3 text-sm" style={{ color: "#9a8f80" }}>모바일</p>
+              </div>
             </div>
-            <p
-              className="text-center mt-6 text-sm tracking-wide break-keep"
-              style={{ color: "#9a8f80" }}
-            >
-              영상 속 문장들도 AI가 그 자리에서 쓴 겁니다. 같은 장면은 두 번 안 나와요.
-            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 sm:mt-16 max-w-4xl mx-auto">
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>40+</p>
+                <p style={{ color: "#9a8f80" }}>당신을 기억하는 인물</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>7</p>
+                <p style={{ color: "#9a8f80" }}>숨은 거점</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>매 런</p>
+                <p style={{ color: "#9a8f80" }}>새로 열리는 도시</p>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -588,112 +665,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ─── Screenshot Section ─── */}
-        <section id="gameplay" className="py-20 sm:py-32" style={{ backgroundColor: "#0e0e0e" }} aria-label="게임 플레이 화면">
-          <div className="max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="text-center mb-12 sm:mb-16">
-              <h2
-                className="text-3xl sm:text-4xl mb-4"
-                style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
-              >
-                실제 화면
-              </h2>
-              <p className="text-lg break-keep" style={{ color: "#d1c5b4" }}>
-                문장을 적고, 주사위를 보고, 결과를 감당합니다. 화면은 이게 전부예요.
-              </p>
-            </div>
-
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
-              {/* Desktop screenshot */}
-              <div className="relative max-w-4xl flex-1">
-                <div
-                  className="absolute inset-0 -m-2 border hidden md:block"
-                  style={{ borderColor: "rgba(255, 222, 165, 0.15)" }}
-                  aria-hidden="true"
-                />
-                <Image
-                  src="/landing/screenshot-desktop.jpg"
-                  alt="DIMTALE 데스크톱 플레이 화면 — NPC 대화, 선택지, 캐릭터 정보 패널"
-                  width={1200}
-                  height={675}
-                  className="relative z-10 w-full border"
-                  style={{ borderColor: "rgba(78, 70, 57, 0.3)" }}
-                  sizes="(max-width: 1280px) 100vw, 900px"
-                  quality={90}
-                />
-                <p className="text-center mt-3 text-sm" style={{ color: "#9a8f80" }}>데스크톱</p>
-              </div>
-              {/* Mobile screenshot */}
-              <div className="relative w-48 sm:w-56 shrink-0">
-                <div
-                  className="absolute inset-0 -m-1.5 border rounded-2xl"
-                  style={{ borderColor: "rgba(255, 222, 165, 0.15)" }}
-                  aria-hidden="true"
-                />
-                <Image
-                  src="/landing/screenshot-mobile.jpg"
-                  alt="DIMTALE 모바일 플레이 화면 — 장면 이미지와 NPC 대화가 보이는 스마트폰 화면"
-                  width={390}
-                  height={844}
-                  className="relative z-10 w-full rounded-xl border"
-                  style={{ borderColor: "rgba(78, 70, 57, 0.3)" }}
-                  sizes="224px"
-                  quality={90}
-                />
-                <p className="text-center mt-3 text-sm" style={{ color: "#9a8f80" }}>모바일</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 sm:mt-16 max-w-4xl mx-auto">
-              <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>40+</p>
-                <p style={{ color: "#9a8f80" }}>당신을 기억하는 인물</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>7</p>
-                <p style={{ color: "#9a8f80" }}>숨은 거점</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>매 런</p>
-                <p style={{ color: "#9a8f80" }}>새로 열리는 도시</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ─── FAQ Section ─── */}
-        <section id="faq" className="max-w-4xl mx-auto px-4 sm:px-8 py-16 sm:py-24" aria-label="자주 묻는 질문">
-          <h2
-            className="text-3xl sm:text-4xl mb-12 text-center"
-            style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
-          >
-            자주 묻는 질문
-          </h2>
-          <div className="space-y-6">
-            {[
-              { q: "어떤 게임인가요?", a: "이름 없는 용병이 되어 잿빛 항구 그레이마르에 도착하는 텍스트 RPG입니다. 부패한 총독, 파업 직전의 부두, 뒷골목의 밀수품이 동시에 움직이고, 40명이 넘는 인물이 당신의 모든 행동을 기억합니다. 파티로 함께 도시를 뒤집을 수도 있습니다." },
-              { q: "무료로 시작할 수 있나요?", a: "가입하면 시작 포인트를 드립니다. PC·모바일 브라우저에서 바로 플레이하고, 이후엔 턴마다 소량의 포인트가 들어요. AI가 실패한 턴에는 차감하지 않습니다." },
-              { q: "AI는 어떤 역할을 하나요?", a: "상황의 묘사와 NPC 대사를 매 턴 새로 씁니다. 주사위·스탯·판정 같은 게임 규칙은 전부 서버가 결정합니다. AI는 작가, 서버는 게임 마스터라고 보시면 됩니다." },
-              { q: "한 번의 플레이는 얼마나 걸리나요?", a: "한 판은 보통 20~30턴, 30분에서 한 시간 정도입니다. 중간 저장되니 언제든 끊고 돌아오세요. 출신과 선택이 달라지면 도시도 다른 모습으로 열립니다." },
-              { q: "모바일에서도 되나요?", a: "네, 모바일 브라우저에 맞춰 있습니다. 선택지는 터치로, 자유 행동은 직접 입력창에 적으면 됩니다." },
-              { q: "캐릭터는 어떻게 만드나요?", a: "부두 노동자·탈영병·밀수업자·약초사·몰락 귀족·떠돌이 검투사 중에서 고르고, 이름과 외모를 정한 뒤 보너스 스탯을 나눠 씁니다. 초상화는 직접 그리거나 AI 생성을 쓸 수 있습니다." },
-            ].map((item, i) => (
-              <details key={i} className="group border-b" style={{ borderColor: "rgba(78, 70, 57, 0.2)" }}>
-                <summary
-                  className="flex items-center justify-between cursor-pointer py-5 text-lg"
-                  style={{ fontFamily: "'Noto Serif KR', serif", color: "#e5e2e1" }}
-                >
-                  {item.q}
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 ml-4 group-open:rotate-180 transition-transform" style={{ color: "#9a8f80" }} aria-hidden="true">
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </summary>
-                <p className="pb-5 leading-relaxed" style={{ color: "#d1c5b4" }}>{item.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
         {/* ─── How to Play Section ─── */}
         <section id="how-to-play" className="py-20 sm:py-32" style={{ backgroundColor: "#0e0e0e" }} aria-label="플레이 가이드">
           <div className="max-w-7xl mx-auto px-4 sm:px-8">
@@ -774,6 +745,39 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ─── FAQ Section ─── */}
+        <section id="faq" className="max-w-4xl mx-auto px-4 sm:px-8 py-16 sm:py-24" aria-label="자주 묻는 질문">
+          <h2
+            className="text-3xl sm:text-4xl mb-12 text-center"
+            style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
+          >
+            자주 묻는 질문
+          </h2>
+          <div className="space-y-6">
+            {[
+              { q: "어떤 게임인가요?", a: "이름 없는 용병이 되어 잿빛 항구 그레이마르에 도착하는 텍스트 RPG입니다. 부패한 총독, 파업 직전의 부두, 뒷골목의 밀수품이 동시에 움직이고, 40명이 넘는 인물이 당신의 모든 행동을 기억합니다. 파티로 함께 도시를 뒤집을 수도 있습니다." },
+              { q: "무료로 시작할 수 있나요?", a: "가입하면 시작 포인트를 드립니다. PC·모바일 브라우저에서 바로 플레이하고, 이후엔 턴마다 소량의 포인트가 들어요. AI가 실패한 턴에는 차감하지 않습니다." },
+              { q: "AI는 어떤 역할을 하나요?", a: "상황의 묘사와 NPC 대사를 매 턴 새로 씁니다. 주사위·스탯·판정 같은 게임 규칙은 전부 서버가 결정합니다. AI는 작가, 서버는 게임 마스터라고 보시면 됩니다." },
+              { q: "한 번의 플레이는 얼마나 걸리나요?", a: "한 판은 보통 20~30턴, 30분에서 한 시간 정도입니다. 중간 저장되니 언제든 끊고 돌아오세요. 출신과 선택이 달라지면 도시도 다른 모습으로 열립니다." },
+              { q: "모바일에서도 되나요?", a: "네, 모바일 브라우저에 맞춰 있습니다. 선택지는 터치로, 자유 행동은 직접 입력창에 적으면 됩니다." },
+              { q: "캐릭터는 어떻게 만드나요?", a: "부두 노동자·탈영병·밀수업자·약초사·몰락 귀족·떠돌이 검투사 중에서 고르고, 이름과 외모를 정한 뒤 보너스 스탯을 나눠 씁니다. 초상화는 직접 그리거나 AI 생성을 쓸 수 있습니다." },
+            ].map((item, i) => (
+              <details key={i} className="group border-b" style={{ borderColor: "rgba(78, 70, 57, 0.2)" }}>
+                <summary
+                  className="flex items-center justify-between cursor-pointer py-5 text-lg"
+                  style={{ fontFamily: "'Noto Serif KR', serif", color: "#e5e2e1" }}
+                >
+                  {item.q}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 ml-4 group-open:rotate-180 transition-transform" style={{ color: "#9a8f80" }} aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </summary>
+                <p className="pb-5 leading-relaxed" style={{ color: "#d1c5b4" }}>{item.a}</p>
+              </details>
+            ))}
           </div>
         </section>
 
