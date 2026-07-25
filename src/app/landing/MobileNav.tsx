@@ -4,10 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 
 const navLinks = [
-  { href: "#world", label: "World" },
-  { href: "#features", label: "Features" },
-  { href: "#story", label: "Lore" },
-  { href: "#how-to-play", label: "Guide" },
+  { href: "#world", label: "세계" },
+  { href: "#features", label: "특징" },
+  { href: "#story", label: "이야기" },
+  { href: "#how-to-play", label: "가이드" },
 ];
 
 export function MobileNav() {
@@ -65,7 +65,7 @@ export function MobileNav() {
               fontFamily: "'Noto Serif KR', 'Noto Serif', serif",
             }}
           >
-            Play Now
+            지금 플레이
           </Link>
         </div>
       )}

@@ -17,7 +17,6 @@ export const metadata: Metadata = {
     "TRPG",
     "DimTale",
     "웹 RPG",
-    "무료 RPG",
     "인터랙티브 픽션",
     "AI 스토리텔링",
     "턴제 RPG",
@@ -129,10 +128,10 @@ function JsonLd() {
           },
           {
             "@type": "Question",
-            name: "무료인가요?",
+            name: "무료로 시작할 수 있나요?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "네, 전부 무료입니다. 별도 설치 없이 웹 브라우저에서 바로 플레이할 수 있습니다.",
+              text: "가입하면 시작 포인트를 드립니다. 설치 없이 웹 브라우저에서 바로 플레이할 수 있고, 이후엔 턴마다 소량의 포인트가 사용됩니다. AI가 실패한 턴에는 차감하지 않습니다.",
             },
           },
           {
@@ -211,19 +210,19 @@ export default function HomePage() {
             style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif" }}
           >
             <a href="#world" className="pb-1 border-b-2" style={{ color: "#ffdea5", borderColor: "#e9c176" }}>
-              World
+              세계
             </a>
             <a href="#features" className="hover:opacity-80 transition-colors" style={{ color: "#9a8f80" }}>
-              Features
+              특징
             </a>
             <a href="#story" className="hover:opacity-80 transition-colors" style={{ color: "#9a8f80" }}>
-              Lore
+              이야기
             </a>
             <a href="#gameplay" className="hover:opacity-80 transition-colors" style={{ color: "#9a8f80" }}>
-              Gameplay
+              화면
             </a>
             <a href="#how-to-play" className="hover:opacity-80 transition-colors" style={{ color: "#9a8f80" }}>
-              Guide
+              가이드
             </a>
             <a href="#faq" className="hover:opacity-80 transition-colors" style={{ color: "#9a8f80" }}>
               FAQ
@@ -239,7 +238,7 @@ export default function HomePage() {
                 fontFamily: "'Noto Serif KR', 'Noto Serif', serif",
               }}
             >
-              Play Now
+              지금 플레이
             </Link>
             <MobileNav />
           </div>
@@ -288,10 +287,10 @@ export default function HomePage() {
 
           <div className="relative z-10 text-center px-4 max-w-4xl">
             <span
-              className="tracking-[0.3em] uppercase mb-4 block animate-pulse text-sm"
+              className="tracking-[0.2em] mb-4 block text-sm"
               style={{ fontFamily: "'Inter', sans-serif", color: "#ffdea5" }}
             >
-              TEXT RPG &middot; 잿빛 항구
+              웹에서 바로 하는 텍스트 RPG
             </span>
             <h1
               className="text-5xl sm:text-6xl md:text-8xl font-black leading-none tracking-tighter mb-4"
@@ -304,21 +303,23 @@ export default function HomePage() {
               DIMTALE
             </h1>
             <p
-              className="text-xl sm:text-2xl md:text-3xl mb-4 sm:mb-6"
+              className="text-xl sm:text-2xl md:text-3xl mb-4 sm:mb-6 break-keep"
               style={{
                 fontFamily: "'Noto Serif KR', 'Noto Serif', serif",
                 color: "#d1c5b4",
               }}
             >
-              당신은 방금 막 도착했고, 이 도시는 당신을 시험한다.
+              총독은 부패했고, 부두는 파업 직전이고,
+              <br className="hidden sm:block" />
+              당신은 방금 배에서 내렸다.
             </p>
             <p
-              className="text-base sm:text-lg mb-8 sm:mb-12 max-w-xl mx-auto leading-relaxed"
+              className="text-base sm:text-lg mb-8 sm:mb-12 max-w-xl mx-auto leading-relaxed break-keep"
               style={{ color: "#9a8f80" }}
             >
-              부패한 총독, 파업 직전의 부두, 뒷골목의 밀수품.
+              심문하고, 미행하고, 숨어들고, 가끔은 그냥 술이나 사세요.
               <br className="hidden sm:block" />
-              누구의 손을 잡을지, 등을 돌릴지, 여기선 전부 당신 몫이다.
+              하고 싶은 걸 문장으로 적으면 주사위가 구르고 &mdash; 오늘 한 거짓말은 내일 돌아옵니다.
             </p>
             <div className="flex flex-col items-center gap-4">
               <Link
@@ -330,8 +331,11 @@ export default function HomePage() {
                   fontFamily: "'Noto Serif KR', 'Noto Serif', serif",
                 }}
               >
-                첫 밤을 시작한다
+                첫 밤 시작하기
               </Link>
+              <p className="text-sm tracking-wide" style={{ color: "#9a8f80" }}>
+                설치 없음 &middot; 가입 30초 &middot; 시작 포인트 지급
+              </p>
             </div>
           </div>
 
@@ -366,10 +370,10 @@ export default function HomePage() {
               aria-hidden="true"
             />
             <h2
-              className="text-2xl sm:text-4xl shrink-0 uppercase tracking-widest"
+              className="text-2xl sm:text-4xl shrink-0 tracking-wide"
               style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
             >
-              Your World, Your Rules
+              이렇게 노는 겁니다
             </h2>
             <div
               className="flex-grow"
@@ -381,15 +385,29 @@ export default function HomePage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <FeatureCard
               icon={
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
               }
-              title="얽힌 음모"
-              desc="5개의 사건이 동시에 움직인다. 당신이 한 사건에 개입하는 순간, 다른 넷이 방향을 바꾼다."
+              title="문장으로 플레이"
+              desc="『경비병 주머니를 슬쩍한다』라고 적어보세요. 정말로 벌어집니다. 물론, 주사위가 허락한다면요."
+            />
+            <FeatureCard
+              icon={
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1" fill="currentColor" />
+                  <circle cx="15.5" cy="15.5" r="1" fill="currentColor" />
+                  <circle cx="15.5" cy="8.5" r="1" fill="currentColor" />
+                  <circle cx="8.5" cy="15.5" r="1" fill="currentColor" />
+                </svg>
+              }
+              title="정직한 주사위"
+              desc="판정은 AI 기분이 아니라 1d6이 정합니다. 굴림도 보정도 전부 보여드려요."
             />
             <FeatureCard
               icon={
@@ -399,8 +417,8 @@ export default function HomePage() {
                   <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
                 </svg>
               }
-              title="숨 쉬는 인물들"
-              desc="40명이 넘는 인물이 각자 원하는 것을 가졌다. 당신이 어제 한 말을 오늘 그들이 꺼낸다."
+              title="뒤끝 있는 인물들"
+              desc="40명이 각자 먹고삽니다. 당신이 어제 한 말을 오늘 꺼내는 것도 그들이고요."
             />
             <FeatureCard
               icon={
@@ -408,17 +426,29 @@ export default function HomePage() {
                   <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
                 </svg>
               }
-              title="두 번 없는 길"
-              desc="같은 길은 두 번 열리지 않는다. 지난 런에서 죽은 사람도, 남긴 빚도 다음 런에선 다른 모습이다."
+              title="매번 다른 도시"
+              desc="죽어도 됩니다. 다음 판의 도시는 어차피 다른 얼굴이니까요."
             />
             <FeatureCard
               icon={
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                  <path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 7l6-6 4 4-6 6M3 3l18 18" />
+                  <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <path d="M20 8v6M23 11h-6" />
                 </svg>
               }
-              title="칼날 위의 선택"
-              desc="거리와 각도를 읽어라. 검 한 번의 빗맞음이 도시의 판을 뒤집는다."
+              title="같이 망하기"
+              desc="혼자 감당이 안 되면 친구를 부르세요. 최대 4명이 같은 골목에 섭니다."
+            />
+            <FeatureCard
+              icon={
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+              }
+              title="정해진 진상"
+              desc="범인은 이미 정해져 있습니다. 아직 아무도 모를 뿐이죠."
             />
           </div>
         </section>
@@ -436,10 +466,10 @@ export default function HomePage() {
                 aria-hidden="true"
               />
               <h2
-                className="text-2xl sm:text-4xl shrink-0 uppercase tracking-widest"
+                className="text-2xl sm:text-4xl shrink-0 tracking-wide"
                 style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
               >
-                Game Preview
+                일단 구경부터 하시죠
               </h2>
               <div
                 className="flex-grow"
@@ -470,10 +500,10 @@ export default function HomePage() {
               </video>
             </div>
             <p
-              className="text-center mt-6 text-sm tracking-wide"
+              className="text-center mt-6 text-sm tracking-wide break-keep"
               style={{ color: "#9a8f80" }}
             >
-              매 플레이마다 다른 이야기 — 같은 길은 두 번 열리지 않는다
+              영상 속 문장들도 AI가 그 자리에서 쓴 겁니다. 같은 장면은 두 번 안 나와요.
             </p>
           </div>
         </section>
@@ -523,7 +553,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-4 text-lg group"
                 style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
               >
-                그 첫날부터 시작한다
+                그 첫날부터 시작하기
                 <svg
                   width="24"
                   height="24"
@@ -566,10 +596,10 @@ export default function HomePage() {
                 className="text-3xl sm:text-4xl mb-4"
                 style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
               >
-                실제 게임 화면
+                실제 화면
               </h2>
-              <p className="text-lg" style={{ color: "#d1c5b4" }}>
-                한 문장의 선택이 도시의 다음 밤을 바꾼다
+              <p className="text-lg break-keep" style={{ color: "#d1c5b4" }}>
+                문장을 적고, 주사위를 보고, 결과를 감당합니다. 화면은 이게 전부예요.
               </p>
             </div>
 
@@ -642,7 +672,7 @@ export default function HomePage() {
           <div className="space-y-6">
             {[
               { q: "어떤 게임인가요?", a: "이름 없는 용병이 되어 잿빛 항구 그레이마르에 도착하는 텍스트 RPG입니다. 부패한 총독, 파업 직전의 부두, 뒷골목의 밀수품이 동시에 움직이고, 40명이 넘는 인물이 당신의 모든 행동을 기억합니다. 파티로 함께 도시를 뒤집을 수도 있습니다." },
-              { q: "무료인가요?", a: "네, 전부 무료입니다. PC·모바일 브라우저에서 바로 플레이하며, 가입은 30초면 끝납니다." },
+              { q: "무료로 시작할 수 있나요?", a: "가입하면 시작 포인트를 드립니다. PC·모바일 브라우저에서 바로 플레이하고, 이후엔 턴마다 소량의 포인트가 들어요. AI가 실패한 턴에는 차감하지 않습니다." },
               { q: "AI는 어떤 역할을 하나요?", a: "상황의 묘사와 NPC 대사를 매 턴 새로 씁니다. 주사위·스탯·판정 같은 게임 규칙은 전부 서버가 결정합니다. AI는 작가, 서버는 게임 마스터라고 보시면 됩니다." },
               { q: "한 번의 플레이는 얼마나 걸리나요?", a: "한 판은 보통 20~30턴, 30분에서 한 시간 정도입니다. 중간 저장되니 언제든 끊고 돌아오세요. 출신과 선택이 달라지면 도시도 다른 모습으로 열립니다." },
               { q: "모바일에서도 되나요?", a: "네, 모바일 브라우저에 맞춰 있습니다. 선택지는 터치로, 자유 행동은 직접 입력창에 적으면 됩니다." },
@@ -672,18 +702,18 @@ export default function HomePage() {
                 className="text-3xl sm:text-4xl mb-4"
                 style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
               >
-                3분이면 잿빛 항구에 선다
+                3분이면 첫 턴을 던집니다
               </h2>
               <p className="text-lg" style={{ color: "#d1c5b4" }}>
-                출신을 고르고, 이름을 짓고, 첫 밤으로 들어간다
+                출신 고르고, 이름 짓고, 바로 첫 밤입니다
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
               {[
                 {
                   step: "01",
-                  title: "출신을 고른다",
-                  desc: "탈영병, 밀수업자, 몰락 귀족. 어디서 왔는지가 누가 먼저 말을 거는지를 정한다.",
+                  title: "출신을 고릅니다",
+                  desc: "탈영병, 밀수업자, 몰락 귀족. 어디서 왔느냐가, 누가 먼저 말을 걸어오는지를 정합니다.",
                   icon: (
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
@@ -692,8 +722,8 @@ export default function HomePage() {
                 },
                 {
                   step: "02",
-                  title: "원하는 대로 움직인다",
-                  desc: "시장에서 정보를 사고, 뒷골목을 엿보고, 관저에 잠입한다. 입력창에 그대로 적으면 된다.",
+                  title: "원하는 대로 적습니다",
+                  desc: "시장에서 정보를 사고, 뒷골목을 엿보고, 관저에 숨어듭니다. 입력창에 그대로 적으면 돼요.",
                   icon: (
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z" />
@@ -702,8 +732,8 @@ export default function HomePage() {
                 },
                 {
                   step: "03",
-                  title: "그 결과를 살아낸다",
-                  desc: "배신은 기억되고, 은혜는 돌아온다. 어떤 선택도 없던 일이 되진 않는다.",
+                  title: "결과를 감당합니다",
+                  desc: "배신은 기억되고, 은혜는 돌아옵니다. 없던 일이 되는 건 없어요.",
                   icon: (
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z" />
@@ -762,7 +792,7 @@ export default function HomePage() {
             className="text-4xl sm:text-5xl md:text-6xl mb-8 sm:mb-12 text-center max-w-2xl px-4 break-keep"
             style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#e5e2e1" }}
           >
-            잿빛 항구의 첫 밤이 열려 있다.
+            항구는 오늘 밤도 열려 있습니다.
           </h2>
           <Link
             href="/play"
@@ -773,7 +803,7 @@ export default function HomePage() {
               fontFamily: "'Noto Serif KR', 'Noto Serif', serif",
             }}
           >
-            첫 밤을 시작한다
+            첫 밤 시작하기
           </Link>
         </section>
       </main>
@@ -793,23 +823,23 @@ export default function HomePage() {
           </div>
           <div className="flex flex-wrap justify-center gap-6 sm:gap-8 italic text-sm">
             <Link href="/" className="hover:opacity-80 transition-opacity duration-300" style={{ color: "#9a8f80" }}>
-              Home
+              홈
             </Link>
             <a href="#features" className="hover:opacity-80 transition-opacity duration-300" style={{ color: "#9a8f80" }}>
-              Features
+              특징
             </a>
             <a href="#story" className="hover:opacity-80 transition-opacity duration-300" style={{ color: "#9a8f80" }}>
-              Lore
+              이야기
             </a>
             <a href="#how-to-play" className="hover:opacity-80 transition-opacity duration-300" style={{ color: "#9a8f80" }}>
-              Guide
+              가이드
             </a>
           </div>
           <p
             className="text-[10px] tracking-[0.2em] mt-6 sm:mt-8 uppercase opacity-50"
             style={{ fontFamily: "'Inter', sans-serif", color: "#9a8f80" }}
           >
-            &copy; 2026 DIMTALE. 잿빛 항구에서 만난다.
+            &copy; 2026 DIMTALE. 잿빛 항구에서 봅시다.
           </p>
         </div>
       </footer>
