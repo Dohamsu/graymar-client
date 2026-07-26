@@ -172,10 +172,13 @@ export const SCENARIO_UI_LABELS: Record<
   string,
   { hubName: string; fallbackLocation: string }
 > = {
+  // [arch/92] hubName 은 거점 장소(여관·선술집)의 고유명을 쓰지 않는다 — 같은
+  // 이름이면 헤더가 "꿈잠 여관"인데 선택지에 "꿈잠 여관으로 향한다"가 뜬다.
+  // 서버 scenario.json hub.name 과 문면을 맞출 것.
   graymar_v1: { hubName: "그레이마르 거점", fallbackLocation: "그레이마르 항만" },
   silverdeen_v1: { hubName: "실버딘 거점", fallbackLocation: "실버딘 광산 마을" },
-  star_sand_v1: { hubName: "꿈잠 여관", fallbackLocation: "극야해안" },
-  karnholt_v1: { hubName: "무너진 곡괭이", fallbackLocation: "카른홀트" },
+  star_sand_v1: { hubName: "극야해안 거점", fallbackLocation: "극야해안" },
+  karnholt_v1: { hubName: "카른홀트 거점", fallbackLocation: "카른홀트" },
 };
 
 /**
