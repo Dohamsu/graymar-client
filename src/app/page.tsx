@@ -5,6 +5,7 @@ import { FeatureCard } from "./landing/FeatureCard";
 import { MobileNav } from "./landing/MobileNav";
 import { AuthRedirect } from "./landing/AuthRedirect";
 import { ScenarioCatalog } from "./landing/ScenarioCatalog";
+import { GameplayDemo } from "./landing/GameplayDemo";
 
 /* ─── SEO & AI SEO Metadata ─── */
 
@@ -359,6 +360,9 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* ─── Gameplay Demo Section (arch/90 P3) ─── */}
+        <GameplayDemo />
+
         {/* ─── Game Intro Video Section ─── */}
         <section className="py-16 sm:py-24" aria-label="게임 소개 영상">
           <div className="max-w-5xl mx-auto px-4 sm:px-8">
@@ -375,7 +379,7 @@ export default function HomePage() {
                 className="text-2xl sm:text-4xl shrink-0 tracking-wide"
                 style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
               >
-                일단 구경부터 하시죠
+                실황은 이렇습니다
               </h2>
               <div
                 className="flex-grow"
@@ -432,7 +436,7 @@ export default function HomePage() {
               className="text-2xl sm:text-4xl shrink-0 tracking-wide"
               style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#ffdea5" }}
             >
-              이렇게 노는 겁니다
+              다른 데선 안 되는 것들
             </h2>
             <div
               className="flex-grow"
