@@ -6,6 +6,7 @@ import { MobileNav } from "./landing/MobileNav";
 import { AuthRedirect } from "./landing/AuthRedirect";
 import { ScenarioCatalog } from "./landing/ScenarioCatalog";
 import { GameplayDemo } from "./landing/GameplayDemo";
+import { LiveStats } from "./landing/LiveStats";
 
 /* ─── SEO & AI SEO Metadata ─── */
 
@@ -572,20 +573,8 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 sm:mt-16 max-w-4xl mx-auto">
-              <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>40+</p>
-                <p style={{ color: "#9a8f80" }}>당신을 기억하는 인물</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>7</p>
-                <p style={{ color: "#9a8f80" }}>숨은 거점</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: "#ffdea5", fontFamily: "'Noto Serif KR', serif" }}>매 런</p>
-                <p style={{ color: "#9a8f80" }}>새로 열리는 도시</p>
-              </div>
-            </div>
+            {/* 사회적 증명 실데이터 — 실패·소표본 시 정적 fallback (arch/90 P4) */}
+            <LiveStats />
           </div>
         </section>
 
