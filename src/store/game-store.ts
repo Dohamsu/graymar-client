@@ -610,7 +610,9 @@ export const useGameStore = create<GameState>((set, get) => ({
         setDefinitions: (data.setDefinitions as GameState['setDefinitions']) ?? [],
         worldState: wsUI ?? null,
         resolveOutcome: null,
-        locationName: null,
+        // [arch/93] 복원 시 장소 표시명 — 서버가 currentLocationId로 파생해 준다.
+        // null로 두면 시나리오 기본 라벨로 떨어져 실제 장소와 어긋난다.
+        locationName: (data.currentLocationName as string | null) ?? null,
         // Quest / Arc State (runState에서 추출)
         arcState: (rsAny?.arcState as ArcStateUI) ?? null,
         narrativeMarks: (wsObj?.narrativeMarks as NarrativeMarkUI[]) ?? [],
@@ -742,7 +744,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         setDefinitions: (data.setDefinitions as GameState['setDefinitions']) ?? [],
         worldState: wsUI ?? null,
         resolveOutcome: null,
-        locationName: null,
+        // [arch/93] 복원 시 장소 표시명 (위 resumeRun과 동일 경로)
+        locationName: (data.currentLocationName as string | null) ?? null,
         // Quest / Arc State (runState에서 추출)
         arcState: (rsAny?.arcState as ArcStateUI) ?? null,
         narrativeMarks: (wsObj?.narrativeMarks as NarrativeMarkUI[]) ?? [],

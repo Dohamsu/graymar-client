@@ -431,7 +431,11 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
   const isPlayer = message.type === "PLAYER";
   const isNarrator = message.type === "NARRATOR";
   const borderColor = isPlayer ? "var(--gold)" : "var(--border-primary)";
-  const bgColor = message.type === "CHOICE" || isPlayer ? "var(--bg-secondary)" : "var(--bg-card)";
+  // arch/93 — 반투명 변형. 뒤에 깔린 장소 배경(LocationBackdrop)이 비치도록 한다.
+  const bgColor =
+    message.type === "CHOICE" || isPlayer
+      ? "var(--bg-secondary-translucent)"
+      : "var(--bg-card-translucent)";
 
   if (prevLoading !== message.loading) {
     setPrevLoading(message.loading);

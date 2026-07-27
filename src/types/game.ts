@@ -296,6 +296,8 @@ export interface WorldStateUI {
   phaseV2?: 'DAWN' | 'DAY' | 'DUSK' | 'NIGHT';
   day?: number;
   currentLocationId: string | null;
+  /** [arch/93] 현재 장소 표시명 — 헤더 라벨 정본 (HUB는 null) */
+  currentLocationName?: string | null;
   locationDynamicStates?: Record<string, LocationDynamicStateUI>;
   playerGoals?: PlayerGoalUI[];
   reputation?: Record<string, number>;

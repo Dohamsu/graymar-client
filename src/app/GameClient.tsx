@@ -38,6 +38,7 @@ import { usePointsStore } from "@/store/points-store";
 import { BugReportButton } from "@/components/ui/BugReportButton";
 import { QuestTab } from "@/components/side-panel/QuestTab";
 import { LocationHeader } from "@/components/hub/LocationHeader";
+import { LocationBackdrop } from "@/components/location/LocationBackdrop";
 import { TurnResultBanner } from "@/components/location/TurnResultBanner";
 import { LocationToastLayer } from "@/components/location/LocationToastLayer";
 import { DeadlineBanner } from "@/components/location/DeadlineBanner";
@@ -320,6 +321,10 @@ export default function GameClient() {
       ? scenarioLabels.hubName
       : locationName ?? scenarioLabels.fallbackLocation;
 
+  // arch/93 — 장소 배경은 탐험 단계에서만. COMBAT은 BattlePanel이 시각을 점유하고,
+  // 전환/종료 화면은 자체 연출이 있어 제외한다.
+  const showBackdrop = phase === "LOCATION" || phase === "HUB";
+
   // Combine choices into the message feed if not already there
   // 내레이터가 타이핑 중이면 선택지 표시를 억제 (내러티브 완료 후 표시)
   const displayMessages =
@@ -417,7 +422,12 @@ export default function GameClient() {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Left Column - Narrative */}
-          <div className="flex min-h-0 flex-1 flex-col bg-[var(--bg-primary)]">
+          <div
+            className="relative flex min-h-0 flex-1 flex-col bg-[var(--bg-primary)]"
+            style={{ isolation: "isolate" }}
+          >
+            {/* arch/93 — 현재 장소 배경 (LOCATION/HUB 한정, COMBAT은 BattlePanel이 점유) */}
+            {showBackdrop && <LocationBackdrop />}
             {/* Battle panel (COMBAT only) */}
             {phase === "COMBAT" &&
               enemies.length > 0 &&
@@ -472,7 +482,13 @@ export default function GameClient() {
 
         <div className="animate-phase-fade flex min-h-0 flex-1 flex-col overflow-hidden">
           {mobileTab === "story" && (
-            <>
+            /* arch/93 — 배경 레이어 기준 컨테이너. min-h-0/flex-1 은 서술 스크롤
+               유지에 필수 (빠뜨리면 arch/86 overflow 무력화 회귀) */
+            <div
+              className="relative flex min-h-0 flex-1 flex-col"
+              style={{ isolation: "isolate" }}
+            >
+              {showBackdrop && <LocationBackdrop />}
               {phase === "COMBAT" &&
                 enemies.length > 0 &&
                 <BattlePanel enemies={enemies} />}
@@ -492,7 +508,7 @@ export default function GameClient() {
                   disabled={isSubmitting || isNarrating || choicesLoading}
                 />
               )}
-            </>
+            </div>
           )}
           {mobileTab === "character" && characterInfo && (
             <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">

@@ -34,6 +34,12 @@
   --bg-card: #141414;
   --border-primary: #1F1F1F;
 
+  /* arch/93 — 서술 카드 반투명 변형. 장소 배경(LocationBackdrop)이 비쳐야
+     하므로 알파를 둔다. 배경이 없는 팩/화면에서는 --bg-primary 위에 얹혀
+     불투명 원본과 육안 차이가 없다. StoryBlock 전용 — 다른 곳은 원본 사용. */
+  --bg-card-translucent: rgba(20, 20, 20, 0.75);
+  --bg-secondary-translucent: rgba(10, 10, 10, 0.78);
+
   /* Text Colors */
   --text-primary: #FAF8F5;
   --text-secondary: #888888;

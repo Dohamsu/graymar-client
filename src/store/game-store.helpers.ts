@@ -822,7 +822,14 @@ export function processTurnResponse(
       const enterTurnNo = t.enterTurnNo ?? t.enterResult.turnNo;
       const nextPhase = derivePhase(t.nextNodeType);
       const transWs = t.enterResult.ui?.worldState as WorldStateUI | undefined;
-      const locName = t.enterResult.summary?.display ?? null;
+      // [arch/93] 헤더 라벨은 worldState.currentLocationName 정본을 쓴다.
+      // summary.display는 "…에 도착했다." 같은 서술 문장이라 라벨로 부적합했다
+      // (구 동작). 구 런/미배선 경로 대비로만 display fallback 유지.
+      const locName =
+        (transWs as { currentLocationName?: string | null } | undefined)
+          ?.currentLocationName ??
+        t.enterResult.summary?.display ??
+        null;
 
       set({
         phase: nextPhase,
@@ -1061,7 +1068,13 @@ export function applyRunSnapshot(
     setDefinitions: (data.setDefinitions as GameState['setDefinitions']) ?? [],
     worldState: resumeWs ?? null,
     resolveOutcome: null,
-    locationName: null,
+    // [arch/93] 복원 시 장소 표시명 — 서버가 currentLocationId로 파생해 준다.
+    // null로 두면 시나리오 기본 라벨로 떨어져 실제 장소와 어긋난다
+    // (실측: LOC_GUARD 체류 중인데 헤더는 거점명).
+    locationName:
+      (data.currentLocationName as string | null | undefined) ??
+      resumeWs?.currentLocationName ??
+      null,
     arcState: (rsAny?.arcState as ArcStateUI) ?? null,
     narrativeMarks: (wsObj?.narrativeMarks as NarrativeMarkUI[]) ?? [],
     mainArcClock: (wsObj?.mainArcClock as MainArcClockUI) ?? null,
