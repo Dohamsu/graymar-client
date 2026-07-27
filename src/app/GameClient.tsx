@@ -41,13 +41,20 @@ import { LocationHeader } from "@/components/hub/LocationHeader";
 import { LocationBackdrop } from "@/components/location/LocationBackdrop";
 import { TurnResultBanner } from "@/components/location/TurnResultBanner";
 import { LocationToastLayer } from "@/components/location/LocationToastLayer";
-import { DeadlineBanner } from "@/components/location/DeadlineBanner";
+import { DeadlineBanner, useDeadlineBannerVisible } from "@/components/location/DeadlineBanner";
 import { EquipmentDropToast } from "@/components/location/EquipmentDropToast";
 import type { BattleEnemy } from "@/types/game";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { TimePhaseTransition } from "@/components/hub/TimePhaseTransition";
 import { NetworkStatus } from "@/components/ui/NetworkStatus";
 import NewsModal from "@/components/ui/NewsModal";
+
+/**
+ * 모바일 고정 헤더가 덮는 상단 높이 — h-12(48) + 상태줄 h-8(32) + 보더 1 = 81px.
+ * viewport-fit=cover 이므로 노치 inset 을 더해야 실제 헤더 하단과 맞는다.
+ * (Header.tsx 의 MobileHeader 마크업 변경 시 이 값도 함께 갱신)
+ */
+const MOBILE_HEADER_OFFSET = "calc(env(safe-area-inset-top) + 81px)";
 
 function NarrativeProgressNotice({ choicesLoading }: { choicesLoading: boolean }) {
   return (
@@ -126,6 +133,9 @@ export default function GameClient() {
   const turnStatus = usePartyStore((s) => s.turnStatus);
   const currentVote = usePartyStore((s) => s.currentVote);
   const castVote = usePartyStore((s) => s.castVote);
+
+  // 모바일 상단 스페이서 판단용 — 배너 표시 조건의 정본은 DeadlineBanner 쪽
+  const deadlineBannerVisible = useDeadlineBannerVisible();
 
   // --- Mobile header auto-hide on scroll ---
   const [mobileHeaderVisible, setMobileHeaderVisible] = useState(true);
@@ -350,6 +360,33 @@ export default function GameClient() {
     submitAction(actionId);
   };
 
+  // 모바일 상단 고정 영역 — 배너/HUD 존재 여부에 따라 스페이서·topInset 을 전환
+  const hasMobileTopBar = !isDesktopLayout && (deadlineBannerVisible || !!(partyInfo && partyMembers.length > 0));
+  const needsMobileTopSpacer = mobileTab !== "story" || hasMobileTopBar;
+
+  // 파티 HUD — 데스크톱/모바일 레이아웃 각각의 상단 고정 영역 안에 배치한다.
+  // (구 구현은 두 레이아웃 바깥 최상단에 렌더해서, 모바일에서는 fixed MobileHeader
+  //  뒤(y=0~81px)에 완전히 가려져 있었다.)
+  const partyHudNode =
+    partyInfo && partyMembers.length > 0 ? (
+      <div className="shrink-0 px-2 pt-1 sm:px-4">
+        <PartyHUD
+          members={partyMembers.map((m) => ({
+            userId: m.userId,
+            nickname: m.nickname,
+            presetId: m.presetId ?? null,
+            portraitUrl: null,
+            hp: m.hp ?? 0,
+            maxHp: m.maxHp ?? 0,
+            turnStatus: turnStatus?.submitted.includes(m.userId)
+              ? ("SUBMITTED" as const)
+              : ("CHOOSING" as const),
+            isCurrentUser: m.userId === currentUserId,
+          }))}
+        />
+      </div>
+    ) : null;
+
   const handleChoiceSelect = (choiceId: string) => {
     // architecture/42 — 공격 계열 선택지에 타겟 id 포함 시 store 갱신
     const attackMatch = choiceId.match(/^(?:attack_melee|combo_double_attack|combo_attack_defend)_(.+)$/);
@@ -384,29 +421,10 @@ export default function GameClient() {
         />
       )}
 
-      {/* ===== PartyHUD (when in a party) ===== */}
-      {partyInfo && partyMembers.length > 0 && (
-        <div className="shrink-0 px-2 pt-1 sm:px-4">
-          <PartyHUD
-            members={partyMembers.map((m) => ({
-              userId: m.userId,
-              nickname: m.nickname,
-              presetId: m.presetId ?? null,
-              portraitUrl: null,
-              hp: m.hp ?? 0,
-              maxHp: m.maxHp ?? 0,
-              turnStatus: turnStatus?.submitted.includes(m.userId)
-                ? "SUBMITTED" as const
-                : "CHOOSING" as const,
-              isCurrentUser: m.userId === currentUserId,
-            }))}
-          />
-        </div>
-      )}
-
       {/* ===== Desktop Layout (lg+) ===== */}
       {isDesktopLayout && (
       <div className="flex h-full flex-col animate-phase-fade" key={`desktop-${phaseKey}`}>
+        {partyHudNode}
         <Header location={location} hud={hud} worldState={worldState} llmStats={llmStats} />
 
         {/* 데드라인 임박/초과 배너 — 조건 충족 시에만 렌더 */}
@@ -473,9 +491,19 @@ export default function GameClient() {
       {/* ===== Mobile & Tablet Layout (<lg) ===== */}
       {!isDesktopLayout && (
       <div className="flex h-full flex-col" key={`mobile-${phaseKey}`}>
-        <MobileHeader location={location} visible={mobileHeaderVisible} activeTab={mobileTab} onTabChange={setMobileTab} hud={hud} worldState={worldState} />
-        {/* 이야기 탭 외에서는 헤더 고정 → 콘텐츠 시작 위치 확보 (h-12 + 상태줄 h-8) */}
-        {mobileTab !== "story" && <div className="h-20 shrink-0" />}
+        {/* 상단 배너/파티 HUD 가 있으면 헤더 자동 숨김을 끈다 — 숨는 순간
+            in-flow 스페이서만 남아 상단에 빈 띠가 생기기 때문 */}
+        <MobileHeader location={location} visible={mobileHeaderVisible || hasMobileTopBar} activeTab={mobileTab} onTabChange={setMobileTab} hud={hud} worldState={worldState} />
+        {/* MobileHeader 는 fixed 라 상단 81px(h-12 + 상태줄 h-8 + 보더) + safe-area 를
+            덮는다. 이야기 탭은 NarrativePanel 의 in-scroll topInset 이 그 자리를
+            메우지만(헤더 자동 숨김과 양립), 그 외에는 in-flow 스페이서로 시작
+            위치를 확보한다. 배너/파티 HUD 가 있을 때도 스페이서를 쓴다 — 안 그러면
+            헤더 뒤에 그대로 가려진다. */}
+        {needsMobileTopSpacer && (
+          <div className="shrink-0" style={{ height: MOBILE_HEADER_OFFSET }} />
+        )}
+
+        {partyHudNode}
 
         {/* 데드라인 임박/초과 배너 (모바일) */}
         <DeadlineBanner />
@@ -498,7 +526,7 @@ export default function GameClient() {
                 onNarrationComplete={flushPending}
                 scrollId="mobile-narrative-scroll"
                 hideChoices={phase === "COMBAT"}
-                topInset
+                topInset={!hasMobileTopBar}
               />
               {phase === "COMBAT" && enemies.length > 0 && (
                 <CombatActionBar
@@ -511,7 +539,7 @@ export default function GameClient() {
             </div>
           )}
           {mobileTab === "character" && characterInfo && (
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-6 md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
               <CharacterTab character={characterInfo} />
             </div>
           )}
@@ -521,22 +549,22 @@ export default function GameClient() {
             </div>
           )}
           {mobileTab === "equipment" && (
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-6 md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
               <EquipmentTab />
             </div>
           )}
           {mobileTab === "inventory" && (
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-6 md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
               <InventoryTab inventory={inventory} gold={hud.gold} changes={inventoryChanges} />
             </div>
           )}
           {mobileTab === "npcs" && (
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-6 md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
               <NpcDossierTab />
             </div>
           )}
           {mobileTab === "quests" && (
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-6 md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
               <QuestTab />
             </div>
           )}

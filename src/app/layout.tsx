@@ -74,9 +74,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* interactive-widget=resizes-content: 키보드가 뜰 때 레이아웃 뷰포트를 함께
+            줄인다. 기본값(resizes-visual)에서는 하단 sticky 입력창이 키보드 뒤로
+            들어가고 h-full 레이아웃이 화면 밖으로 밀린다 (Android Chrome). */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
         />
         {/* P3-C1: next/font 로 전환 — LCP 블로킹 요청 제거 (2026-04-24) */}
         {/* iOS 네이티브 스플래시 — data URI SVG로 모든 해상도 대응 */}

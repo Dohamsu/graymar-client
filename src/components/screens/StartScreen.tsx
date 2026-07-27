@@ -629,27 +629,17 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   // AUTH
   // =========================================================================
   if (screenPhase === "AUTH") {
+    // 세로 공간이 모자라면(작은 기기·가로 모드·키보드 노출) 스크롤로 흘린다.
+    // 구 구현은 overflow-hidden + maxHeight:600 이라 로그인 버튼이 잘린 채
+    // 도달 불가였다 (실측 390x390: 제출 버튼 4px 만 노출).
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-[var(--bg-primary)] px-4">
-        <div className="flex flex-col items-center gap-2">
-          <DimtaleLogoAnimated width={220} height={88} onReady={handleLogoReady} readyAfterMs={0} skipAnimation />
-          <h1 className="sr-only">DimTale</h1>
-        </div>
-        <div
-          className="w-full overflow-hidden"
-          style={{
-            maxHeight: 600,
-            pointerEvents: "auto",
-            transition: "max-height 1.5s cubic-bezier(0.4, 0, 0.2, 1)",
-          }}
-        >
-          <div
-            className="flex w-full flex-col items-center gap-8 pt-8"
-            style={{
-              opacity: 1,
-              transition: "opacity 0.2s ease",
-            }}
-          >
+      <div className="h-full overflow-y-auto overscroll-contain bg-[var(--bg-primary)]">
+        <div className="flex min-h-full w-full flex-col items-center justify-center px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-[calc(2rem+env(safe-area-inset-top))]">
+          <div className="flex flex-col items-center gap-2">
+            <DimtaleLogoAnimated width={220} height={88} onReady={handleLogoReady} readyAfterMs={0} skipAnimation />
+            <h1 className="sr-only">DimTale</h1>
+          </div>
+          <div className="flex w-full flex-col items-center gap-8 pt-8">
             <AuthForm onSuccess={() => setScreenPhase("TITLE")} />
             <button
               onClick={() => setScreenPhase("TITLE")}
@@ -671,7 +661,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     const displayName = authUser?.nickname ?? authUser?.email ?? "";
 
     return (
-      <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-[var(--bg-primary)]">
+      <div className="relative h-full overflow-hidden bg-[var(--bg-primary)]">
         {/* 배경 이미지 — 모바일/데스크톱 분기 */}
         <picture className="pointer-events-none">
           <source media="(min-width: 768px)" srcSet="/title-bg-desktop.webp" />
@@ -695,7 +685,12 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           />
         )}
 
-        <div className="relative z-10 flex flex-col items-center gap-3">
+        {/* 배경은 고정하고 콘텐츠만 스크롤 — 세로가 짧으면(가로 모드·작은 기기)
+            구 구현은 overflow-hidden 으로 메뉴 하단(파티·로그아웃)이 도달 불가였다
+            (실측 844x390). */}
+        <div className="relative z-10 h-full overflow-y-auto overscroll-contain">
+        <div className="flex min-h-full w-full flex-col items-center justify-center pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1.5rem+env(safe-area-inset-top))]">
+        <div className="flex flex-col items-center gap-3">
           <DimtaleLogoAnimated width={320} height={128} onReady={handleLogoReady} readyAfterMs={3200} skipAnimation={hasPlayedOpening} />
           <h1 className="sr-only">DimTale</h1>
           <p
@@ -708,14 +703,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           </p>
         </div>
 
-        <div
-          className="relative z-10 w-full overflow-hidden"
-          style={{
-            maxHeight: 600,
-            pointerEvents: "auto",
-            transition: "max-height 1.5s cubic-bezier(0.4, 0, 0.2, 1)",
-          }}
-        >
+        <div className="w-full">
           <div
             className="flex w-full flex-col items-center gap-4 px-6 pt-12"
             style={{
@@ -848,8 +836,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
                 {/* 새 게임 선택 모달 */}
                 {showNewGameChoice && lastCharacter && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setShowNewGameChoice(false)}>
-                    <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
+                  <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/70 py-4" onClick={() => setShowNewGameChoice(false)}>
+                    <div className="m-auto mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
                       <h3 className="mb-4 text-center font-display text-lg text-[var(--gold)]">새 게임</h3>
                       <p className="mb-5 text-center text-sm text-[var(--text-secondary)]">
                         이전 캐릭터 <span className="text-[var(--gold)]">{lastCharacter.characterName || getPresetName(lastCharacter.presetId)}</span>{korParticleRo(lastCharacter.characterName || getPresetName(lastCharacter.presetId))} 바로 시작하거나, 새 캐릭터를 생성할 수 있습니다.
@@ -874,8 +862,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
                 {/* 진행 중 런 그만두기 확인 모달 (arch/70 §3.3) */}
                 {showAbortConfirm && activeRunInfo && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => !aborting && setShowAbortConfirm(false)}>
-                    <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
+                  <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/70 py-4" onClick={() => !aborting && setShowAbortConfirm(false)}>
+                    <div className="m-auto mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
                       <h3 className="mb-4 text-center font-display text-lg text-[var(--color-danger)]">게임 그만두기</h3>
                       <p className="mb-5 text-center text-sm text-[var(--text-secondary)]">
                         진행 중인 게임을 그만두면 <span className="text-[var(--color-danger)]">지금까지의 진행 상황이 사라집니다.</span> 계속할까요?
@@ -902,8 +890,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
                 {/* 새 게임 시작 전 활성 런 경고 모달 (arch/70) */}
                 {showNewGameWarn && activeRunInfo && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => !aborting && setShowNewGameWarn(false)}>
-                    <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
+                  <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/70 py-4" onClick={() => !aborting && setShowNewGameWarn(false)}>
+                    <div className="m-auto mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
                       <h3 className="mb-4 text-center font-display text-lg text-[var(--gold)]">새 게임 시작</h3>
                       <p className="mb-5 text-center text-sm text-[var(--text-secondary)]">
                         진행 중인 게임이 있습니다. 새로 시작하면 <span className="text-[var(--color-danger)]">기존 게임은 중단</span>되고 진행 상황이 사라집니다.
@@ -930,8 +918,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
                 {/* 새 캐릭터로 새 여정 시작 확인 (기존 여정은 여정 기록에 보관) */}
                 {showNewJourneyConfirm && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => !campaignLoading && setShowNewJourneyConfirm(false)}>
-                    <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
+                  <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/70 py-4" onClick={() => !campaignLoading && setShowNewJourneyConfirm(false)}>
+                    <div className="m-auto mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-6" onClick={e => e.stopPropagation()}>
                       <h3 className="mb-4 text-center font-display text-lg text-[var(--gold)]">새 캐릭터로 시작</h3>
                       <p className="mb-5 text-center text-sm text-[var(--text-secondary)]">
                         새 캐릭터의 여정을 시작합니다. <span className="text-[var(--color-danger)]">지금 캐릭터의 여정은 여기서 마무리</span>되고, 진행 중인 게임이 있으면 중단됩니다. 계속할까요?
@@ -968,6 +956,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         </div>
       </div>
       </div>
+      </div>
+      </div>
     );
   }
 
@@ -976,7 +966,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   // =========================================================================
   if (screenPhase === "CAMPAIGN") {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
+      <div className="h-full overflow-y-auto overscroll-contain bg-[var(--bg-primary)]">
+      <div className="flex min-h-full flex-col items-center justify-center gap-8 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <div className="flex flex-col items-center gap-3">
           <div className="flex h-16 w-16 items-center justify-center border-2 border-[var(--gold)]">
             <span className="font-display text-2xl font-bold text-[var(--gold)]">C</span>
@@ -1041,6 +1032,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           &larr; 돌아가기
         </button>
       </div>
+      </div>
     );
   }
 
@@ -1050,7 +1042,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   if (screenPhase === "CAMPAIGN_SCENARIO") {
     return (
       <div className="flex h-full flex-col bg-[var(--bg-primary)]">
-        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6">
           <button
             onClick={() => setScreenPhase("CAMPAIGN")}
             className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
@@ -1062,7 +1054,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           </h2>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-6">
           <div className="mx-auto flex max-w-2xl flex-col gap-4">
             {scenarios.length === 0 ? (
               <p className="text-center text-sm text-[var(--text-muted)]">사용 가능한 시나리오가 없습니다.</p>
@@ -1139,7 +1131,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   if (screenPhase === "SELECT_SCENARIO") {
     return (
       <div className="flex h-full flex-col bg-[var(--bg-primary)]">
-        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6">
           <button
             onClick={() => { setSoloScenarioId(null); setScreenPhase("TITLE"); }}
             className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
@@ -1149,7 +1141,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           <h2 className="font-display text-base text-[var(--text-primary)]">여정 선택</h2>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-6">
           <div className="mx-auto flex max-w-2xl flex-col gap-4">
             <p className="text-center text-sm text-[var(--text-muted)]">
               어느 땅에서 이야기를 시작하시겠습니까?
@@ -1201,7 +1193,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   if (screenPhase === "SELECT_PRESET") {
     return (
       <div className="flex h-full flex-col bg-[var(--bg-primary)]">
-        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6">
           <button
             onClick={() => {
               // architecture/71: 캠페인 생성 흐름이면 시나리오 선택으로 복귀
@@ -1222,7 +1214,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           <StepIndicator current={0} total={totalCreationSteps} labels={creationStepLabels} />
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-6">
           <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-5">
             {scenarioPresets.map((preset) => (
               <PresetCard

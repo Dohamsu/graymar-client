@@ -60,7 +60,7 @@ export function CreationLayout({
 }) {
   return (
     <div className="flex h-full flex-col bg-[var(--bg-primary)]">
-      <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
+      <div className="flex items-center gap-4 border-b border-[var(--border-primary)] px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6">
         <button
           onClick={onBack}
           className="text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
@@ -70,11 +70,11 @@ export function CreationLayout({
         <h2 className="flex-1 font-display text-base text-[var(--text-primary)]">{title}</h2>
         <StepIndicator current={step} total={totalSteps} labels={stepLabels} />
       </div>
-      <div className={`min-h-0 flex-1 overflow-y-auto px-4 pt-6 sm:px-6 ${footer ? "pb-28" : "pb-6"}`}>
+      <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-6 sm:px-6 ${footer ? "pb-28" : "pb-[calc(1.5rem+env(safe-area-inset-bottom))]"}`}>
         <div className="mx-auto max-w-3xl">{children}</div>
       </div>
       {footer && (
-        <div className="shrink-0 border-t border-[var(--border-primary)] px-4 py-4 sm:px-6">
+        <div className="shrink-0 border-t border-[var(--border-primary)] px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
           <div className="mx-auto max-w-3xl">{footer}</div>
         </div>
       )}

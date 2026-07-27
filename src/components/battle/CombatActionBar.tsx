@@ -97,7 +97,7 @@ export function CombatActionBar({
   };
 
   return (
-    <div className="flex flex-col gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-primary)] px-2 py-3 sm:px-3">
+    <div className="flex flex-col gap-2 border-t border-[var(--border-primary)] bg-[var(--bg-primary)] px-2 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-3 lg:pb-3">
       {/* 타겟 표시 */}
       {selectedEnemy && (
         <div className="flex items-center gap-2 px-1 text-[10px] text-[var(--text-muted)]">

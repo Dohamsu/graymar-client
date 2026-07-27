@@ -81,7 +81,7 @@ export function PartyJoinModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center">
       <div
-        className="flex w-full max-h-[90dvh] flex-col rounded-t-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-2xl sm:mx-4 sm:max-h-[80vh] sm:max-w-md sm:rounded-lg sm:rounded-t-lg"
+        className="flex max-h-[90dvh] w-full flex-col rounded-t-xl border border-[var(--border-primary)] bg-[var(--bg-card)] pb-[env(safe-area-inset-bottom)] shadow-2xl sm:mx-4 sm:max-h-[80dvh] sm:max-w-md sm:rounded-lg sm:rounded-t-lg sm:pb-0"
         style={{ animation: "fadeIn 0.2s ease-out" }}
       >
         {/* Header */}
@@ -199,7 +199,7 @@ export function PartyJoinModal({
               </form>
 
               {/* Search Results */}
-              <div className="flex-1 min-h-[200px] max-h-[50dvh] space-y-2 overflow-y-auto">
+              <div className="max-h-[50dvh] min-h-[200px] flex-1 space-y-2 overflow-y-auto overscroll-contain">
                 {searchResults.length === 0 ? (
                   <p className="py-8 text-center text-xs text-[var(--text-muted)]">
                     검색 결과가 없습니다

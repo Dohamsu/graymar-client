@@ -48,12 +48,12 @@ export function PointsModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/80 p-4"
       role="dialog"
       aria-modal="true"
       onKeyDown={(e) => e.key === "Escape" && closeModal()}
     >
-      <div className="w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-2xl">
+      <div className="m-auto w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Gem size={18} className="text-[var(--gold)]" />

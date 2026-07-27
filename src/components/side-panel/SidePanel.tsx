@@ -66,7 +66,7 @@ export function SidePanel({ character, inventory, gold, inventoryChanges, onClea
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-5">
         {activeTab === "캐릭터" && <CharacterTab character={character} />}
         {activeTab === "장비" && <EquipmentTab />}
         {activeTab === "소지품" && (

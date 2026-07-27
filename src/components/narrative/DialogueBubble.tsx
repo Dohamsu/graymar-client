@@ -45,7 +45,7 @@ function PortraitLightbox({
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="relative h-64 w-64 overflow-hidden rounded-2xl shadow-2xl md:h-80 md:w-80"
+          className="relative h-[min(16rem,60dvh)] w-[min(16rem,60dvh)] overflow-hidden rounded-2xl shadow-2xl md:h-[min(20rem,60dvh)] md:w-[min(20rem,60dvh)]"
           style={{ border: "2px solid var(--gold)" }}
         >
           <Image

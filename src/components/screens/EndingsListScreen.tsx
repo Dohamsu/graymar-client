@@ -110,7 +110,7 @@ export function EndingsListScreen() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-[var(--bg-primary)] overflow-y-auto">
+    <div className="flex h-full flex-col overflow-y-auto overscroll-contain bg-[var(--bg-primary)] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
       <div className="mx-auto w-full max-w-[760px] px-4 pt-10 pb-16 sm:px-6">
         {/* 상단 돌아가기 */}
         <div className="mb-6">

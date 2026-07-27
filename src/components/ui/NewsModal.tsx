@@ -28,15 +28,15 @@ export default function NewsModal({ signals, onClose }: Props) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain py-4 transition-opacity duration-300 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
       onClick={handleClose}
     >
-      <div className="absolute inset-0 bg-black/80" />
+      <div className="fixed inset-0 bg-black/80" />
 
       <div
-        className={`relative mx-4 w-full max-w-sm transform transition-transform duration-300 ${
+        className={`relative m-auto mx-4 w-full max-w-sm transform transition-transform duration-300 ${
           visible ? "scale-100" : "scale-90"
         }`}
         onClick={(e) => e.stopPropagation()}

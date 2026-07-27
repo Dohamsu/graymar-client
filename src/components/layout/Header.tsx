@@ -156,8 +156,8 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
       </header>
       <LlmSettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {confirmOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" onKeyDown={(e) => e.key === 'Escape' && setConfirmOpen(false)}>
-          <div className="mx-4 w-full max-w-xs rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-2xl">
+        <div className="fixed inset-0 z-60 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/80 py-4" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" onKeyDown={(e) => e.key === 'Escape' && setConfirmOpen(false)}>
+          <div className="m-auto mx-4 w-full max-w-xs rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-2xl">
             <h3 id="confirm-title" className="mb-2 text-base font-bold text-[var(--text-primary)]">타이틀로 돌아가기</h3>
             <p className="mb-5 text-sm text-[var(--text-secondary)]">진행 중인 게임은 자동 저장됩니다.</p>
             <div className="flex gap-3">
@@ -369,8 +369,8 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange,
 
       <LlmSettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {confirmOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80" role="alertdialog" aria-modal="true" aria-labelledby="mobile-confirm-title" onKeyDown={(e) => e.key === 'Escape' && setConfirmOpen(false)}>
-          <div className="mx-4 w-full max-w-xs rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-2xl">
+        <div className="fixed inset-0 z-60 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/80 py-4" role="alertdialog" aria-modal="true" aria-labelledby="mobile-confirm-title" onKeyDown={(e) => e.key === 'Escape' && setConfirmOpen(false)}>
+          <div className="m-auto mx-4 w-full max-w-xs rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-2xl">
             <h3 id="mobile-confirm-title" className="mb-2 text-base font-bold text-[var(--text-primary)]">타이틀로 돌아가기</h3>
             <p className="mb-5 text-sm text-[var(--text-secondary)]">진행 중인 게임은 자동 저장됩니다.</p>
             <div className="flex gap-3">

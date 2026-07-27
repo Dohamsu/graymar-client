@@ -116,8 +116,8 @@ export function LootDistribution({
   }, [revealedItems, lootResults.length, activeTab]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="mx-4 w-full max-w-md rounded-lg border border-[var(--gold)]/30 bg-[var(--bg-secondary)] shadow-xl animate-in fade-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/60 py-4">
+      <div className="m-auto mx-4 w-full max-w-md rounded-lg border border-[var(--gold)]/30 bg-[var(--bg-secondary)] shadow-xl animate-in fade-in zoom-in-95 duration-300">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--border-primary)] px-5 py-4">
           <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export function LootDistribution({
         </div>
 
         {/* Content */}
-        <div className="max-h-80 overflow-y-auto p-4">
+        <div className="max-h-80 overflow-y-auto overscroll-contain p-4">
           {activeTab === "loot" &&
             lootResults.map((item, idx) => (
               <div

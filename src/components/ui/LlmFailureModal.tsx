@@ -61,7 +61,7 @@ export function LlmFailureModal() {
 
   return (
     <div
-      className="fixed inset-0 z-60 flex items-center justify-center bg-black/80"
+      className="fixed inset-0 z-60 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/80 py-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="llm-fail-title"
@@ -69,7 +69,7 @@ export function LlmFailureModal() {
     >
       <div
         ref={modalRef}
-        className="mx-4 w-full max-w-sm rounded-lg border border-[var(--hp-red)]/30 bg-[var(--bg-primary)] p-6 shadow-2xl shadow-black/50"
+        className="m-auto mx-4 w-full max-w-sm rounded-lg border border-[var(--hp-red)]/30 bg-[var(--bg-primary)] p-6 shadow-2xl shadow-black/50"
       >
         {/* Icon + Title */}
         <div className="mb-4 flex items-center gap-3">

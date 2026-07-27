@@ -304,7 +304,7 @@ export function JourneySummaryScreen() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-[var(--bg-primary)]">
+    <div className="flex h-full flex-col overflow-y-auto overscroll-contain bg-[var(--bg-primary)] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
       <SummaryContent summary={summary} />
     </div>
   );

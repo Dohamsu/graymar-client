@@ -56,7 +56,7 @@ export function EndingScreen() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-[var(--bg-primary)] overflow-y-auto">
+    <div className="flex h-full flex-col overflow-y-auto overscroll-contain bg-[var(--bg-primary)] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
       {/* Header */}
       <div className="flex flex-col items-center gap-4 py-12">
         <div className="h-px w-40 bg-[var(--gold)]/40" />

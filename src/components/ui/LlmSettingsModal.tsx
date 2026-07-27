@@ -127,8 +127,8 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
   const totalCost = turnCosts?.reduce((sum, t) => sum + t.cost, 0) ?? 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="mx-4 w-full max-w-md rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/60 py-4">
+      <div className="m-auto mx-4 w-full max-w-md rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--border-primary)] px-5 py-4">
           <h2 className="font-display text-base font-semibold text-[var(--text-primary)]">
@@ -143,7 +143,7 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
         </div>
 
         {/* Body */}
-        <div className="max-h-[70vh] space-y-5 overflow-y-auto px-5 py-5">
+        <div className="max-h-[70dvh] space-y-5 overflow-y-auto overscroll-contain px-5 py-5">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2
@@ -281,7 +281,7 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
                 ) : (
                   <>
                     {/* 턴별 테이블 */}
-                    <div className="max-h-[200px] overflow-y-auto rounded border border-[var(--border-primary)]">
+                    <div className="max-h-[200px] overflow-y-auto overscroll-contain rounded border border-[var(--border-primary)]">
                       <table className="w-full text-[11px]">
                         <thead className="sticky top-0 bg-[var(--bg-secondary)]">
                           <tr className="text-[var(--text-muted)]">

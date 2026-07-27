@@ -79,8 +79,8 @@ export default function PortraitCropModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-      <div className="flex w-full max-w-sm flex-col gap-4 px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/80 py-4">
+      <div className="m-auto flex w-full max-w-sm flex-col gap-4 px-4">
         {/* 크롭 영역 */}
         <div className="relative aspect-[4/5] w-full overflow-hidden rounded-lg">
           <Cropper

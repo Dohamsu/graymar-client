@@ -92,7 +92,7 @@ export function PartyLobby({
   return (
     <div className="flex h-full flex-col bg-[var(--bg-primary)]">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3 sm:px-6">
+      <div className="flex items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6">
         <div>
           <h1 className="font-display text-lg font-bold text-[var(--text-primary)]">
             {partyName}
@@ -155,7 +155,7 @@ export function PartyLobby({
       </div>
 
       {/* ── Footer Buttons ── */}
-      <div className="flex items-center justify-between border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3 sm:px-6">
+      <div className="flex items-center justify-between border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6">
         <button
           onClick={() => setShowLeaveConfirm(true)}
           className="flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] px-4 py-3 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--hp-red)]/30 hover:text-[var(--hp-red)]"
@@ -198,9 +198,9 @@ export function PartyLobby({
 
       {/* Leave Confirm Modal */}
       {showLeaveConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/60 py-4">
           <div
-            className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-6 shadow-xl"
+            className="m-auto mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-6 shadow-xl"
             style={{ animation: "fadeIn 0.15s ease-out" }}
           >
             <div className="mb-4 flex items-center gap-3">

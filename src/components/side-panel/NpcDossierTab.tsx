@@ -168,7 +168,7 @@ export function NpcDossierTab() {
       {/* Selected NPC — Wanted Poster Card */}
       {selectedNpc && (
         <div
-          className="relative flex flex-col items-center gap-3 overflow-hidden rounded-lg bg-cover bg-center px-5 py-5 shadow-lg"
+          className="relative flex shrink-0 flex-col items-center gap-3 overflow-hidden rounded-lg bg-cover bg-center px-5 py-5 shadow-lg"
           style={{ backgroundImage: "url('/textures/wanted-poster.webp')" }}
         >
           {/* Portrait */}

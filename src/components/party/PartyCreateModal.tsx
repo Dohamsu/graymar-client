@@ -32,7 +32,7 @@ export function PartyCreateModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center">
       <div
-        className="w-full rounded-t-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-2xl sm:mx-4 sm:max-w-sm sm:rounded-lg sm:rounded-t-lg"
+        className="max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-t-xl border border-[var(--border-primary)] bg-[var(--bg-card)] pb-[env(safe-area-inset-bottom)] shadow-2xl sm:mx-4 sm:max-w-sm sm:rounded-lg sm:rounded-t-lg sm:pb-0"
         style={{ animation: "fadeIn 0.2s ease-out" }}
       >
         {/* Header */}

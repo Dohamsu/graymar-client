@@ -232,7 +232,9 @@ export function BugReportModal({ onClose }: BugReportModalProps) {
       onClick={handleBackdropClick}
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center"
     >
-      <div className="w-full max-w-md rounded-t-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-2xl shadow-black/50 sm:rounded-xl">
+      {/* 키보드가 올라오면 가시 높이가 400px 안팎까지 줄어든다 — 시트 자체가
+          스크롤되지 않으면 상단(제목·카테고리)이 잘린 채 도달 불가해진다. */}
+      <div className="max-h-[88dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] pb-[env(safe-area-inset-bottom)] shadow-2xl shadow-black/50 sm:rounded-xl sm:pb-0">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--border-primary)] px-5 py-4">
           <h2 className="text-base font-bold text-[var(--text-primary)]">

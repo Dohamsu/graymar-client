@@ -185,7 +185,7 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
 
   if (isLoading && !party) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 bg-[var(--bg-primary)]">
+      <div className="flex h-full flex-col items-center justify-center gap-4 overflow-y-auto overscroll-contain bg-[var(--bg-primary)] px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <Loader2 size={32} className="animate-spin text-[var(--gold)]" />
         <span className="text-sm text-[var(--text-muted)]">파티 정보를 불러오는 중...</span>
       </div>
@@ -254,7 +254,7 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
   // ── No Party (create / join) ──
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-8 bg-[var(--bg-primary)] px-4">
+    <div className="flex h-full flex-col items-center justify-center gap-8 overflow-y-auto overscroll-contain bg-[var(--bg-primary)] px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1.5rem+env(safe-area-inset-top))]">
       <div className="flex flex-col items-center gap-3">
         <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[var(--gold)]/40 bg-[var(--gold)]/5">
           <Users size={28} className="text-[var(--gold)]" />

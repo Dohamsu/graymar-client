@@ -29,8 +29,8 @@ export function VoteModal({ vote, currentUserId, onCast }: VoteModalProps) {
   }, [vote.expiresAt]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-5 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/60 py-4">
+      <div className="m-auto mx-4 w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-5 shadow-xl">
         {/* Header */}
         <div className="mb-4 flex items-center gap-2">
           <MapPin size={18} className="text-[var(--gold)]" />

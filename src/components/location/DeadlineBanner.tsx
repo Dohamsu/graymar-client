@@ -13,6 +13,19 @@ import { useGameStore } from "@/store/game-store";
  *  daysLeft === 3 → 주황, "D-3 · 결말 가까움"
  *  daysLeft ≥ 4 → 렌더 안 함
  */
+/**
+ * 배너가 실제로 렌더되는지 여부. 모바일은 고정 헤더가 상단 81px 을 덮으므로
+ * 호출부(GameClient)가 배너 유무에 따라 상단 스페이서를 켜야 한다 — 표시 조건의
+ * 정본을 이 파일 하나로 유지하기 위한 export.
+ */
+export function useDeadlineBannerVisible(): boolean {
+  const mainArcClock = useGameStore((s) => s.mainArcClock);
+  const day = useGameStore((s) => s.day);
+  if (!mainArcClock) return false;
+  const daysLeft = mainArcClock.softDeadlineDay - day;
+  return mainArcClock.triggered || daysLeft <= 3;
+}
+
 export function DeadlineBanner() {
   const mainArcClock = useGameStore((s) => s.mainArcClock);
   const day = useGameStore((s) => s.day);

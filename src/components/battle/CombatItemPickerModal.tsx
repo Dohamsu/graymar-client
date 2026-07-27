@@ -25,11 +25,11 @@ export function CombatItemPickerModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/70 px-4 py-4 animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-lg border border-[var(--gold)]/40 bg-[var(--bg-card)] p-5 shadow-xl"
+        className="m-auto w-full max-w-sm rounded-lg border border-[var(--gold)]/40 bg-[var(--bg-card)] p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">
