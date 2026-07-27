@@ -204,6 +204,25 @@ export function getLlmSettings() {
   return request<LlmSettingsResponse>('/v1/settings/llm');
 }
 
+export interface MeResponse {
+  id: string;
+  /** 사람이 읽는 가입순 식별자 */
+  memberNo: number;
+  email: string;
+  nickname: string | null;
+  role: string;
+  createdAt: string;
+}
+
+/**
+ * GET /v1/auth/me — 현재 로그인 유저.
+ * 회원번호는 로그인 응답에도 담기지만, 기능 배포 전에 로그인한 세션은
+ * localStorage 캐시에 그 필드가 없어 서버 조회가 필요하다.
+ */
+export function getMe() {
+  return request<MeResponse>('/v1/auth/me');
+}
+
 /** PATCH /v1/settings/llm — update LLM settings at runtime. */
 export function updateLlmSettings(
   patch: Partial<{

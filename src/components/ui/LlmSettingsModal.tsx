@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { X, Check, Loader2, AlertCircle, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { X, Check, Loader2, AlertCircle, Trash2, Copy } from "lucide-react";
 import {
   getLlmSettings,
   updateLlmSettings,
   getLlmUsage,
+  getMe,
   type LlmSettingsResponse,
   type LlmUsageResponse,
+  type MeResponse,
 } from "@/lib/api-client";
+import { useAuthStore } from "@/store/auth-store";
 import {
   useSettingsStore,
   TEXT_SPEED_PRESETS,
@@ -22,6 +25,11 @@ import { calcTurnCostKRW, formatKRW } from "@/data/llm-pricing";
 interface LlmSettingsModalProps {
   open: boolean;
   onClose: () => void;
+}
+
+/** 회원번호 표시형 — 4자리 zero-pad (#0031). 자릿수를 넘으면 그대로 늘어난다. */
+function formatMemberNo(no: number): string {
+  return `#${String(no).padStart(4, "0")}`;
 }
 
 const TEXT_SPEED_ORDER: TextSpeedKey[] = ["instant", "fast", "normal", "slow"];
@@ -60,6 +68,12 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
   const runId = useGameStore((s) => s.runId);
   const [usageData, setUsageData] = useState<LlmUsageResponse | null>(null);
 
+  // 내 계정 (회원번호) — 로그인 상태에서만 조회
+  const authToken = useAuthStore((s) => s.token);
+  const authUser = useAuthStore((s) => s.user);
+  const [me, setMe] = useState<MeResponse | null>(null);
+  const [memberNoCopied, setMemberNoCopied] = useState(false);
+
   // Server version
   const [serverVersion, setServerVersion] = useState<string | null>(null);
   const clientVersion = process.env.NEXT_PUBLIC_CLIENT_VERSION ?? 'unknown';
@@ -91,10 +105,30 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
       );
     }
 
+    if (authToken) {
+      promises.push(
+        getMe()
+          .then((data) => setMe(data))
+          .catch(() => {}) // 계정 조회 실패해도 설정 자체는 열려야 한다
+      );
+    }
+
     Promise.all(promises)
       .catch((err) => setError(String(err)))
       .finally(() => setLoading(false));
-  }, [open, runId]);
+  }, [open, runId, authToken]);
+
+  const handleCopyMemberNo = useCallback(async () => {
+    const no = me?.memberNo ?? authUser?.memberNo;
+    if (no === undefined || no === null) return;
+    try {
+      await navigator.clipboard.writeText(formatMemberNo(no));
+      setMemberNoCopied(true);
+      setTimeout(() => setMemberNoCopied(false), 2000);
+    } catch {
+      /* 클립보드 차단 환경 — 번호는 화면에 그대로 보이므로 무시 */
+    }
+  }, [me?.memberNo, authUser?.memberNo]);
 
   async function handleSave() {
     setSaving(true);
@@ -113,6 +147,9 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
       setSaving(false);
     }
   }
+
+  // 서버 조회분 우선, 실패 시 로그인 응답 캐시로 폴백 (구 세션 캐시엔 없을 수 있음)
+  const memberNo = me?.memberNo ?? authUser?.memberNo ?? null;
 
   if (!open) return null;
 
@@ -153,6 +190,44 @@ export function LlmSettingsModal({ open, onClose }: LlmSettingsModalProps) {
             </div>
           ) : (
             <>
+              {/* 내 계정 — 회원번호는 문의·지원 때 본인을 특정하는 값이라 복사 가능하게 둔다 */}
+              {memberNo !== null && (
+                <div className="rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-3">
+                  <label className="mb-2 block text-xs font-semibold text-[var(--text-secondary)]">
+                    내 계정
+                  </label>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-[var(--text-primary)]">
+                        {me?.nickname ?? authUser?.nickname ?? "이름 없음"}
+                      </p>
+                      <p className="truncate text-[11px] text-[var(--text-muted)]">
+                        {me?.email ?? authUser?.email ?? ""}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyMemberNo}
+                      title="회원번호 복사"
+                      aria-label="회원번호 복사"
+                      className="flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--border-primary)] bg-[var(--bg-card)] px-2.5 py-1.5 transition-colors hover:border-[var(--gold)]/40"
+                    >
+                      <span className="font-mono text-sm font-semibold tracking-wider text-[var(--gold)]">
+                        {formatMemberNo(memberNo)}
+                      </span>
+                      {memberNoCopied ? (
+                        <Check size={13} className="text-[var(--success-green)]" />
+                      ) : (
+                        <Copy size={13} className="text-[var(--text-muted)]" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[10px] leading-relaxed text-[var(--text-muted)]">
+                    문의하실 때 이 회원번호를 알려주시면 계정을 바로 확인할 수 있습니다.
+                  </p>
+                </div>
+              )}
+
               {/* 현재 LLM 모델 정보 — 개발 빌드 전용 (일반 유저에게 내부 인프라 비노출) */}
               {settings && process.env.NODE_ENV !== "production" && (
                 <div className="rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-3">

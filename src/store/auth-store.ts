@@ -8,6 +8,8 @@ interface AuthUser {
   id: string;
   email: string;
   nickname: string | null;
+  /** 가입순 회원번호. 이 기능 배포 전에 로그인한 세션의 캐시에는 없다 → optional */
+  memberNo?: number;
 }
 
 interface AuthState {
