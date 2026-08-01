@@ -264,6 +264,8 @@ export function getTurnDetail(runId: string, turnNo: number) {
         action: { type: string; payload: Record<string, unknown> };
       }> | null;
     };
+    /** [arch/96] 워커가 갱신한 ui (sceneCut 등) — 폴링 경로 수령용 */
+    serverResult?: { ui?: { sceneCut?: { id: string; imageUrl: string } } };
   }>(`/v1/runs/${runId}/turns/${turnNo}`);
 }
 

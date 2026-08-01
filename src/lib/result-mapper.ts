@@ -18,6 +18,8 @@ export interface TurnHistoryItem {
   eventTexts: string[];
   choices: Array<{ id: string; label: string }>;
   displaySummary: string | null;
+  /** [arch/96] 장면 컷 — 이력 복원용 */
+  sceneCut?: { id: string; imageUrl: string } | null;
 }
 
 /**
@@ -97,6 +99,7 @@ export function mapTurnHistoryToMessages(
         type: 'NARRATOR',
         text: narratorText,
         loading: false,
+        ...(turn.sceneCut ? { sceneCut: turn.sceneCut } : {}),
       });
     }
   }
@@ -204,6 +207,7 @@ export function mapResultToMessages(
       text: isLlmTarget ? '' : (result.summary.display || result.summary.short || ''),
       loading: isLlmTarget,
       ...(result.ui?.npcPortrait ? { npcPortrait: result.ui.npcPortrait } : {}),
+      ...(result.ui?.sceneCut ? { sceneCut: result.ui.sceneCut } : {}),
       ...(speakingNpc ? { speakingNpc } : {}),
     });
   }

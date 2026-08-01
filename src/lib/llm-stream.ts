@@ -33,6 +33,8 @@ export interface LlmDoneEvent {
   type: 'done';
   narrative: string;
   choices?: Array<{ id: string; label: string; hint?: string; action?: { payload?: { affordance?: string } } }>;
+  /** [arch/96] 장면 컷 — 워커 태그 매칭 결과 */
+  sceneCut?: { id: string; imageUrl: string } | null;
 }
 
 export interface LlmErrorEvent {
@@ -56,7 +58,7 @@ export interface LlmStreamCallbacks {
     paragraphStart?: boolean,
   ) => void;
   onChoicesLoading?: () => void;
-  onDone: (narrative: string, choices?: LlmDoneEvent['choices']) => void;
+  onDone: (narrative: string, choices?: LlmDoneEvent['choices'], sceneCut?: LlmDoneEvent['sceneCut']) => void;
   onError: (message: string) => void;
 }
 
@@ -104,7 +106,7 @@ export function connectLlmStream(
           callbacks.onChoicesLoading?.();
           break;
         case 'done':
-          callbacks.onDone(data.narrative, data.choices);
+          callbacks.onDone(data.narrative, data.choices, data.sceneCut);
           cleanup();
           break;
         case 'error':

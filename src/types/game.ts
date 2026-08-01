@@ -13,6 +13,8 @@ export interface StoryMessage {
   tags?: string[];
   /** 장소 진입 시 표시할 이미지 경로 */
   locationImage?: string;
+  /** [arch/96] 장면 컷 — 서술 태그 매칭 인라인 이미지 (서버 ui.sceneCut) */
+  sceneCut?: { id: string; imageUrl: string };
   /** NPC 초상화 정보 (서버 ui.npcPortrait) */
   npcPortrait?: {
     npcId: string;
@@ -227,6 +229,8 @@ export interface ServerResultV1 {
       displayName: string;
       imageUrl?: string;
     };
+    /** [arch/96] 장면 컷 — 워커 태그 매칭 인라인 이미지 */
+    sceneCut?: { id: string; imageUrl: string };
   };
   choices: Array<{
     id: string;

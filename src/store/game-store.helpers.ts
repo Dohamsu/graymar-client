@@ -271,12 +271,22 @@ export function flushNarrator(
   set: (partial: Partial<GameState>) => void,
   /** true면 타이핑 애니메이션 스킵 (스트리밍 후 교체 시) */
   skipTyping = false,
+  /** [arch/96] 장면 컷 — 확정 서술과 함께 도착한 인라인 이미지 */
+  sceneCut?: { id: string; imageUrl: string } | null,
 ) {
   const targetId = `narrator-${turnNo}`;
   const found = get().messages.some(m => m.id === targetId);
   uiLog('narrator', 'flushNarrator', { targetId, textLen: text.length, skipTyping, found });
   const messages = get().messages.map((msg) =>
-    msg.id === targetId ? { ...msg, text, loading: false, ...(skipTyping ? { typed: true } : {}) } : msg,
+    msg.id === targetId
+      ? {
+          ...msg,
+          text,
+          loading: false,
+          ...(skipTyping ? { typed: true } : {}),
+          ...(sceneCut ? { sceneCut } : {}),
+        }
+      : msg,
   );
   set({ messages });
 }
@@ -308,7 +318,10 @@ export function pollForNarrative(
         if (detail.llm.choices && detail.llm.choices.length > 0) {
           set({ pendingChoices: detail.llm.choices.map(c => ({ id: c.id, label: c.label, affordance: c.action?.payload?.affordance as string | undefined, hint: c.hint })) });
         }
-        flushNarrator(stripNarratorChoices(detail.llm.output!), turnNo, get, set);
+        flushNarrator(
+          stripNarratorChoices(detail.llm.output!), turnNo, get, set, false,
+          detail.serverResult?.ui?.sceneCut ?? null,
+        );
         return;
       }
 
@@ -571,7 +584,7 @@ export function streamNarrative(
       set({ choicesLoading: true });
     },
 
-    onDone(narrative, choices) {
+    onDone(narrative, choices, sceneCut) {
       uiLog('stream', 'onDone', { narrativeLen: narrative?.length, choicesCount: choices?.length, analyzedBufLen: analyzedBuffer.length, rawBufLen: rawBuffer.length });
       receivedDone = true;
 
@@ -613,6 +626,15 @@ export function streamNarrative(
         streamDisconnect: null,
         choicesLoading: false,
       });
+
+      // [arch/96] 장면 컷 — narrator 메시지에 부착 (텍스트 확정과 독립, id 기준 패치)
+      if (sceneCut) {
+        set({
+          messages: get().messages.map((m) =>
+            m.id === `narrator-${turnNo}` ? { ...m, sceneCut } : m,
+          ),
+        });
+      }
 
       // done 이벤트에서 tokenStats 조회
       getTurnDetail(runId, turnNo).then((detail) => {
