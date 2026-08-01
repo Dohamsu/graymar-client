@@ -217,3 +217,17 @@ export const PRESET_PORTRAITS: Record<
 export function scenarioUiLabels(scenarioId: string | null) {
   return SCENARIO_UI_LABELS[scenarioId ?? "graymar_v1"] ?? SCENARIO_UI_LABELS.graymar_v1;
 }
+
+/**
+ * 프리셋 초상화 경로 (파티 HUD·멤버 카드 등) — PRESET_PORTRAITS 정본 맵 단일 참조.
+ * 미지 프리셋·미지정은 null 반환 → 호출측이 이니셜 아바타 등으로 폴백 렌더.
+ * (기존 `/images/presets/*.webp` 하드코딩 경로는 실재하지 않아 404 반복 —
+ * 2026-08-01 파티 QA 실측 수정)
+ */
+export function presetPortraitUrl(
+  presetId: string | null | undefined,
+  gender: "male" | "female" = "male",
+): string | null {
+  if (!presetId) return null;
+  return PRESET_PORTRAITS[presetId]?.[gender] ?? null;
+}

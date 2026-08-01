@@ -3,6 +3,8 @@
 import { Crown, Check } from "lucide-react";
 import Image from "next/image";
 
+import { presetPortraitUrl } from "@/data/presets";
+
 // ── Types ──
 
 interface PartyMember {
@@ -24,11 +26,7 @@ interface PartyMemberCardProps {
   isSelf?: boolean;
 }
 
-/** Map preset ID to a default portrait path */
-function defaultPortrait(presetId: string | null): string {
-  if (!presetId) return "/_silhouette.webp";
-  return `/${presetId.toLowerCase()}_m.webp`;
-}
+// 초상화 경로는 presetPortraitUrl (정본 맵) — 미지 프리셋은 null → 이니셜 아바타 폴백
 
 export function PartyMemberCard({ member, isSelf = false }: PartyMemberCardProps) {
   // ── Empty Slot ──
@@ -72,14 +70,20 @@ export function PartyMemberCard({ member, isSelf = false }: PartyMemberCardProps
       </div>
 
       {/* Portrait */}
-      <div className="relative mb-2 h-14 w-14 overflow-hidden rounded-full border-2 border-[var(--border-primary)] sm:h-16 sm:w-16">
-        <Image
-          src={member.portraitUrl || defaultPortrait(member.presetId)}
-          alt={member.nickname}
-          fill
-          className="object-cover"
-          sizes="64px"
-        />
+      <div className="relative mb-2 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)] sm:h-16 sm:w-16">
+        {member.portraitUrl || presetPortraitUrl(member.presetId) ? (
+          <Image
+            src={(member.portraitUrl || presetPortraitUrl(member.presetId))!}
+            alt={member.nickname}
+            fill
+            className="object-cover"
+            sizes="64px"
+          />
+        ) : (
+          <span className="text-lg font-semibold text-[var(--text-muted)]">
+            {member.nickname.slice(0, 1).toUpperCase()}
+          </span>
+        )}
       </div>
 
       {/* Name + Level */}

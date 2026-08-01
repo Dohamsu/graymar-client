@@ -227,6 +227,7 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
           }}
           onLeave={handleLeave}
           onSendChat={handleSendChat}
+          error={error}
         />
 
         {/* Modals */}

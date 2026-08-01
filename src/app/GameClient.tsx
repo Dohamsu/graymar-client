@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { scenarioUiLabels } from "@/data/presets";
+import { scenarioUiLabels, presetPortraitUrl } from "@/data/presets";
 import { useGameStore } from "@/store/game-store";
 import { useAuthStore } from "@/store/auth-store";
 import {
@@ -246,13 +246,19 @@ export default function GameClient() {
                 style={{ animationDelay: `${i * 150}ms` }}
               >
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--gold)]/40 bg-[var(--bg-secondary)]">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- 64px 로컬 webp + onError 폴백, next/image 이득 없음 */}
-                  <img
-                    src={`/images/presets/${(m.presetId ?? "dockworker").toLowerCase()}.webp`}
-                    alt={m.nickname}
-                    className="h-full w-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
+                  {presetPortraitUrl(m.presetId) ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- 64px 로컬 webp + onError 폴백, next/image 이득 없음
+                    <img
+                      src={presetPortraitUrl(m.presetId)!}
+                      alt={m.nickname}
+                      className="h-full w-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    <span className="text-xl font-semibold text-[var(--text-muted)]">
+                      {m.nickname.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs font-medium text-[var(--text-secondary)]">
                   {m.nickname}

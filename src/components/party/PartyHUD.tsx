@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 
+import { presetPortraitUrl } from "@/data/presets";
+
 // ── Types ──
 
 type TurnStatus = "CHOOSING" | "SUBMITTED" | "AI_ACTING";
@@ -33,11 +35,7 @@ const STATUS_COLOR: Record<TurnStatus, string> = {
   AI_ACTING: "var(--info-blue)",
 };
 
-function defaultPortrait(presetId: string | null): string {
-  // 이월 캐릭터 등 프리셋이 없으면 제네릭 실루엣(콘텐츠 ID 리터럴 폴백 금지, arch/70)
-  if (!presetId) return "/images/presets/_silhouette.webp";
-  return `/images/presets/${presetId.toLowerCase()}.webp`;
-}
+// 초상화 경로는 presetPortraitUrl (정본 맵) — 미지 프리셋은 null → 이니셜 아바타 폴백
 
 export function PartyHUD({ members }: PartyHUDProps) {
   if (members.length === 0) return null;
@@ -57,14 +55,20 @@ export function PartyHUD({ members }: PartyHUDProps) {
             }`}
           >
             {/* Mini avatar */}
-            <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full border border-[var(--border-primary)]">
-              <Image
-                src={m.portraitUrl || defaultPortrait(m.presetId)}
-                alt={m.nickname}
-                fill
-                className="object-cover"
-                sizes="24px"
-              />
+            <div className="relative flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+              {m.portraitUrl || presetPortraitUrl(m.presetId) ? (
+                <Image
+                  src={(m.portraitUrl || presetPortraitUrl(m.presetId))!}
+                  alt={m.nickname}
+                  fill
+                  className="object-cover"
+                  sizes="24px"
+                />
+              ) : (
+                <span className="text-[10px] font-semibold text-[var(--text-muted)]">
+                  {m.nickname.slice(0, 1).toUpperCase()}
+                </span>
+              )}
             </div>
 
             {/* Info block */}

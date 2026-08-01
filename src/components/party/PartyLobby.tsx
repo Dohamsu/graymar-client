@@ -47,6 +47,8 @@ interface PartyLobbyProps {
   onSendChat: (text: string) => void;
   chatSending?: boolean;
   startLoading?: boolean;
+  /** 시작 실패 등 store 에러 — 로비에서 무표시로 삼켜지던 것 표시 (2026-08-01 QA) */
+  error?: string | null;
 }
 
 export function PartyLobby({
@@ -65,6 +67,7 @@ export function PartyLobby({
   onSendChat,
   chatSending = false,
   startLoading = false,
+  error = null,
 }: PartyLobbyProps) {
   const [codeCopied, setCodeCopied] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -153,6 +156,13 @@ export function PartyLobby({
           />
         </div>
       </div>
+
+      {/* ── Error Banner (시작 실패 등) ── */}
+      {error && (
+        <div className="border-t border-[var(--hp-red)]/20 bg-[var(--hp-red)]/10 px-4 py-2 text-center text-xs text-[var(--hp-red)] sm:px-6">
+          {error}
+        </div>
+      )}
 
       {/* ── Footer Buttons ── */}
       <div className="flex items-center justify-between border-t border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6">
