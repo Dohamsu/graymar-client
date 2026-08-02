@@ -673,22 +673,7 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
           {/* 장면 그리기 버튼 — 비활성화 (고도화 후 복원) */}
           {/* [arch/96] 장면 컷 — 워커 태그 매칭 인라인 이미지 (서술 확정 후 표시) */}
           {message.sceneCut && !message.loading && (
-            <div className="relative mt-3 h-[180px] w-full overflow-hidden rounded lg:h-[260px]">
-              <Image
-                src={message.sceneCut.imageUrl}
-                alt="장면"
-                fill
-                sizes="(max-width: 768px) 100vw, 800px"
-                className="object-cover"
-              />
-              <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background:
-                    'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)',
-                }}
-              />
-            </div>
+            <SceneCutImage imageUrl={message.sceneCut.imageUrl} />
           )}
         </div>
       ) : (
@@ -732,6 +717,34 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
           </p>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * [arch/96] 장면 컷 렌더 — 로드 실패 시 통째 숨김.
+ * 슬러그 마이그레이션 등으로 과거 턴에 저장된 URL이 404가 되어도 UI가 깨지지 않는다.
+ */
+function SceneCutImage({ imageUrl }: { imageUrl: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) return null;
+  return (
+    <div className="relative mt-3 h-[180px] w-full overflow-hidden rounded lg:h-[260px]">
+      <Image
+        src={imageUrl}
+        alt="장면"
+        fill
+        sizes="(max-width: 768px) 100vw, 800px"
+        className="object-cover"
+        onError={() => setBroken(true)}
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)',
+        }}
+      />
     </div>
   );
 }
