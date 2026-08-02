@@ -1502,22 +1502,16 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         stepLabels={creationStepLabels}
         onBack={() => setScreenPhase("CHARACTER_NAME")}
         footer={
-          <div className="flex w-full flex-col gap-2">
-            {bonusPointsRemaining > 0 && (
-              <p className="text-center text-xs text-[var(--text-muted)]">
-                포인트 {bonusPointsRemaining}개를 모두 배분해야 다음으로 넘어갈 수 있습니다.
-              </p>
-            )}
+          bonusPointsRemaining === 0 ? (
             <button
               onClick={() =>
                 setScreenPhase(hasTraits ? "CHARACTER_TRAIT" : "CHARACTER_CONFIRM")
               }
-              disabled={bonusPointsRemaining > 0}
-              className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:shadow-none"
+              className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
             >
               다 음 <ChevronRight size={18} className="ml-1" />
             </button>
-          </div>
+          ) : null
         }
       >
         <div className="flex flex-col gap-6">
@@ -1531,6 +1525,11 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
               <span className="text-sm text-[var(--text-muted)]">/ {BONUS_POINTS_TOTAL}</span>
             </div>
           </div>
+          {bonusPointsRemaining > 0 && (
+            <p className="-mt-4 text-center text-xs text-[var(--text-muted)]">
+              포인트 {bonusPointsRemaining}개를 모두 배분하면 다음 버튼이 표시됩니다.
+            </p>
+          )}
 
           {/* Active titles */}
           {activeTitles.length > 0 && (
