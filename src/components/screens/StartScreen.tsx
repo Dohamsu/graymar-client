@@ -24,34 +24,21 @@ import PortraitCropModal from "@/components/ui/PortraitCropModal";
 import { DimtaleLogoAnimated } from "@/components/brand/DimtaleLogoAnimated";
 import type { CharacterPreset } from "@/types/game";
 import {
-  Plus,
-  Minus,
   ChevronLeft,
   ChevronRight,
-  Check,
   ImageIcon,
-  Info,
   Users,
   Upload,
 } from "lucide-react";
 
 import { PortraitLoadingOverlay } from "./start-screen/PortraitLoadingOverlay";
 import { PresetCard } from "./start-screen/PresetCard";
-import { RadarChart } from "./start-screen/RadarChart";
 import { AuthForm } from "./start-screen/AuthForm";
 import {
   CreationLayout,
   StepIndicator,
 } from "./start-screen/CreationLayout";
-import {
-  nextBonusStats,
-  TRAIT_ICON_MAP,
-  STAT_LABELS,
-  STAT_DESCRIPTIONS,
-  STAT_COLORS_MAP,
-  BONUS_POINTS_TOTAL,
-  STAT_KEYS,
-} from "./start-screen/stat-config";
+import { TRAIT_ICON_MAP } from "./start-screen/stat-config";
 
 // 기존 소비처(spec 등) 경로 유지용 re-export — 정본은 start-screen/stat-config.
 export { nextBonusStats } from "./start-screen/stat-config";
@@ -61,11 +48,7 @@ type ScreenPhase =
   | "AUTH"
   | "SELECT_SCENARIO"
   | "SELECT_PRESET"
-  | "CHARACTER_NAME"
-  | "CHARACTER_PORTRAIT"
-  | "CHARACTER_STATS"
-  | "CHARACTER_TRAIT"
-  | "CHARACTER_CONFIRM"
+  | "CHARACTER_FINISH"
   | "CAMPAIGN"
   | "CAMPAIGN_SCENARIO";
 type Gender = "male" | "female";
@@ -154,8 +137,6 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
   // Character creation state
   const [characterName, setCharacterName] = useState("");
-  const [bonusStats, setBonusStats] = useState<Record<string, number>>({});
-  const [selectedTraitId, setSelectedTraitId] = useState<string | null>(null);
   const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
   const [portraitLoading, setPortraitLoading] = useState(false);
   const [portraitGenCount, setPortraitGenCount] = useState(0);
@@ -165,7 +146,6 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   const [portraitUploading, setPortraitUploading] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [focusedStat, setFocusedStat] = useState<string | null>(null);
 
   // Campaign state
   const [activeCampaign, setActiveCampaign] = useState<CampaignResponse | null>(null);
@@ -221,12 +201,10 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     () => (creationBundle ? creationBundle.traits.map(formatPackTrait) : TRAITS),
     [creationBundle],
   );
-  // 특성 없는 팩은 특성 단계를 통째로 건너뛴다 (빈 목록 + 다음 비활성 데드엔드 방지)
-  const hasTraits = availableTraits.length > 0;
-  const totalCreationSteps = hasTraits ? 6 : 5;
-  const creationStepLabels = hasTraits
-    ? undefined
-    : ["출신", "초상화", "이름", "스탯", "확인"];
+  // [arch/97] 생성 간략화 — 배경 → 마무리 2단계. 스탯 배분·특성 선택 화면 폐지,
+  // 특성은 배경 시그니처(defaultTraitId)로 자동 부여 (서버 폴백과 동일 규칙).
+  const totalCreationSteps = 2;
+  const creationStepLabels = ["배경", "마무리"];
   const selectedPreset = useMemo(
     () => scenarioPresets.find((p) => p.presetId === selectedPresetId) ?? null,
     [scenarioPresets, selectedPresetId],
@@ -237,23 +215,14 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   // 프리셋 + 성별 모두 선택됐는지
   const presetStepComplete = selectedPresetId !== null && selectedGender !== null;
 
-  const bonusPointsUsed = useMemo(
-    () => Object.values(bonusStats).reduce((sum, v) => sum + v, 0),
-    [bonusStats],
-  );
-  const bonusPointsRemaining = BONUS_POINTS_TOTAL - bonusPointsUsed;
-
   // Reset creation state when going back to preset selection
   const resetCreationState = () => {
     setCharacterName("");
-    setBonusStats({});
-    setSelectedTraitId(null);
     setPortraitUrl(null);
     setPortraitGenCount(0);
     setPortraitDescription("");
     setShowPortraitInput(false);
     setPortraitError(null);
-    setFocusedStat(null);
   };
 
   const handlePresetSelect = (presetId: string) => {
@@ -265,21 +234,15 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
 
   const handleStartGame = () => {
     if (!selectedPresetId) return;
-    if (bonusPointsRemaining > 0) {
-      setScreenPhase("CHARACTER_STATS");
-      return;
-    }
+    // [arch/97] bonusStats·traitId 미전송 — 스탯 +6은 프리셋에 내장, 특성은
+    // 서버가 defaultTraitId 로 자동 부여
     const opts: {
       characterName?: string;
-      bonusStats?: Record<string, number>;
-      traitId?: string;
       portraitUrl?: string;
       scenarioId?: string;
     } = {};
     if (soloScenarioId) opts.scenarioId = soloScenarioId;
     if (characterName.trim()) opts.characterName = characterName.trim();
-    if (bonusPointsUsed > 0) opts.bonusStats = bonusStats;
-    if (selectedTraitId) opts.traitId = selectedTraitId;
     if (portraitUrl) opts.portraitUrl = portraitUrl;
     // 캐릭터 정보를 localStorage에 저장 (새 게임 시 재사용 가능)
     try {
@@ -287,12 +250,10 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         presetId: selectedPresetId,
         gender: effectiveGender,
         characterName: opts.characterName,
-        bonusStats: opts.bonusStats,
-        traitId: opts.traitId,
         portraitUrl: opts.portraitUrl,
       }));
     } catch { /* ignore */ }
-    // architecture/71 §4.3: 캠페인 첫 시나리오 — 동일 6단계 생성 후 캠페인 경로로 시작
+    // architecture/71 §4.3: 캠페인 첫 시나리오 — 동일 생성 플로우 후 캠페인 경로로 시작
     if (campaignCreation) {
       startCampaignRun(
         campaignCreation.campaignId,
@@ -301,8 +262,6 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
         effectiveGender,
         {
           characterName: opts.characterName,
-          bonusStats: opts.bonusStats,
-          traitId: opts.traitId,
           portraitUrl: opts.portraitUrl,
         },
       );
@@ -1222,6 +1181,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                 preset={preset}
                 selected={selectedPresetId === preset.presetId}
                 onSelect={() => handlePresetSelect(preset.presetId)}
+                traitName={availableTraits.find((t) => t.traitId === preset.defaultTraitId)?.name}
               />
             ))}
           </div>
@@ -1277,7 +1237,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
               onClick={() => {
                 if (!selectedPresetId) return;
                 resetCreationState();
-                setScreenPhase("CHARACTER_PORTRAIT");
+                setScreenPhase("CHARACTER_FINISH");
               }}
               disabled={!presetStepComplete || isLoading}
               className="flex h-12 w-full items-center justify-center border border-[var(--gold)] font-display text-lg tracking-[4px] transition-all disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-[var(--gold)] enabled:text-[var(--bg-primary)] enabled:hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
@@ -1291,111 +1251,55 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
   }
 
   // =========================================================================
-  // Step 3: CHARACTER_NAME
+  // Step 2: CHARACTER_FINISH — 초상·이름·요약 통합 마무리 (arch/97 생성 간략화)
   // =========================================================================
-  if (screenPhase === "CHARACTER_NAME") {
-    return (
-      <CreationLayout
-        title="캐릭터 이름"
-        step={2}
-        totalSteps={totalCreationSteps}
-        stepLabels={creationStepLabels}
-        onBack={() => setScreenPhase("CHARACTER_PORTRAIT")}
-        footer={
-          <div className="flex gap-3">
-            <button
-              onClick={() => { setCharacterName(""); setScreenPhase("CHARACTER_STATS"); }}
-              className="flex h-12 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] font-display text-sm tracking-wider text-[var(--text-muted)] transition-all hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-            >
-              건너뛰기
-            </button>
-            <button
-              onClick={() => setScreenPhase("CHARACTER_STATS")}
-              className="flex h-12 flex-[2] items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
-            >
-              다 음 <ChevronRight size={18} className="ml-1" />
-            </button>
-          </div>
-        }
-      >
-        <div className="flex flex-col items-center gap-8 py-8">
-          <div className="flex flex-col items-center gap-1">
-            <p className="text-sm text-[var(--text-muted)]">{selectedPreset?.name} ({selectedGender === "male" ? "남" : selectedGender === "female" ? "여" : "미선택"})</p>
-          </div>
-
-          <div className="w-full max-w-sm">
-            <label htmlFor="char-name" className="mb-2 block text-xs text-[var(--text-muted)]">
-              캐릭터 이름 (선택사항)
-            </label>
-            <input
-              id="char-name"
-              type="text"
-              maxLength={8}
-              value={characterName}
-              onChange={(e) => setCharacterName(e.target.value)}
-              placeholder="이름을 입력하세요"
-              className="h-14 w-full rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 text-center font-display text-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none transition-colors"
-              autoFocus
-            />
-            <p className="mt-2 text-right text-xs text-[var(--text-muted)]">
-              {characterName.length}/8
-            </p>
-          </div>
-
-          <p className="max-w-sm text-center text-xs leading-relaxed text-[var(--text-muted)]">
-            이름을 정하지 않으면 &quot;이름 없는 용병&quot;으로 불립니다.
-          </p>
-        </div>
-      </CreationLayout>
-    );
-  }
-
-  // =========================================================================
-  // Step 2: CHARACTER_PORTRAIT
-  // =========================================================================
-  if (screenPhase === "CHARACTER_PORTRAIT") {
-    const defaultPortrait = selectedPreset?.portraits?.[effectiveGender];
+  if (screenPhase === "CHARACTER_FINISH") {
+    const preset = selectedPreset;
+    const trait = availableTraits.find((t) => t.traitId === preset?.defaultTraitId);
+    const defaultPortrait = preset?.portraits?.[effectiveGender];
     const displayPortrait = portraitUrl || defaultPortrait;
+    const displayName = characterName.trim() || "이름 없는 용병";
+    const itemsText = preset?.startingItems.map((i) => (i.qty > 1 ? `${i.name} x${i.qty}` : i.name)).join(", ") ?? "";
 
     return (
       <CreationLayout
-        title="초상화"
+        title="마무리"
         step={1}
         totalSteps={totalCreationSteps}
         stepLabels={creationStepLabels}
         onBack={() => setScreenPhase("SELECT_PRESET")}
         footer={
-          <button
-            onClick={() => setScreenPhase("CHARACTER_NAME")}
-            className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
-          >
-            {displayPortrait ? "이 초상화로 진행" : "초상화 없이 진행"}{" "}
-            <ChevronRight size={18} className="ml-1" />
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setScreenPhase("SELECT_PRESET")}
+              className="flex h-12 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] font-display text-sm tracking-wider text-[var(--text-muted)] transition-all hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+            >
+              배경 다시 선택
+            </button>
+            <button
+              onClick={handleStartGame}
+              disabled={isLoading}
+              className="flex h-12 flex-[2] items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-lg tracking-[4px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:shadow-none"
+            >
+              {isLoading ? "불러오는 중..." : "모험 시작"}
+            </button>
+          </div>
         }
       >
-        <div className="flex flex-col items-center gap-6 py-4">
-          {/* Description text — 기본 초상화 없는 팩 프리셋은 안내 문구 분기 */}
-          <p className="text-center text-sm text-[var(--text-secondary)]">
-            {displayPortrait
-              ? "당신의 모습입니다. 원한다면 새로운 모습을 만들 수 있습니다."
-              : "이 출신은 기본 초상화가 준비되지 않았습니다. 내 이미지를 올리거나, 그대로 진행할 수 있습니다."}
-          </p>
-
-          {/* Portrait display -- 4:5 비율, 상단 정렬 */}
-          <div className="relative aspect-[4/5] w-72 max-w-full overflow-hidden rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+        <div className="flex flex-col items-center gap-6 py-2">
+          {/* 초상 — 프리셋 기본 즉시 표시, 원하면 바꾸기 (선택) */}
+          <div className="relative aspect-[4/5] w-56 max-w-full overflow-hidden rounded-lg border-2 border-[var(--gold)] bg-[var(--bg-secondary)]">
             {displayPortrait ? (
               portraitUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element -- AI-generated external URL */
-                <img src={displayPortrait} alt="캐릭터 초상화" className="h-full w-full object-cover object-top" />
+                <img src={displayPortrait} alt={displayName} className="h-full w-full object-cover object-top" />
               ) : (
-                <Image src={displayPortrait} alt="캐릭터 초상화" fill sizes="288px" className="object-cover object-top" />
+                <Image src={displayPortrait} alt={displayName} fill sizes="224px" className="object-cover object-top" />
               )
             ) : (
-              /* 캐릭터 확인 화면의 이니셜 타일과 동일한 톤 */
               <div className="flex h-full w-full flex-col items-center justify-center gap-3">
                 <span className="font-display text-6xl text-[var(--text-muted)]">
-                  {selectedPreset?.name?.charAt(0) ?? "?"}
+                  {preset?.name?.charAt(0) ?? "?"}
                 </span>
                 <span className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                   <ImageIcon size={13} /> 기본 초상화 없음
@@ -1405,41 +1309,83 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
             {portraitLoading && <PortraitLoadingOverlay />}
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-col items-center gap-3 w-full max-w-sm">
-            <>
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={portraitUploading}
+              className="flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-2 text-xs text-[var(--text-secondary)] transition-colors hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Upload size={13} />
+              {portraitUploading ? "처리 중..." : "내 이미지로 바꾸기"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/gif"
+              onChange={handleUploadPortrait}
+              className="hidden"
+            />
+            {portraitUrl && (
               <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={portraitUploading}
-                className="flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm text-[var(--text-secondary)] transition-colors hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={() => { setPortraitUrl(null); }}
+                className="text-xs text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--text-secondary)]"
               >
-                <Upload size={14} />
-                {portraitUploading ? "처리 중..." : "내 이미지 업로드"}
+                기본 초상화로 되돌리기
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/heic,image/gif"
-                onChange={handleUploadPortrait}
-                className="hidden"
-              />
-              <p className="text-[10px] text-[var(--text-muted)] text-center">
-                JPEG, PNG, WebP, HEIC, GIF · 최대 20MB
-              </p>
-              {portraitUrl && (
-                <button
-                  onClick={() => { setPortraitUrl(null); }}
-                  className="text-xs text-[var(--text-muted)] underline underline-offset-4 transition-colors hover:text-[var(--text-secondary)]"
-                >
-                  기본 초상화로 되돌리기
-                </button>
-              )}
-            </>
+            )}
+            {portraitError && (
+              <p className="text-sm text-[var(--hp-red)]">{portraitError}</p>
+            )}
           </div>
 
-          {portraitError && (
-            <p className="text-sm text-[var(--hp-red)]">{portraitError}</p>
-          )}
+          {/* 이름 (선택) */}
+          <div className="w-full max-w-sm">
+            <label htmlFor="char-name" className="mb-2 block text-xs text-[var(--text-muted)]">
+              캐릭터 이름 (선택사항 — 비우면 &quot;이름 없는 용병&quot;)
+            </label>
+            <input
+              id="char-name"
+              type="text"
+              maxLength={8}
+              value={characterName}
+              onChange={(e) => setCharacterName(e.target.value)}
+              placeholder="이름을 입력하세요"
+              className="h-12 w-full rounded-lg border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 text-center font-display text-lg text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
+            />
+          </div>
+
+          {/* 요약 — 배경·성별·특성 칩 + 특성 효과 + 시작 장비 */}
+          <div className="w-full max-w-sm rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
+            <div className="mb-3 flex flex-wrap justify-center gap-2">
+              <span className="rounded-md border border-[var(--gold)] bg-[rgba(201,169,98,0.1)] px-2.5 py-1 text-xs font-bold text-[var(--gold)]">
+                {preset?.name}
+              </span>
+              <span className="rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2.5 py-1 text-xs text-[var(--text-muted)]">
+                {effectiveGender === "male" ? "남성" : "여성"}
+              </span>
+            </div>
+            {trait && (
+              <div className="mb-3 flex items-center gap-3 rounded-md bg-[var(--bg-secondary)] px-3 py-2.5">
+                {(() => {
+                  const IC = TRAIT_ICON_MAP[trait.icon];
+                  return IC ? <IC size={18} className="shrink-0 text-[var(--gold)]" /> : <span>{trait.icon}</span>;
+                })()}
+                <div>
+                  <p className="font-display text-sm font-bold text-[var(--gold)]">{trait.name}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">{trait.effectSummary}</p>
+                </div>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--text-muted)]">
+              <span className="text-[var(--gold)]">{preset?.startingGold ?? 0}G</span>
+              {itemsText && (
+                <>
+                  <span className="text-[var(--border-primary)]">|</span>
+                  <span>{itemsText}</span>
+                </>
+              )}
+            </div>
+          </div>
 
           {cropImageSrc && (
             <PortraitCropModal
@@ -1452,429 +1398,6 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
       </CreationLayout>
     );
   }
-
-  // =========================================================================
-  // Step 4: CHARACTER_STATS
-  // =========================================================================
-  if (screenPhase === "CHARACTER_STATS") {
-    // 칭호: 스탯 합계(기본+보너스)가 임계값 이상이면 활성화
-    const STAT_TITLES: Record<string, Array<{ threshold: number; title: string; desc: string }>> = {
-      str: [
-        { threshold: 14, title: "강력한 팔", desc: "웬만한 싸움은 주먹 한 방이면 된다." },
-        { threshold: 18, title: "전투의 화신", desc: "적은 당신 앞에서 무릎을 꿇는다." },
-      ],
-      dex: [
-        { threshold: 14, title: "날쌘 발", desc: "그림자처럼 빠르게 움직인다." },
-        { threshold: 18, title: "유령 걸음", desc: "아무도 당신을 잡을 수 없다." },
-      ],
-      wit: [
-        { threshold: 14, title: "예리한 눈", desc: "숨겨진 단서를 놓치지 않는다." },
-        { threshold: 18, title: "천재 분석가", desc: "모든 퍼즐의 답이 보인다." },
-      ],
-      con: [
-        { threshold: 14, title: "단단한 몸", desc: "웬만한 타격에도 끄떡없다." },
-        { threshold: 18, title: "철벽", desc: "어떤 고통도 버텨낸다." },
-      ],
-      per: [
-        { threshold: 12, title: "직감", desc: "남들이 놓치는 것을 본다." },
-        { threshold: 16, title: "천리안", desc: "숨겨진 것은 없다." },
-      ],
-      cha: [
-        { threshold: 14, title: "매력적인 화술", desc: "사람들이 자연스레 귀를 기울인다." },
-        { threshold: 18, title: "타고난 지도자", desc: "모두가 당신을 따른다." },
-      ],
-    };
-    const activeTitles = STAT_KEYS.map((key) => {
-      const total = (selectedPreset?.stats[key] ?? 0) + (bonusStats[key] ?? 0);
-      const tiers = STAT_TITLES[key] ?? [];
-      // 가장 높은 임계값 달성한 칭호
-      for (let i = tiers.length - 1; i >= 0; i--) {
-        if (total >= tiers[i].threshold) return { key, ...tiers[i] };
-      }
-      return null;
-    }).filter(Boolean) as Array<{ key: string; threshold: number; title: string; desc: string }>;
-
-    return (
-      <CreationLayout
-        title="보너스 스탯 배분"
-        step={3}
-        totalSteps={totalCreationSteps}
-        stepLabels={creationStepLabels}
-        onBack={() => setScreenPhase("CHARACTER_NAME")}
-        footer={
-          bonusPointsRemaining === 0 ? (
-            <button
-              onClick={() =>
-                setScreenPhase(hasTraits ? "CHARACTER_TRAIT" : "CHARACTER_CONFIRM")
-              }
-              className="flex h-12 w-full items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)]"
-            >
-              다 음 <ChevronRight size={18} className="ml-1" />
-            </button>
-          ) : null
-        }
-      >
-        <div className="flex flex-col gap-6">
-          {/* Remaining points */}
-          <div className="flex items-center justify-between rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3">
-            <span className="text-sm text-[var(--text-secondary)]">보너스 포인트</span>
-            <div className="flex items-center gap-2">
-              <span className={`font-display text-2xl font-bold ${bonusPointsRemaining > 0 ? "text-[var(--gold)]" : "text-[var(--text-muted)]"}`}>
-                {bonusPointsRemaining}
-              </span>
-              <span className="text-sm text-[var(--text-muted)]">/ {BONUS_POINTS_TOTAL}</span>
-            </div>
-          </div>
-          {bonusPointsRemaining > 0 && (
-            <p className="-mt-4 text-center text-xs text-[var(--text-muted)]">
-              포인트 {bonusPointsRemaining}개를 모두 배분하면 다음 버튼이 표시됩니다.
-            </p>
-          )}
-
-          {/* Active titles */}
-          {activeTitles.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              {activeTitles.map((t) => (
-                <div key={t.key} className="rounded-md border border-[rgba(201,169,98,0.3)] bg-[rgba(201,169,98,0.06)] px-4 py-2 text-sm">
-                  <span className="font-bold text-[var(--gold)]">{t.title}</span>
-                  <span className="ml-2 text-[var(--text-secondary)]">{t.desc}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Stat rows */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {STAT_KEYS.map((key) => {
-              const baseVal = selectedPreset?.stats[key] ?? 0;
-              const bonus = bonusStats[key] ?? 0;
-              const total = baseVal + bonus;
-              const canIncrease = bonusPointsRemaining > 0;
-              const canDecrease = bonus > 0;
-
-              return (
-                <div
-                  key={key}
-                  className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
-                    focusedStat === key
-                      ? "border-[var(--gold)] bg-[rgba(201,169,98,0.06)]"
-                      : "border-[var(--border-primary)] bg-[var(--bg-card)]"
-                  }`}
-                  onClick={() => setFocusedStat(key)}
-                >
-                  {/* Color dot + label */}
-                  <div className="flex items-center gap-2 w-20 sm:w-24">
-                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: STAT_COLORS_MAP[key] }} />
-                    <span className="font-display text-sm font-bold text-[var(--text-primary)]">
-                      {STAT_LABELS[key]}
-                    </span>
-                  </div>
-
-                  {/* Base value */}
-                  <span className="w-6 text-center text-sm text-[var(--text-muted)]">{baseVal}</span>
-
-                  {/* Bonus */}
-                  {bonus > 0 && (
-                    <span className="w-8 text-center text-sm font-bold text-[var(--gold)]">+{bonus}</span>
-                  )}
-                  {bonus === 0 && <span className="w-8" />}
-
-                  {/* Total */}
-                  <span className="w-8 text-center font-display text-lg font-bold text-[var(--text-primary)]">{total}</span>
-
-                  {/* +/- buttons */}
-                  <div className="ml-auto flex items-center gap-1">
-                    <button
-                      type="button"
-                      aria-label={`${STAT_LABELS[key]} 감소`}
-                      title={`${STAT_LABELS[key]} 감소`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (canDecrease) setBonusStats((prev) => nextBonusStats(prev, key, -1, bonusPointsRemaining));
-                      }}
-                      disabled={!canDecrease}
-                      className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-primary)] text-[var(--text-muted)] transition-colors hover:border-[var(--text-secondary)] hover:text-[var(--text-secondary)] disabled:opacity-20 disabled:cursor-not-allowed"
-                    >
-                      <Minus size={14} />
-                      <span className="sr-only">{STAT_LABELS[key]} 감소</span>
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`${STAT_LABELS[key]} 증가`}
-                      title={`${STAT_LABELS[key]} 증가`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (canIncrease) setBonusStats((prev) => nextBonusStats(prev, key, 1, bonusPointsRemaining));
-                      }}
-                      disabled={!canIncrease}
-                      className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--gold)] text-[var(--gold)] transition-colors hover:bg-[rgba(201,169,98,0.1)] disabled:opacity-20 disabled:cursor-not-allowed"
-                    >
-                      <Plus size={14} />
-                      <span className="sr-only">{STAT_LABELS[key]} 증가</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Focused stat description */}
-          <div className="min-h-[48px] rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-3">
-            {focusedStat ? (
-              <div className="flex items-start gap-2">
-                <Info size={14} className="mt-0.5 shrink-0 text-[var(--text-muted)]" />
-                <div>
-                  <span className="text-sm font-bold" style={{ color: STAT_COLORS_MAP[focusedStat] }}>
-                    {STAT_LABELS[focusedStat]}
-                  </span>
-                  <span className="ml-2 text-sm text-[var(--text-secondary)]">
-                    {STAT_DESCRIPTIONS[focusedStat]}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-[var(--text-muted)]">스탯을 클릭하면 설명을 볼 수 있습니다.</p>
-            )}
-          </div>
-        </div>
-      </CreationLayout>
-    );
-  }
-
-  // =========================================================================
-  // Step 5: CHARACTER_TRAIT
-  // =========================================================================
-  if (screenPhase === "CHARACTER_TRAIT") {
-    return (
-      <CreationLayout
-        title="특성 선택"
-        step={4}
-        totalSteps={totalCreationSteps}
-        stepLabels={creationStepLabels}
-        onBack={() => setScreenPhase("CHARACTER_STATS")}
-        footer={
-          <div className="flex gap-3">
-            <button
-              onClick={() => { setSelectedTraitId(null); setScreenPhase("CHARACTER_CONFIRM"); }}
-              className="flex h-12 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] font-display text-sm tracking-wider text-[var(--text-muted)] transition-all hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-            >
-              건너뛰기
-            </button>
-            <button
-              onClick={() => setScreenPhase("CHARACTER_CONFIRM")}
-              disabled={!selectedTraitId}
-              className="flex h-12 flex-[2] items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-base tracking-[3px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              다 음 <ChevronRight size={18} className="ml-1" />
-            </button>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-[var(--text-secondary)]">
-            캐릭터에게 부여할 특성을 하나 선택하세요. 특성은 판정과 게임플레이에 영향을 줍니다.
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {availableTraits.map((trait) => {
-              const isSelected = selectedTraitId === trait.traitId;
-              const IconComp = TRAIT_ICON_MAP[trait.icon];
-              return (
-                <button
-                  key={trait.traitId}
-                  onClick={() => setSelectedTraitId(isSelected ? null : trait.traitId)}
-                  className={`flex flex-col gap-2 rounded-lg border p-4 text-left transition-all ${
-                    isSelected
-                      ? "border-[var(--gold)] bg-[rgba(201,169,98,0.08)] shadow-[0_0_16px_rgba(201,169,98,0.15)]"
-                      : "border-[var(--border-primary)] bg-[var(--bg-card)] hover:border-[rgba(201,169,98,0.4)] hover:bg-[rgba(201,169,98,0.04)]"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isSelected ? "bg-[rgba(201,169,98,0.2)]" : "bg-[var(--bg-secondary)]"}`}>
-                      {IconComp ? (
-                        <IconComp size={20} className={isSelected ? "text-[var(--gold)]" : "text-[var(--text-muted)]"} />
-                      ) : (
-                        <span className="text-lg">{trait.icon}</span>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className={`font-display text-sm font-bold ${isSelected ? "text-[var(--gold)]" : "text-[var(--text-primary)]"}`}>
-                        {trait.name}
-                      </h3>
-                      <p className="text-xs text-[var(--text-muted)]">{trait.description}</p>
-                    </div>
-                    {isSelected && <Check size={18} className="text-[var(--gold)]" />}
-                  </div>
-                  <div className={`rounded-md px-3 py-2 text-xs ${isSelected ? "bg-[rgba(201,169,98,0.1)]" : "bg-[var(--bg-secondary)]"}`}>
-                    <div className={`mb-1 font-bold ${isSelected ? "text-[var(--gold)]" : "text-[var(--text-secondary)]"}`}>
-                      {trait.effectSummary}
-                    </div>
-                    {isSelected && trait.effectDetails && (
-                      <ul className="flex flex-col gap-0.5 text-[var(--text-secondary)]">
-                        {trait.effectDetails.map((d, i) => (
-                          <li key={i}>{d}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </CreationLayout>
-    );
-  }
-
-  // =========================================================================
-  // Step 6: CHARACTER_CONFIRM
-  // =========================================================================
-  if (screenPhase === "CHARACTER_CONFIRM") {
-    const preset = selectedPreset;
-    const trait = availableTraits.find((t) => t.traitId === selectedTraitId);
-    const displayName = characterName.trim() || "이름 없는 용병";
-    const displayPortrait = portraitUrl || preset?.portraits?.[effectiveGender];
-    const itemsText = preset?.startingItems.map((i) => (i.qty > 1 ? `${i.name} x${i.qty}` : i.name)).join(", ") ?? "";
-
-    return (
-      <CreationLayout
-        title="캐릭터 확인"
-        step={hasTraits ? 5 : 4}
-        totalSteps={totalCreationSteps}
-        stepLabels={creationStepLabels}
-        onBack={() =>
-          setScreenPhase(hasTraits ? "CHARACTER_TRAIT" : "CHARACTER_STATS")
-        }
-        footer={
-          <div className="flex flex-col gap-2">
-            {bonusPointsRemaining > 0 && (
-              <p className="text-center text-xs text-[var(--danger,#d97a7a)]">
-                보너스 포인트 {bonusPointsRemaining}개가 남아 있습니다. 스탯 단계로 돌아가 모두 배분해주세요.
-              </p>
-            )}
-            <div className="flex gap-3">
-              <button
-                onClick={() =>
-                  bonusPointsRemaining > 0
-                    ? setScreenPhase("CHARACTER_STATS")
-                    : setScreenPhase("SELECT_PRESET")
-                }
-                className="flex h-12 flex-1 items-center justify-center rounded-md border border-[var(--border-primary)] font-display text-sm tracking-wider text-[var(--text-muted)] transition-all hover:border-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-              >
-                {bonusPointsRemaining > 0 ? "스탯 배분하러" : "수정하기"}
-              </button>
-              <button
-                onClick={handleStartGame}
-                disabled={isLoading || bonusPointsRemaining > 0}
-                className="flex h-12 flex-[2] items-center justify-center border border-[var(--gold)] bg-[var(--gold)] font-display text-lg tracking-[4px] text-[var(--bg-primary)] transition-all hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:shadow-none"
-              >
-                {isLoading ? "불러오는 중..." : "모험 시작"}
-              </button>
-            </div>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-6">
-          {/* Top: portrait + name + preset info */}
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
-            {/* Portrait */}
-            <div className="relative aspect-[4/5] w-36 shrink-0 overflow-hidden rounded-lg border-2 border-[var(--gold)] bg-[var(--bg-secondary)]">
-              {displayPortrait ? (
-                portraitUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element -- AI-generated external URL */
-                  <img src={displayPortrait} alt={displayName} className="h-full w-full object-cover object-top" />
-                ) : (
-                  <Image src={displayPortrait} alt={displayName} fill sizes="144px" className="object-cover object-top" />
-                )
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <span className="font-display text-4xl text-[var(--text-muted)]">{displayName[0]}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Name + tags */}
-            <div className="flex flex-col items-center gap-2 sm:items-start">
-              <h3 className="font-display text-2xl font-bold text-[var(--text-primary)]">{displayName}</h3>
-              <div className="flex flex-wrap gap-2">
-                <span className="rounded-md border border-[var(--gold)] bg-[rgba(201,169,98,0.1)] px-2.5 py-1 text-xs font-bold text-[var(--gold)]">
-                  {preset?.name}
-                </span>
-                <span className="rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2.5 py-1 text-xs text-[var(--text-muted)]">
-                  {effectiveGender === "male" ? "남성" : "여성"}
-                </span>
-                {trait && (
-                  <span className="rounded-md border border-[rgba(201,169,98,0.4)] bg-[rgba(201,169,98,0.06)] px-2.5 py-1 text-xs text-[var(--gold)]">
-                    {trait.name}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-[var(--text-secondary)]">{preset?.description}</p>
-            </div>
-          </div>
-
-          {/* Radar chart */}
-          <div className="flex flex-col items-center gap-4 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-6">
-            <h4 className="font-display text-sm font-bold text-[var(--text-secondary)]">능력치</h4>
-            <RadarChart
-              baseStats={preset?.stats ?? {}}
-              bonusStats={bonusStats}
-              size={220}
-            />
-            {/* Stat summary row */}
-            <div className="grid w-full grid-cols-3 gap-2 sm:grid-cols-6">
-              {STAT_KEYS.map((key) => {
-                const base = preset?.stats[key] ?? 0;
-                const bonus = bonusStats[key] ?? 0;
-                return (
-                  <div key={key} className="flex flex-col items-center gap-0.5 rounded-md bg-[var(--bg-secondary)] px-2 py-2">
-                    <span className="text-[10px] font-bold" style={{ color: STAT_COLORS_MAP[key] }}>
-                      {STAT_LABELS[key]}
-                    </span>
-                    <div className="flex items-baseline gap-0.5">
-                      <span className="font-display text-lg font-bold text-[var(--text-primary)]">{base + bonus}</span>
-                      {bonus > 0 && (
-                        <span className="text-xs font-bold text-[var(--gold)]">+{bonus}</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Trait + items + gold */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Trait */}
-            {trait && (
-              <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
-                <h4 className="mb-2 text-xs font-bold text-[var(--text-muted)]">특성</h4>
-                <div className="flex items-center gap-3">
-                  {(() => {
-                    const IC = TRAIT_ICON_MAP[trait.icon];
-                    return IC ? <IC size={20} className="text-[var(--gold)]" /> : <span>{trait.icon}</span>;
-                  })()}
-                  <div>
-                    <p className="font-display text-sm font-bold text-[var(--gold)]">{trait.name}</p>
-                    <p className="text-xs text-[var(--text-secondary)]">{trait.effectSummary}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Starting items & gold */}
-            <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
-              <h4 className="mb-2 text-xs font-bold text-[var(--text-muted)]">시작 장비</h4>
-              <div className="flex flex-col gap-1">
-                <p className="text-sm text-[var(--gold)]">{preset?.startingGold ?? 0}G</p>
-                {itemsText && <p className="text-sm text-[var(--text-secondary)]">{itemsText}</p>}
-              </div>
-            </div>
-          </div>
-        </div>
-      </CreationLayout>
-    );
-  }
-
   // Fallback (should not reach here)
   return null;
 }

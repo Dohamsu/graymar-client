@@ -126,6 +126,8 @@ export interface CharacterPreset {
   playstyleHint: string;
   portraits?: { male: string; female: string };
   stats: Record<string, number>;
+  /** [arch/97] 배경 시그니처 특성 — 생성 시 서버가 자동 부여, 카드 뱃지 표시용 */
+  defaultTraitId?: string | null;
   startingGold: number;
   startingItems: Array<{ name: string; qty: number }>;
 }

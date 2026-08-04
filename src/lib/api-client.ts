@@ -350,6 +350,7 @@ export interface CreationBundle {
     description: string;
     playstyleHint: string;
     stats: Record<string, number>;
+    defaultTraitId?: string | null;
     startingGold: number;
     startingItems: Array<{ name: string; qty: number }>;
   }>;

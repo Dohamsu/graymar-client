@@ -3,6 +3,7 @@ import type { CharacterPreset } from "@/types/game";
 export const PRESETS: CharacterPreset[] = [
   {
     presetId: "DOCKWORKER",
+    defaultTraitId: "BLOOD_OATH",
     name: "부두 노동자",
     subtitle: "항만의 주먹",
     description:
@@ -15,15 +16,16 @@ export const PRESETS: CharacterPreset[] = [
       str: 16,
       dex: 4,
       wit: 4,
-      con: 14,
-      per: 5,
-      cha: 5,
+      con: 16,
+      per: 6,
+      cha: 6,
     },
     startingGold: 30,
     startingItems: [{ name: "하급 치료제", qty: 2 }],
   },
   {
     presetId: "DESERTER",
+    defaultTraitId: "BATTLE_MEMORY",
     name: "탈영병",
     subtitle: "추적받는 검",
     description:
@@ -33,10 +35,10 @@ export const PRESETS: CharacterPreset[] = [
     stats: {
       MaxHP: 100,
       MaxStamina: 5,
-      str: 11,
-      dex: 10,
-      wit: 9,
-      con: 9,
+      str: 13,
+      dex: 12,
+      wit: 10,
+      con: 10,
       per: 8,
       cha: 6,
     },
@@ -48,6 +50,7 @@ export const PRESETS: CharacterPreset[] = [
   },
   {
     presetId: "SMUGGLER",
+    defaultTraitId: "STREET_SENSE",
     name: "밀수업자",
     subtitle: "어둠의 운반책",
     description:
@@ -58,11 +61,11 @@ export const PRESETS: CharacterPreset[] = [
       MaxHP: 80,
       MaxStamina: 6,
       str: 7,
-      dex: 14,
+      dex: 16,
       wit: 6,
       con: 6,
-      per: 9,
-      cha: 12,
+      per: 11,
+      cha: 14,
     },
     startingGold: 60,
     startingItems: [
@@ -72,6 +75,7 @@ export const PRESETS: CharacterPreset[] = [
   },
   {
     presetId: "HERBALIST",
+    defaultTraitId: "NIGHT_CHILD",
     name: "약초상",
     subtitle: "뒷골목 약사",
     description:
@@ -83,9 +87,9 @@ export const PRESETS: CharacterPreset[] = [
       MaxStamina: 7,
       str: 6,
       dex: 6,
-      wit: 13,
-      con: 10,
-      per: 12,
+      wit: 17,
+      con: 12,
+      per: 14,
       cha: 5,
     },
     startingGold: 40,
@@ -97,6 +101,7 @@ export const PRESETS: CharacterPreset[] = [
   },
   {
     presetId: "FALLEN_NOBLE",
+    defaultTraitId: "SILVER_TONGUE",
     name: "몰락 귀족",
     subtitle: "잃어버린 가문의 후예",
     description:
@@ -108,10 +113,10 @@ export const PRESETS: CharacterPreset[] = [
       MaxStamina: 6,
       str: 5,
       dex: 5,
-      wit: 10,
+      wit: 12,
       con: 7,
-      per: 8,
-      cha: 16,
+      per: 10,
+      cha: 18,
     },
     startingGold: 80,
     startingItems: [
@@ -121,6 +126,7 @@ export const PRESETS: CharacterPreset[] = [
   },
   {
     presetId: "GLADIATOR",
+    defaultTraitId: "GAMBLER_LUCK",
     name: "떠돌이 검투사",
     subtitle: "투기장의 생존자",
     description:
@@ -130,10 +136,10 @@ export const PRESETS: CharacterPreset[] = [
     stats: {
       MaxHP: 110,
       MaxStamina: 6,
-      str: 14,
-      dex: 12,
+      str: 16,
+      dex: 14,
       wit: 4,
-      con: 10,
+      con: 12,
       per: 4,
       cha: 6,
     },

@@ -7,10 +7,13 @@ export function PresetCard({
   preset,
   selected,
   onSelect,
+  traitName,
 }: {
   preset: CharacterPreset;
   selected: boolean;
   onSelect: () => void;
+  /** [arch/97] 배경 시그니처 특성명 — 자동 부여 뱃지 표시 */
+  traitName?: string;
 }) {
   const itemsText = preset.startingItems
     .map((i) => (i.qty > 1 ? `${i.name} x${i.qty}` : i.name))
@@ -46,6 +49,11 @@ export function PresetCard({
             </span>
           </div>
           <p className="text-sm text-[var(--gold)]">{preset.subtitle}</p>
+          {traitName && (
+            <span className="mt-1.5 inline-block rounded-md border border-[rgba(201,169,98,0.4)] bg-[rgba(201,169,98,0.06)] px-2 py-0.5 text-[11px] text-[var(--gold)]">
+              특성 · {traitName}
+            </span>
+          )}
         </div>
 
         {/* Description */}
