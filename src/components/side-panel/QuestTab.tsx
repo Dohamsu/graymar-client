@@ -34,7 +34,7 @@ const INCIDENT_KIND_LABELS: Record<string, { label: string; color: string }> = {
   POLITICAL: { label: "정치", color: "var(--info-blue)" },
   ECONOMIC: { label: "경제", color: "var(--gold)" },
   SOCIAL: { label: "사회", color: "var(--success-green)" },
-  MILITARY: { label: "군사", color: "#f97316" },
+  MILITARY: { label: "군사", color: "var(--orange)" },
 };
 
 // 서버 정본 enum (parsed-intent-v3.ts APPROACH_VECTOR)과 1:1 — drift 수정 2026-07-23

@@ -40,7 +40,7 @@ export function PartyTurnStatus({
         {submittedCount < totalMembers ? (
           <Circle size={14} className="text-[var(--gold)]" />
         ) : (
-          <CheckCircle2 size={14} className="text-emerald-400" />
+          <CheckCircle2 size={14} className="text-[var(--success-green)]" />
         )}
         <span className="text-xs font-medium text-[var(--text-primary)]">
           {submittedCount}/{totalMembers} 제출
@@ -63,7 +63,7 @@ export function PartyTurnStatus({
           secondsLeft <= 5
             ? "text-[var(--hp-red)]"
             : secondsLeft <= 10
-              ? "text-amber-400"
+              ? "text-[var(--gold)]"
               : "text-[var(--text-muted)]"
         }`}
       >

@@ -44,7 +44,7 @@ function formatDate(iso: string): string {
 
 function eventDotColor(ev: JourneyKeyEvent): string {
   if (ev.kind === "MARK") return "bg-[var(--gold)]";
-  if (ev.kind === "DISCOVERY") return "bg-[var(--info-blue,#60a5fa)]";
+  if (ev.kind === "DISCOVERY") return "bg-[var(--info-blue)]";
   // INCIDENT — outcome 기반
   switch (ev.outcome) {
     case "CONTAINED":

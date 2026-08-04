@@ -60,9 +60,9 @@ export function DeadlineBanner() {
               : `마지막 종이 울리기까지 ${daysLeft}일 남았다.`,
         }
       : {
-          bg: "bg-[#f97316]/10",
-          border: "border-[#f97316]/40",
-          text: "text-[#f97316]",
+          bg: "bg-[#C98A5E]/10",
+          border: "border-[#C98A5E]/40",
+          text: "text-[#C98A5E]",
           icon: Clock,
           label: "D-3",
           body: "도시의 공기가 무거워지고 있다.",

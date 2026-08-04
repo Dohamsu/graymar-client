@@ -12,19 +12,19 @@ import { getNpcPortraitUrl } from "@/data/npc-portraits";
 // ---------------------------------------------------------------------------
 
 const POSTURE_LABELS: Record<string, { label: string; color: string }> = {
-  FRIENDLY: { label: "우호", color: "#22c55e" },
-  CAUTIOUS: { label: "경계", color: "#eab308" },
-  HOSTILE: { label: "적대", color: "#ef4444" },
-  FEARFUL: { label: "두려움", color: "#a855f7" },
-  CALCULATING: { label: "계산적", color: "#3b82f6" },
+  FRIENDLY: { label: "우호", color: "#8FAC7E" },
+  CAUTIOUS: { label: "경계", color: "#C9A962" },
+  HOSTILE: { label: "적대", color: "#C0625A" },
+  FEARFUL: { label: "두려움", color: "#A08CC0" },
+  CALCULATING: { label: "계산적", color: "#8FA9C4" },
 };
 
 const EMOTION_CONFIG: { key: keyof Pick<NpcEmotionalUI, 'trust' | 'fear' | 'respect' | 'suspicion' | 'attachment'>; label: string; color: string }[] = [
-  { key: "trust", label: "신뢰", color: "#22c55e" },
-  { key: "fear", label: "공포", color: "#ef4444" },
-  { key: "respect", label: "존경", color: "#eab308" },
-  { key: "suspicion", label: "의심", color: "#a855f7" },
-  { key: "attachment", label: "유대", color: "#3b82f6" },
+  { key: "trust", label: "신뢰", color: "#8FAC7E" },
+  { key: "fear", label: "공포", color: "#C0625A" },
+  { key: "respect", label: "존경", color: "#C9A962" },
+  { key: "suspicion", label: "의심", color: "#A08CC0" },
+  { key: "attachment", label: "유대", color: "#8FA9C4" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ function EmotionBar({ label, value, color }: { label: string; value: number; col
       </div>
       <span
         className="w-6 text-right text-[9px] font-semibold"
-        style={{ color: value > 0 ? color : value < 0 ? "#ef4444" : "#2a1f14" }}
+        style={{ color: value > 0 ? color : value < 0 ? "#C0625A" : "#2a1f14" }}
       >
         {value > 0 ? `+${value}` : value}
       </span>

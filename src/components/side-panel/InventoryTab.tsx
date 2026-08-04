@@ -54,9 +54,9 @@ const TYPE_ORDER = ["CONSUMABLE", "CLUE", "KEY_ITEM"];
 
 const RARITY_COLORS: Record<string, string> = {
   COMMON: "#9CA3AF",
-  RARE: "#3B82F6",
-  UNIQUE: "#A855F7",
-  LEGENDARY: "#F59E0B",
+  RARE: "#8FA9C4",
+  UNIQUE: "#A08CC0",
+  LEGENDARY: "#D2A85C",
 };
 
 const SLOT_LABELS: Record<string, string> = {

@@ -54,13 +54,13 @@ export function VoteModal({ vote, currentUserId, onCast }: VoteModalProps) {
         {/* Vote counts */}
         <div className="mb-4 flex items-center justify-between rounded-md bg-[var(--bg-primary)] px-4 py-3">
           <div className="flex items-center gap-2">
-            <Check size={16} className="text-emerald-400" />
+            <Check size={16} className="text-[var(--success-green)]" />
             <span className="text-sm text-[var(--text-primary)]">
               찬성 {vote.yesVotes}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <X size={16} className="text-red-400" />
+            <X size={16} className="text-[var(--hp-red)]" />
             <span className="text-sm text-[var(--text-primary)]">
               반대 {vote.noVotes}
             </span>
@@ -76,14 +76,14 @@ export function VoteModal({ vote, currentUserId, onCast }: VoteModalProps) {
           <div className="flex gap-3">
             <button
               onClick={() => onCast(vote.id, "yes")}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-[var(--success-green)] px-4 py-2.5 text-sm font-medium text-[#0F0F0F] transition-opacity hover:opacity-85"
             >
               <Check size={16} />
               찬성
             </button>
             <button
               onClick={() => onCast(vote.id, "no")}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-[var(--hp-red)] px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85"
             >
               <X size={16} />
               반대

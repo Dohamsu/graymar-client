@@ -1249,8 +1249,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                   onClick={() => setSelectedGenderState("male")}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-all ${
                     selectedGender === "male"
-                      ? "border-[#60A5FA] bg-[rgba(96,165,250,0.15)] text-[#60A5FA] shadow-[0_0_10px_rgba(96,165,250,0.2)]"
-                      : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[#60A5FA]/50 hover:text-[#60A5FA]/70"
+                      ? "border-[#8FA9C4] bg-[rgba(143,169,196,0.15)] text-[#8FA9C4] shadow-[0_0_10px_rgba(143,169,196,0.2)]"
+                      : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[#8FA9C4]/50 hover:text-[#8FA9C4]/70"
                   }`}
                 >
                   <span className="text-lg">♂</span> 남성
@@ -1260,8 +1260,8 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
                   onClick={() => setSelectedGenderState("female")}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-md border-2 py-2.5 text-sm font-bold tracking-wider transition-all ${
                     selectedGender === "female"
-                      ? "border-[#F472B6] bg-[rgba(244,114,182,0.15)] text-[#F472B6] shadow-[0_0_10px_rgba(244,114,182,0.2)]"
-                      : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[#F472B6]/50 hover:text-[#F472B6]/70"
+                      ? "border-[#C08A9B] bg-[rgba(192,138,155,0.15)] text-[#C08A9B] shadow-[0_0_10px_rgba(192,138,155,0.2)]"
+                      : "border-[var(--border-primary)] text-[var(--text-muted)] hover:border-[#C08A9B]/50 hover:text-[#C08A9B]/70"
                   }`}
                 >
                   <span className="text-lg">♀</span> 여성

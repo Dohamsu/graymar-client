@@ -45,14 +45,16 @@
   --text-secondary: #888888;
   --text-muted: #666666;
 
-  /* Accent Colors */
+  /* Accent Colors — 뮤트 앤틱 시맨틱 (2026-08-04: 스탯 팔레트와 동일 원칙으로
+     고채도 모던 컬러 폐지. 구값: hp-red #E74C3C · stamina #27AE60 ·
+     success #4ADE80 · info #60A5FA · purple #A78BFA · orange #F97316) */
   --gold: #C9A962;
-  --hp-red: #E74C3C;
-  --stamina-green: #27AE60;
-  --success-green: #4ADE80;
-  --info-blue: #60A5FA;
-  --purple: #A78BFA;
-  --orange: #F97316;
+  --hp-red: #C0625A;
+  --stamina-green: #7A9E6E;
+  --success-green: #8FAC7E;
+  --info-blue: #8FA9C4;
+  --purple: #A08CC0;
+  --orange: #C98A5E;
 
   /* Stat Colors — 뮤트 앤틱 팔레트 (arch/68 C-4: 무지개색 → 골드 테마 정합) */
   --stat-str: #C0625A;
