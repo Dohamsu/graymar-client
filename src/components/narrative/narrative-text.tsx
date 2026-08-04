@@ -36,9 +36,10 @@ export function renderInlineText(text: string, keyBase: number): { nodes: React.
     if (match.index > lastIndex) {
       parts.push(<span key={key++}>{text.slice(lastIndex, match.index)}</span>);
     }
-    // 홑따옴표 = 쪽지/간판/소문 인용, 단어 강조 → 밝은 청록색 + 볼드
+    // 홑따옴표 = 쪽지/간판/소문 인용, 단어 강조 → 대사와 같은 골드 + 이탤릭
+    // (인라인 위치·기울임으로 대사 블록과 구분 — 톤앤매너 통일, 2026-08-04)
     parts.push(
-      <span key={key++} className="font-semibold" style={{ color: "var(--info-blue)" }}>
+      <span key={key++} className="font-semibold italic" style={{ color: "var(--gold)" }}>
         {match[0]}
       </span>,
     );
@@ -158,8 +159,8 @@ export function renderStyledText(text: string, speakingNpc?: SpeakingNpc): React
       parts.push(
         <span
           key={key++}
-          className={isDialogue ? "block my-6 font-dialogue" : "font-semibold"}
-          style={{ color: isDialogue ? "var(--gold)" : "var(--info-blue)" }}
+          className={isDialogue ? "block my-6 font-dialogue" : "font-semibold italic"}
+          style={{ color: "var(--gold)" }}
         >
           {match[0]}
         </span>,
