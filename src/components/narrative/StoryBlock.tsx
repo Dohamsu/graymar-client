@@ -728,8 +728,19 @@ export function StoryBlock({ message, onChoiceSelect, onNarrationComplete }: Sto
 function SceneCutImage({ imageUrl }: { imageUrl: string }) {
   const [broken, setBroken] = useState(false);
   if (broken) return null;
+  // 사방 페더링 마스크 — 하드 엣지 카드 대신 배경에 녹는 삽화 느낌
+  const featherMask =
+    'linear-gradient(to right, transparent, black 7%, black 93%, transparent), linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)';
   return (
-    <div className="relative mt-3 h-[180px] w-full overflow-hidden rounded lg:h-[260px]">
+    <div
+      className="relative mt-3 h-[180px] w-full overflow-hidden lg:h-[260px]"
+      style={{
+        maskImage: featherMask,
+        WebkitMaskImage: featherMask,
+        maskComposite: 'intersect',
+        WebkitMaskComposite: 'source-in',
+      }}
+    >
       <Image
         src={imageUrl}
         alt="장면"
@@ -737,13 +748,6 @@ function SceneCutImage({ imageUrl }: { imageUrl: string }) {
         sizes="(max-width: 768px) 100vw, 800px"
         className="object-cover"
         onError={() => setBroken(true)}
-      />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)',
-        }}
       />
     </div>
   );
