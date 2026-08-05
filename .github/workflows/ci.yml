@@ -1,0 +1,26 @@
+# CI — 무비용 게이트 (arch/99 후속, 하네스 보강 #1)
+# NEXT_PUBLIC_* env는 전부 코드 fallback이 있어 무설정 빌드 가능 (2026-08-05 확인).
+# main push = Vercel 프로덕션 자동 배포이므로, 이 게이트는 배포와 병행으로
+# 린트·빌드 회귀를 기록한다 (Vercel 빌드 실패의 조기 신호 겸용).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm build
