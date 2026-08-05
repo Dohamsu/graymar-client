@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useGameStore } from "@/store/game-store";
 import { CharacterTab } from "./CharacterTab";
 import { InventoryTab } from "./InventoryTab";
 import { EquipmentTab } from "./EquipmentTab";
@@ -29,6 +30,9 @@ export function SidePanel({ character, inventory, gold, inventoryChanges, onClea
   }, []);
 
   const hasChanges = !!inventoryChanges;
+  // [arch/99] 퀘스트 탭 유도 배지 — 단서 발견·단계 전환 시 점등, 열람 시 해제
+  const questTabBadge = useGameStore((s) => s.questTabBadge);
+  const clearQuestTabBadge = useGameStore((s) => s.clearQuestTabBadge);
 
   const handleTabClick = useCallback((tab: string) => {
     setActiveTab(tab);
@@ -37,7 +41,8 @@ export function SidePanel({ character, inventory, gold, inventoryChanges, onClea
       if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
       clearTimerRef.current = setTimeout(onClearChanges, 5000);
     }
-  }, [hasChanges, onClearChanges]);
+    if (tab === "퀘스트") clearQuestTabBadge();
+  }, [hasChanges, onClearChanges, clearQuestTabBadge]);
 
   return (
     <div className="flex h-full w-[320px] flex-col border-l border-[var(--border-primary)] bg-[var(--bg-secondary)] xl:w-[420px]">
@@ -45,7 +50,9 @@ export function SidePanel({ character, inventory, gold, inventoryChanges, onClea
       <div className="flex h-12 w-full items-center border-b border-[var(--border-primary)] px-4">
         {TABS.map((tab) => {
           const active = activeTab === tab;
-          const showBadge = tab === "소지품" && hasChanges && activeTab !== "소지품";
+          const showBadge =
+            (tab === "소지품" && hasChanges && activeTab !== "소지품") ||
+            (tab === "퀘스트" && questTabBadge && activeTab !== "퀘스트");
           return (
             <button
               key={tab}

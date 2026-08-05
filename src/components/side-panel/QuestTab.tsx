@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Clock, AlertTriangle, Award, GitBranch, Target, Shield, Sparkles, ScrollText, MapPin, CheckCircle2 } from "lucide-react";
+import { Compass, Clock, AlertTriangle, Award, GitBranch, Shield, ScrollText, MapPin, CheckCircle2 } from "lucide-react";
 import { useGameStore } from "@/store/game-store";
 import type { ArcRoute } from "@/types/game";
 
@@ -70,33 +70,8 @@ const FACTION_LABELS: Record<string, string> = {
 };
 
 // 레거시 영속 텍스트 번역 안전망 (2026-07-24) — 기존 런의 runState에 이미
-// 저장된 "talk 관련 활동을 계속하고 있다"류 목표 설명과 "ECONOMIC 접근 2회"류
-// 스레드 요약은 서버 수정만으로 안 바뀐다. 렌더 시점에 한글로 교정.
-const LEGACY_GOAL_RE = /^([a-z_]+) 관련 활동을 계속하고 있다$/;
-const ACTION_GOAL_KO: Record<string, string> = {
-  talk: "사람들과 대화하며 정보를 모으고 있다",
-  investigate: "단서를 파고들며 조사를 이어가고 있다",
-  observe: "주변을 관찰하며 상황을 살피고 있다",
-  search: "구석구석 뒤지며 수색하고 있다",
-  persuade: "설득으로 사람들을 움직이려 하고 있다",
-  bribe: "금전으로 입을 열게 하려 하고 있다",
-  threaten: "위협적인 방식으로 밀어붙이고 있다",
-  sneak: "은밀하게 움직이며 눈에 띄지 않으려 하고 있다",
-  steal: "남의 물건에 손을 대는 일이 잦다",
-  fight: "힘으로 부딪히는 일이 잦다",
-  help: "어려운 사람들을 도우며 신뢰를 쌓고 있다",
-  trade: "거래로 이득을 챙기고 있다",
-  rest: "휴식을 자주 취하며 때를 기다리고 있다",
-  shop: "물건을 사들이며 채비를 갖추고 있다",
-  move_location: "여러 지역을 오가며 발품을 팔고 있다",
-};
-
-function localizeGoalDescription(desc: string): string {
-  const m = LEGACY_GOAL_RE.exec(desc);
-  if (!m) return desc;
-  return ACTION_GOAL_KO[m[1]!] ?? "같은 방식의 행동을 반복하고 있다";
-}
-
+// 저장된 "ECONOMIC 접근 2회"류 스레드 요약은 서버 수정만으로 안 바뀐다.
+// 렌더 시점에 한글로 교정.
 function localizeThreadSummary(summary: string): string {
   return summary.replace(
     /\b(SOCIAL|STEALTH|PRESSURE|ECONOMIC|OBSERVATIONAL|POLITICAL|LOGISTICAL|VIOLENT)\b/g,
@@ -253,11 +228,9 @@ export function QuestTab() {
   const activeIncidents = useGameStore((s) => s.activeIncidents);
   const narrativeMarks = useGameStore((s) => s.narrativeMarks);
   const playerThreads = useGameStore((s) => s.playerThreads);
-  const playerGoals = useGameStore((s) => s.playerGoals);
   const reputation = useGameStore((s) => s.worldState?.reputation);
   const questStatus = useGameStore((s) => s.questStatus);
 
-  const activeGoals = playerGoals.filter((g) => !g.completed);
   const reputationEntries = reputation ? Object.entries(reputation) : [];
 
   // 이정표 — 미발견 단서의 발견 가능 지역 (중복 지역 병합)
@@ -271,21 +244,12 @@ export function QuestTab() {
   const routeName = (route: ArcRoute) =>
     questStatus?.arcRouteLabels?.[route] ?? ARC_ROUTE_LABELS[route].name;
 
-  // ── 상단 요약 — 현재 데이터만 사용. 항목이 하나라도 있으면 카드 노출.
-  const summaryRoute = arcState?.currentRoute
-    ? { name: routeName(arcState.currentRoute), color: ARC_ROUTE_LABELS[arcState.currentRoute].color }
-    : null;
-  const summaryDeadline = mainArcClock
-    ? mainArcClock.triggered
-      ? { label: "시한 초과", urgent: true }
-      : (() => {
-          const remaining = mainArcClock.softDeadlineDay - (day ?? 1);
-          return { label: `D-${remaining}`, urgent: remaining <= 3 };
-        })()
-    : null;
-  const summaryGoal = activeGoals[0] ?? null;
-  const summaryActiveIncidentCount = activeIncidents.filter((i) => !i.resolved).length;
-  const showSummary = Boolean(summaryRoute || summaryDeadline || summaryGoal || summaryActiveIncidentCount);
+  // 팩 게이팅 (arch/99) — 노선: 확정됐거나 커밋 동선 있는 팩만.
+  // 시한: 퀘스트 팩(AUTHORED)만 — AUTONOMOUS는 종결 축이 규명율이라 D-day가 오정보.
+  const showRouteSection = Boolean(
+    arcState?.currentRoute || questStatus?.hasArcCommit,
+  );
+  const showDeadlineSection = Boolean(questStatus && mainArcClock);
 
   return (
     <div className="flex flex-col gap-6">
@@ -377,83 +341,8 @@ export function QuestTab() {
         </section>
       )}
 
-      {/* 0. Top Summary — 현재 상황 한눈에 */}
-      {showSummary && (
-        <section className="flex flex-col gap-2">
-          <SectionHeader icon={Sparkles} title="현재 상황" />
-          <div className={`flex flex-col gap-2.5 ${CARD_CLASS}`}>
-            {/* 노선 + 시한 한 줄 */}
-            {(summaryRoute || summaryDeadline) && (
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[12px] font-semibold text-[var(--text-primary)]/85">노선</span>
-                <div className="flex items-center gap-2">
-                  {summaryRoute ? (
-                    <span
-                      className="text-[13px] font-bold"
-                      style={{ color: summaryRoute.color }}
-                    >
-                      {summaryRoute.name}
-                    </span>
-                  ) : (
-                    <span className="text-[12px] font-medium text-[var(--text-primary)]/70">
-                      미정
-                    </span>
-                  )}
-                  {summaryDeadline && (
-                    <span
-                      className={`rounded px-2 py-0.5 text-[11px] font-bold tabular-nums ${
-                        summaryDeadline.urgent
-                          ? "bg-[var(--hp-red)]/25 text-[var(--hp-red)]"
-                          : "bg-white/10 text-[var(--text-primary)]/95"
-                      }`}
-                    >
-                      {summaryDeadline.label}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-            {/* 활성 사건 카운트 */}
-            {summaryActiveIncidentCount > 0 && (
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[12px] font-semibold text-[var(--text-primary)]/85">활성 사건</span>
-                <span className="text-[12px] font-bold tabular-nums text-[var(--text-primary)]">
-                  {summaryActiveIncidentCount}건
-                </span>
-              </div>
-            )}
-            {/* 다음 목표 한 줄 */}
-            {summaryGoal && (
-              <div className="flex flex-col gap-1.5 border-t border-white/15 pt-2.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-primary)]/75">
-                  다음 목표
-                </span>
-                <div className="flex items-start gap-2">
-                  <span className="mt-px text-[12px] leading-none">
-                    {summaryGoal.type === "EXPLICIT" ? "\u{1F4CB}" : "\u{1F50D}"}
-                  </span>
-                  <span className="text-[12px] font-semibold leading-snug text-[var(--text-primary)]">
-                    {localizeGoalDescription(summaryGoal.description)}
-                  </span>
-                </div>
-                <StatRow
-                  label="진행"
-                  value={summaryGoal.progress}
-                  color={
-                    summaryGoal.progress >= 70
-                      ? "var(--success-green)"
-                      : summaryGoal.progress >= 30
-                        ? "var(--gold)"
-                        : "var(--info-blue)"
-                  }
-                />
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* A. Arc Route */}
+      {/* A. Arc Route — 확정됐거나 커밋 동선 있는 팩만 (arch/99) */}
+      {showRouteSection && (
       <section className="flex flex-col gap-2">
         <SectionHeader icon={Compass} title="노선" />
         {arcState?.currentRoute ? (
@@ -501,6 +390,7 @@ export function QuestTab() {
           <EmptyCard text="아직 노선을 정하지 않았다" />
         )}
       </section>
+      )}
 
       {/* A-2. Faction Reputation */}
       <section className="flex flex-col gap-2">
@@ -534,43 +424,41 @@ export function QuestTab() {
         )}
       </section>
 
-      {/* B. Deadline */}
+      {/* B. Deadline — 퀘스트 팩(AUTHORED)만 (arch/99: AUTONOMOUS는 규명율 종결) */}
+      {showDeadlineSection && mainArcClock && (
       <section className="flex flex-col gap-2">
         <SectionHeader icon={Clock} title="시한" />
-        {mainArcClock ? (
-          <div className={`flex flex-col gap-2.5 ${CARD_CLASS}`}>
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
-                {day}일차 / {mainArcClock.softDeadlineDay}일
-              </span>
-              {(() => {
-                const remaining = mainArcClock.softDeadlineDay - (day ?? 1);
-                const urgent = remaining <= 3;
-                return (
-                  <span
-                    className={`rounded px-2 py-0.5 text-[12px] font-bold tabular-nums ${
-                      mainArcClock.triggered
-                        ? "bg-[var(--hp-red)]/25 text-[var(--hp-red)]"
-                        : urgent
-                          ? "bg-[var(--orange)]/25 text-[var(--orange)]"
-                          : "bg-white/10 text-[var(--text-primary)]"
-                    }`}
-                  >
-                    {mainArcClock.triggered ? "시한 초과" : `D-${remaining}`}
-                  </span>
-                );
-              })()}
-            </div>
-            <MiniBar
-              value={day}
-              max={mainArcClock.softDeadlineDay}
-              color={mainArcClock.triggered ? "var(--hp-red)" : day > mainArcClock.softDeadlineDay - 3 ? "var(--orange)" : "var(--info-blue)"}
-            />
+        <div className={`flex flex-col gap-2.5 ${CARD_CLASS}`}>
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+              {day}일차 / {mainArcClock.softDeadlineDay}일
+            </span>
+            {(() => {
+              const remaining = mainArcClock.softDeadlineDay - (day ?? 1);
+              const urgent = remaining <= 3;
+              return (
+                <span
+                  className={`rounded px-2 py-0.5 text-[12px] font-bold tabular-nums ${
+                    mainArcClock.triggered
+                      ? "bg-[var(--hp-red)]/25 text-[var(--hp-red)]"
+                      : urgent
+                        ? "bg-[var(--orange)]/25 text-[var(--orange)]"
+                        : "bg-white/10 text-[var(--text-primary)]"
+                  }`}
+                >
+                  {mainArcClock.triggered ? "시한 초과" : `D-${remaining}`}
+                </span>
+              );
+            })()}
           </div>
-        ) : (
-          <EmptyCard text="아직 시한이 정해지지 않았다" />
-        )}
+          <MiniBar
+            value={day}
+            max={mainArcClock.softDeadlineDay}
+            color={mainArcClock.triggered ? "var(--hp-red)" : day > mainArcClock.softDeadlineDay - 3 ? "var(--orange)" : "var(--info-blue)"}
+          />
+        </div>
       </section>
+      )}
 
       {/* C. Active Incidents */}
       <section className="flex flex-col gap-2">
@@ -708,56 +596,9 @@ export function QuestTab() {
         )}
       </section>
 
-      {/* F. Player Goals */}
-      <section className="flex flex-col gap-2">
-        <SectionHeader icon={Target} title="활성 목표" />
-        {activeGoals.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {activeGoals.map((goal) => (
-              <div
-                key={goal.id}
-                className={`flex flex-col gap-2 ${CARD_CLASS}`}
-              >
-                <div className="flex items-start gap-2">
-                  <span className="mt-px text-[13px] leading-none">
-                    {goal.type === "EXPLICIT" ? "\u{1F4CB}" : "\u{1F50D}"}
-                  </span>
-                  <span className="text-[13px] font-semibold leading-snug text-[var(--text-primary)]">
-                    {localizeGoalDescription(goal.description)}
-                  </span>
-                </div>
-                <StatRow
-                  label="진행"
-                  value={goal.progress}
-                  color={goal.progress >= 70 ? "var(--success-green)" : goal.progress >= 30 ? "var(--gold)" : "var(--info-blue)"}
-                />
-                {goal.milestones.length > 0 && (
-                  <div className="mt-0.5 flex flex-col gap-1.5 border-t border-white/15 pt-2.5">
-                    {goal.milestones.map((ms, i) => (
-                      <div key={i} className="flex items-start gap-1.5">
-                        <span className="mt-px text-[11px] leading-none">
-                          {ms.completed ? "\u2705" : "\u2B1C"}
-                        </span>
-                        <span
-                          className={`text-[12px] leading-relaxed ${
-                            ms.completed
-                              ? "text-[var(--text-primary)]/55 line-through"
-                              : "text-[var(--text-primary)]/95"
-                          }`}
-                        >
-                          {ms.description}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyCard text="아직 감지된 목표가 없다" />
-        )}
-      </section>
+      {/* 구 "활성 목표" 섹션 제거 (arch/99 D1) — EXPLICIT 목표는 생성 경로가 없고
+          IMPLICIT 목표는 진행도 동결·완료 불가라 죽은 표시였다. 행동 경향은
+          위 "행동 패턴"(playerThreads)이 동일 정보를 담당한다. */}
     </div>
   );
 }

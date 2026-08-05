@@ -108,6 +108,8 @@ export interface GameState {
   playerThreads: PlayerThreadSummaryUI[];
   day: number;
   questStatus: QuestStatusUI | null;
+  /** 퀘스트 탭 유도 배지 (arch/99) — 단서 발견·단계 전환 시 true, 탭 열람 시 해제 */
+  questTabBadge: boolean;
   // Player Goals & Location Dynamic States
   playerGoals: PlayerGoalUI[];
   locationDynamicStates: Record<string, LocationDynamicStateUI>;
@@ -181,6 +183,7 @@ export interface GameState {
   skipLlmNarrative: () => void;
   clearInventoryChanges: () => void;
   clearRecentEquipmentDrops: () => void;
+  clearQuestTabBadge: () => void;
   equipItem: (instanceId: string) => Promise<void>;
   unequipItem: (slot: string) => Promise<void>;
   useItem: (itemId: string) => Promise<void>;
@@ -298,6 +301,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   playerThreads: [],
   day: 1,
   questStatus: null,
+  questTabBadge: false,
   // Player Goals & Location Dynamic States
   playerGoals: [],
   locationDynamicStates: {},
@@ -1184,6 +1188,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ recentEquipmentDrops: [] });
   },
 
+  clearQuestTabBadge: () => {
+    set({ questTabBadge: false });
+  },
+
   reset: () => {
     // 스트리밍 연결 정리
     const { streamDisconnect } = get();
@@ -1231,6 +1239,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerThreads: [],
       day: 1,
       questStatus: null,
+      questTabBadge: false,
       playerGoals: [],
       locationDynamicStates: {},
       equipmentBag: [],

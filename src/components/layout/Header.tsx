@@ -292,6 +292,8 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange,
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const reset = useGameStore((s) => s.reset);
+  // [arch/99] 퀘스트 탭 유도 배지 — 단서 발견·단계 전환 시 햄버거·메뉴 항목에 점등
+  const questTabBadge = useGameStore((s) => s.questTabBadge);
   const pointsEnabled = usePointsStore((s) => s.enabled);
   const pointsBalance = usePointsStore((s) => s.balance);
   const openPoints = usePointsStore((s) => s.openModal);
@@ -316,10 +318,13 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange,
           </span>
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-11 w-11 items-center justify-center rounded-md bg-[var(--bg-card)]"
+            className="relative flex h-11 w-11 items-center justify-center rounded-md bg-[var(--bg-card)]"
             aria-label="메뉴 열기"
           >
             <Menu size={16} className="text-[var(--text-primary)]" />
+            {questTabBadge && activeTab !== "quests" && (
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 animate-pulse rounded-full bg-[var(--gold)]" />
+            )}
           </button>
         </div>
         {hud && <MobileStatusRow hud={hud} worldState={worldState} />}
@@ -348,6 +353,9 @@ export function MobileHeader({ location, visible = true, activeTab, onTabChange,
               >
                 <item.Icon size={15} className={activeTab === item.id ? "text-[var(--gold)]" : "text-[var(--text-muted)]"} />
                 <span>{item.label}</span>
+                {item.id === "quests" && questTabBadge && activeTab !== "quests" && (
+                  <span className="ml-auto h-2 w-2 animate-pulse rounded-full bg-[var(--gold)]" />
+                )}
               </button>
             ))}
             {pointsEnabled && (

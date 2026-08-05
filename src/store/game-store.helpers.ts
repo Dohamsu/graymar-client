@@ -1189,7 +1189,19 @@ export function applyServerResultUi(
     if (dayVal !== undefined) set({ day: dayVal });
     if (threads) set({ playerThreads: threads });
     const qs = uiBundle.questStatus as QuestStatusUI | null | undefined;
-    if (qs !== undefined) set({ questStatus: qs ?? null });
+    if (qs !== undefined) {
+      // [arch/99] 퀘스트 탭 유도 배지 — 단서 발견 또는 단계 전환 감지 시 점등
+      const prevQs = get().questStatus;
+      if (
+        qs &&
+        prevQs &&
+        (qs.discoveredFacts.length > prevQs.discoveredFacts.length ||
+          qs.stateIndex > prevQs.stateIndex)
+      ) {
+        set({ questTabBadge: true });
+      }
+      set({ questStatus: qs ?? null });
+    }
   }
 
   // ResolveOutcome 업데이트

@@ -446,6 +446,8 @@ export interface QuestStatusUI {
   factionNames: Record<string, string>;
   /** 아크 노선 팩별 라벨 (routeId → label) — graymar 하드코딩 대체 */
   arcRouteLabels?: Record<string, string>;
+  /** 팩에 노선 커밋 동선 존재 여부 — 노선 섹션 게이팅 (arch/99, 구서버 미전송 대비 optional) */
+  hasArcCommit?: boolean;
 }
 
 // --- Notification System ---

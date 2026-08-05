@@ -112,6 +112,12 @@ export default function GameClient() {
   const [showPartyScreen, setShowPartyScreen] = useState(false);
   const [isDesktopLayout, setIsDesktopLayout] = useState(true);
 
+  // [arch/99] 모바일 퀘스트 탭 열람 시 유도 배지 해제 (데스크톱은 SidePanel이 처리)
+  const clearQuestTabBadge = useGameStore((s) => s.clearQuestTabBadge);
+  useEffect(() => {
+    if (mobileTab === "quests") clearQuestTabBadge();
+  }, [mobileTab, clearQuestTabBadge]);
+
   // Tailwind의 lg:hidden/lg:flex만 쓰면 데스크톱/모바일 선택지 DOM이 동시에 존재해
   // 브라우저·접근성 레이어가 숨겨진 중복 버튼을 클릭할 수 있다. 실제 뷰포트에 맞는
   // 레이아웃만 렌더링해서 선택지 클릭 타깃을 하나로 유지한다.
