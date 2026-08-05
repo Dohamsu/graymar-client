@@ -966,7 +966,10 @@ export function applyRunSnapshot(
 ): void {
   const run = data.run as Record<string, unknown>;
   const runId = run.id as string;
-  set({ scenarioId: (run.scenarioId as string | undefined) ?? null });
+  set({
+    scenarioId: (run.scenarioId as string | undefined) ?? null,
+    scenarioName: (run.scenarioName as string | undefined) ?? null,
+  });
   const currentNode = data.currentNode as Record<string, unknown> | undefined;
   const lastResult = data.lastResult as ServerResultV1 | undefined;
   const battleState = data.battleState as unknown | undefined;

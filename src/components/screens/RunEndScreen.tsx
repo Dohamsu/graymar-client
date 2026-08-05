@@ -1,9 +1,11 @@
 "use client";
 
 import { useGameStore } from "@/store/game-store";
+import { scenarioRegionName } from "@/data/presets";
 
 export function RunEndScreen() {
   const reset = useGameStore((s) => s.reset);
+  const scenarioId = useGameStore((s) => s.scenarioId);
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-10 bg-[var(--bg-primary)]">
@@ -16,8 +18,8 @@ export function RunEndScreen() {
       </div>
 
       <p className="max-w-md text-center text-sm leading-relaxed text-[var(--text-secondary)]">
-        그레이마르 항만의 이야기가 끝났다. 당신의 선택이
-        항구 도시와 그 사람들의 운명을 결정지었다.
+        {scenarioRegionName(scenarioId)}의 이야기가 끝났다. 당신의 선택이 이
+        땅과 그 사람들의 운명을 결정지었다.
       </p>
 
       <button

@@ -45,7 +45,7 @@ export function DeadlineBanner() {
         text: "text-[var(--hp-red)]",
         icon: AlertTriangle,
         label: "시한 초과",
-        body: "그레이마르의 시간이 다 됐다. 도시는 이미 변하기 시작했다.",
+        body: "약속된 시간이 다 됐다. 세상은 이미 변하기 시작했다.",
       }
     : isUrgent
       ? {
@@ -65,7 +65,7 @@ export function DeadlineBanner() {
           text: "text-[#C98A5E]",
           icon: Clock,
           label: "D-3",
-          body: "도시의 공기가 무거워지고 있다.",
+          body: "거리의 공기가 무거워지고 있다.",
         };
 
   const Icon = tone.icon;

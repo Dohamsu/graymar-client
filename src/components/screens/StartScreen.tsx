@@ -1169,7 +1169,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           >
             <ChevronLeft size={18} className="inline" /> 뒤로
           </button>
-          <h2 className="flex-1 font-display text-base text-[var(--text-primary)]">용병의 과거를 선택하세요</h2>
+          <h2 className="flex-1 font-display text-base text-[var(--text-primary)]">당신의 과거를 선택하세요</h2>
           <StepIndicator current={0} total={totalCreationSteps} labels={creationStepLabels} />
         </div>
 
@@ -1258,7 +1258,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
     const trait = availableTraits.find((t) => t.traitId === preset?.defaultTraitId);
     const defaultPortrait = preset?.portraits?.[effectiveGender];
     const displayPortrait = portraitUrl || defaultPortrait;
-    const displayName = characterName.trim() || "이름 없는 용병";
+    const displayName = characterName.trim() || "이름 없는 이방인";
     const itemsText = preset?.startingItems.map((i) => (i.qty > 1 ? `${i.name} x${i.qty}` : i.name)).join(", ") ?? "";
 
     return (
@@ -1341,7 +1341,7 @@ export function StartScreen({ onParty }: { onParty?: () => void } = {}) {
           {/* 이름 (선택) */}
           <div className="w-full max-w-sm">
             <label htmlFor="char-name" className="mb-2 block text-xs text-[var(--text-muted)]">
-              캐릭터 이름 (선택사항 — 비우면 &quot;이름 없는 용병&quot;)
+              캐릭터 이름 (선택사항 — 비우면 &quot;이름 없는 이방인&quot;)
             </label>
             <input
               id="char-name"

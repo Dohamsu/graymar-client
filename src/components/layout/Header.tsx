@@ -10,6 +10,7 @@ import { HeatGauge } from "@/components/hub/HeatGauge";
 import { PackMeterGauge } from "@/components/hub/PackMeterGauge";
 import { TimePhaseIndicator } from "@/components/hub/TimePhaseIndicator";
 import { useGameStore } from "@/store/game-store";
+import { scenarioUiLabels } from "@/data/presets";
 
 interface HeaderProps {
   location: string;
@@ -76,6 +77,12 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const reset = useGameStore((s) => s.reset);
+  // 팩 인지형 타이틀 (2026-08-05) — 서버 run.scenarioName 우선, 구응답 폴백은
+  // 클라 라벨 맵. 모노그램은 표시명 첫 글자.
+  const scenarioName = useGameStore((s) => s.scenarioName);
+  const scenarioId = useGameStore((s) => s.scenarioId);
+  const worldTitle =
+    scenarioName ?? scenarioUiLabels(scenarioId).displayName;
 
   return (
     <>
@@ -87,10 +94,12 @@ export function Header({ location, hud, worldState, llmStats }: HeaderProps) {
           aria-label="타이틀 화면으로 돌아가기"
         >
           <div className="flex h-9 w-9 items-center justify-center border border-[var(--gold)]">
-            <span className="font-display text-sm font-bold text-[var(--gold)]">왕</span>
+            <span className="font-display text-sm font-bold text-[var(--gold)]">
+              {worldTitle.charAt(0)}
+            </span>
           </div>
           <span className="font-display text-lg tracking-[2px] text-[var(--text-primary)]">
-            그림자의 왕국
+            {worldTitle}
           </span>
         </button>
 

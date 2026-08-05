@@ -176,15 +176,17 @@ export function adaptPresetsForScenario(scenarioId: string | null): CharacterPre
 /** architecture/63 ⑥ — 시나리오별 클라 고정 라벨 (HUB 헤더 등 서버 미전달 표기) */
 export const SCENARIO_UI_LABELS: Record<
   string,
-  { hubName: string; fallbackLocation: string }
+  { hubName: string; fallbackLocation: string; displayName: string }
 > = {
   // [arch/92] hubName 은 거점 장소(여관·선술집)의 고유명을 쓰지 않는다 — 같은
   // 이름이면 헤더가 "꿈잠 여관"인데 선택지에 "꿈잠 여관으로 향한다"가 뜬다.
   // 서버 scenario.json hub.name 과 문면을 맞출 것.
-  graymar_v1: { hubName: "그레이마르 거점", fallbackLocation: "그레이마르 항만" },
-  silverdeen_v1: { hubName: "실버딘 거점", fallbackLocation: "실버딘 광산 마을" },
-  star_sand_v1: { hubName: "극야해안 거점", fallbackLocation: "극야해안" },
-  karnholt_v1: { hubName: "카른홀트 거점", fallbackLocation: "카른홀트" },
+  // displayName 은 서버 run.scenarioName 미수신(구버전 응답) 시 폴백 —
+  // scenario.json name 과 문면을 맞출 것 (팩 인지형 헤더 타이틀, 2026-08-05).
+  graymar_v1: { hubName: "그레이마르 거점", fallbackLocation: "그레이마르 항만", displayName: "그레이마르 항구" },
+  silverdeen_v1: { hubName: "실버딘 거점", fallbackLocation: "실버딘 광산 마을", displayName: "실버딘 은광 마을" },
+  star_sand_v1: { hubName: "극야해안 거점", fallbackLocation: "극야해안", displayName: "극야해안과 별고래의 무덤" },
+  karnholt_v1: { hubName: "카른홀트 거점", fallbackLocation: "카른홀트", displayName: "카른홀트" },
 };
 
 /**
@@ -222,6 +224,12 @@ export const PRESET_PORTRAITS: Record<
 
 export function scenarioUiLabels(scenarioId: string | null) {
   return SCENARIO_UI_LABELS[scenarioId ?? "graymar_v1"] ?? SCENARIO_UI_LABELS.graymar_v1;
+}
+
+/** 팩 인지형 크롬 문구용 짧은 지역명 — "그레이마르"/"실버딘"/"극야해안"/"카른홀트".
+ *  hubName("X 거점")에서 파생해 라벨 맵과 단일 정본 유지 (호외 제목·엔딩 문구 등). */
+export function scenarioRegionName(scenarioId: string | null): string {
+  return scenarioUiLabels(scenarioId).hubName.replace(/\s*거점$/, "");
 }
 
 /**

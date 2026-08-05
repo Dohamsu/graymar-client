@@ -123,7 +123,7 @@ export function EndingScreen() {
         {/* City Status */}
         <div className="border border-[var(--border-primary)] rounded-lg p-4 bg-[var(--bg-card)]">
           <h3 className="text-xs font-semibold tracking-[2px] text-[var(--text-muted)] mb-3">
-            도시 상태
+            세계 상태
           </h3>
           <div className="flex items-center justify-between">
             <span className="text-sm text-[var(--text-secondary)]">

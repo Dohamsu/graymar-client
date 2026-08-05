@@ -22,11 +22,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.dimtale.com"),
   title: "DimTale — AI 텍스트 RPG",
   description:
-    "AI가 만들어내는 살아있는 판타지 세계. 중세 항만 도시에서 펼쳐지는 몰입형 텍스트 RPG. 당신의 선택이 이야기를 바꿉니다.",
+    "AI가 만들어내는 살아있는 판타지 세계. 당신의 선택이 이야기가 되는 몰입형 텍스트 RPG. 매 여정마다 다른 세계가 열립니다.",
   openGraph: {
     title: "DimTale — AI 텍스트 RPG",
     description:
-      "AI가 만들어내는 살아있는 판타지 세계. 중세 항만 도시에서 펼쳐지는 몰입형 텍스트 RPG. 당신의 선택이 이야기를 바꿉니다.",
+      "AI가 만들어내는 살아있는 판타지 세계. 당신의 선택이 이야기가 되는 몰입형 텍스트 RPG. 매 여정마다 다른 세계가 열립니다.",
     siteName: "DimTale",
     locale: "ko_KR",
     type: "website",

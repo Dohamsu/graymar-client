@@ -18,7 +18,7 @@ const NODE_TYPE_DESCRIPTIONS: Record<string, string> = {
   REST: "잠시 숨을 돌릴 수 있다...",
   SHOP: "물품을 거래할 수 있다...",
   EXIT: "끝이 가까워지고 있다...",
-  HUB: "도시의 소식을 정리한다...",
+  HUB: "거점에서 소식을 정리한다...",
   LOCATION: "목적지에 도착하고 있다...",
 };
 

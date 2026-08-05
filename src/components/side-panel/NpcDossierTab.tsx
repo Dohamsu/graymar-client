@@ -150,7 +150,7 @@ export function NpcDossierTab() {
             아직 만난 인물이 없다
           </p>
           <p className="text-center text-[10px] text-[var(--text-muted)]">
-            그레이마르의 인물들과 교류하면 이곳에 기록됩니다
+            이 땅의 인물들과 교류하면 이곳에 기록됩니다
           </p>
         </div>
       </div>

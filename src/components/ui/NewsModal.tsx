@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { SignalFeedItemUI } from "@/types/game";
+import { useGameStore } from "@/store/game-store";
+import { scenarioRegionName } from "@/data/presets";
 
 interface Props {
   signals: SignalFeedItemUI[];
@@ -10,6 +12,8 @@ interface Props {
 
 export default function NewsModal({ signals, onClose }: Props) {
   const [visible, setVisible] = useState(false);
+  // 팩 인지형 호외 제목 — "그레이마르/실버딘/극야해안/카른홀트 호외" (2026-08-05)
+  const regionName = scenarioRegionName(useGameStore((s) => s.scenarioId));
   // P2-C1: close 애니메이션 setTimeout cleanup
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -65,7 +69,7 @@ export default function NewsModal({ signals, onClose }: Props) {
                 textShadow: "0 1px 3px rgba(0,0,0,0.85)",
               }}
             >
-              그레이마르 호외
+              {regionName} 호외
             </h2>
             <div
               className="mx-auto mt-2 h-[2px] w-full"

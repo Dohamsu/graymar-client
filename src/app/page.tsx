@@ -11,9 +11,9 @@ import { LiveStats } from "./landing/LiveStats";
 /* ─── SEO & AI SEO Metadata ─── */
 
 export const metadata: Metadata = {
-  title: "DIMTALE — 잿빛 항구의 음모 | 텍스트 RPG",
+  title: "DIMTALE — AI 텍스트 RPG | 당신의 선택이 이야기가 된다",
   description:
-    "부패한 총독, 파업 직전의 부두, 뒷골목의 밀수품. 이름 없는 용병으로 잿빛 항구에 도착한 당신의 첫 밤. 40명이 넘는 인물이 당신의 모든 선택을 기억한다.",
+    "부패한 항구, 무너진 은광, 별고래가 잠든 극야의 해안. 이름 없는 이방인으로 도착한 당신의 첫 밤. 수십 명의 인물이 당신의 모든 선택을 기억한다.",
   keywords: [
     "텍스트 RPG",
     "AI RPG",
@@ -33,9 +33,9 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "DIMTALE — 잿빛 항구의 음모",
+    title: "DIMTALE — AI 텍스트 RPG",
     description:
-      "이름 없는 용병으로 도착한 당신의 첫 밤. 부패한 총독, 파업 직전의 부두, 뒷골목의 밀수품이 기다린다.",
+      "이름 없는 이방인으로 도착한 당신의 첫 밤. 세계마다 다른 음모와 미스터리가 기다린다.",
     siteName: "DIMTALE",
     locale: "ko_KR",
     type: "website",
@@ -44,15 +44,15 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "DIMTALE — 잿빛 항구의 음모",
+        alt: "DIMTALE — AI 텍스트 RPG",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "DIMTALE — 잿빛 항구의 음모",
+    title: "DIMTALE — AI 텍스트 RPG",
     description:
-      "이름 없는 용병으로 도착한 당신의 첫 밤. 누구의 손을 잡을지, 등을 돌릴지, 여기선 전부 당신 몫이다.",
+      "이름 없는 이방인으로 도착한 당신의 첫 밤. 누구의 손을 잡을지, 등을 돌릴지, 여기선 전부 당신 몫이다.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -83,18 +83,18 @@ function JsonLd() {
       {
         "@type": "WebSite",
         name: "DIMTALE",
-        alternateName: "그레이마르",
+        alternateName: "딤테일",
         url: "https://www.dimtale.com",
         description:
-          "잿빛 항구 그레이마르에서 펼쳐지는 텍스트 RPG. 부패와 밀수, 음모가 얽힌 도시에서 이름 없는 용병의 첫 밤이 시작된다.",
+          "AI가 만들어내는 살아있는 판타지 세계에서 펼쳐지는 텍스트 RPG. 부패한 항구, 무너진 은광, 극야의 해안 — 세계마다 다른 음모 속에서 이름 없는 이방인의 첫 밤이 시작된다.",
         inLanguage: "ko",
       },
       {
         "@type": "VideoGame",
-        name: "DIMTALE — 잿빛 항구의 음모",
-        alternateName: ["그레이마르", "Graymar RPG"],
+        name: "DIMTALE — AI 텍스트 RPG",
+        alternateName: ["딤테일", "DimTale"],
         description:
-          "왕국의 항만 도시 그레이마르. 부패한 총독, 파업 직전의 부두, 뒷골목의 밀수품이 동시에 움직인다. 이름 없는 용병으로 도착한 당신의 선택이 도시의 다음 밤을 바꾼다. 40명이 넘는 인물이 당신의 행동을 기억한다.",
+          "AI가 서술하고 서버가 판정하는 몰입형 텍스트 RPG. 그레이마르 항구·실버딘 은광·극야해안·카른홀트 — 세계마다 다른 음모가 동시에 움직이고, 수십 명의 인물이 당신의 행동을 기억한다.",
         genre: [
           "텍스트 RPG",
           "인터랙티브 픽션",
@@ -126,7 +126,7 @@ function JsonLd() {
             name: "어떤 게임인가요?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "이름 없는 용병이 되어 잿빛 항구 그레이마르에 도착하는 텍스트 RPG입니다. 부패한 총독, 파업 직전의 부두, 뒷골목의 밀수품이 동시에 움직이고, 40명이 넘는 인물이 당신의 모든 행동을 기억합니다.",
+              text: "이름 없는 이방인이 되어 낯선 세계에 도착하는 텍스트 RPG입니다. 부패한 항구, 무너진 은광, 별고래가 잠든 극야의 해안 — 지금 4개의 세계가 열려 있고, 세계마다 다른 인물들이 당신의 모든 행동을 기억합니다.",
             },
           },
           {
@@ -212,7 +212,7 @@ export default function HomePage() {
             className="hidden md:flex items-center gap-10 tracking-tight"
             style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif" }}
           >
-            <a href="#world" className="pb-1 border-b-2" style={{ color: "#ffdea5", borderColor: "#e9c176" }}>
+            <a href="#worlds" className="pb-1 border-b-2" style={{ color: "#ffdea5", borderColor: "#e9c176" }}>
               세계
             </a>
             <a href="#features" className="hover:opacity-80 transition-colors" style={{ color: "#9a8f80" }}>
@@ -312,9 +312,9 @@ export default function HomePage() {
                 color: "#d1c5b4",
               }}
             >
-              총독은 부패했고, 부두는 파업 직전이고,
+              부패한 항구, 무너진 은광, 별고래가 잠든 극야의 해안 &mdash;
               <br className="hidden sm:block" />
-              당신은 방금 배에서 내렸다.
+              당신은 방금 그 세계에 도착했다.
             </p>
             <p
               className="text-base sm:text-lg mb-8 sm:mb-12 max-w-xl mx-auto leading-relaxed break-keep"
@@ -490,8 +490,8 @@ export default function HomePage() {
                   <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
                 </svg>
               }
-              title="매번 다른 도시"
-              desc="죽어도 됩니다. 다음 판의 도시는 어차피 다른 얼굴이니까요."
+              title="매번 다른 세계"
+              desc="죽어도 됩니다. 다음 판의 세계는 어차피 다른 얼굴이니까요."
             />
             <FeatureCard
               icon={
@@ -599,6 +599,9 @@ export default function HomePage() {
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-2 items-center gap-10 sm:gap-16">
             <div className="space-y-6 sm:space-y-8">
               <div className="w-12 h-1" style={{ backgroundColor: "#ffdea5" }} aria-hidden="true" />
+              <p className="text-sm tracking-[3px]" style={{ color: "#9a8f80" }}>
+                대표 시나리오 &mdash; 그레이마르 항구
+              </p>
               <h2
                 className="text-3xl sm:text-5xl"
                 style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#e5e2e1" }}
@@ -677,7 +680,7 @@ export default function HomePage() {
                 {
                   step: "01",
                   title: "출신을 고릅니다",
-                  desc: "탈영병, 밀수업자, 몰락 귀족. 어디서 왔느냐가, 누가 먼저 말을 걸어오는지를 정합니다.",
+                  desc: "탈영병, 밀수업자, 순례자, 몰락 귀족. 세계마다 다른 과거가 준비되어 있고, 어디서 왔느냐가 누가 먼저 말을 걸어오는지를 정합니다.",
                   icon: (
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
@@ -687,7 +690,7 @@ export default function HomePage() {
                 {
                   step: "02",
                   title: "원하는 대로 적습니다",
-                  desc: "시장에서 정보를 사고, 뒷골목을 엿보고, 관저에 숨어듭니다. 입력창에 그대로 적으면 돼요.",
+                  desc: "정보를 사고, 골목을 엿보고, 금지된 곳에 숨어듭니다. 입력창에 그대로 적으면 돼요.",
                   icon: (
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z" />
@@ -751,7 +754,7 @@ export default function HomePage() {
           </h2>
           <div className="space-y-6">
             {[
-              { q: "어떤 게임인가요?", a: "이름 없는 용병이 되어 잿빛 항구 그레이마르에 도착하는 텍스트 RPG입니다. 부패한 총독, 파업 직전의 부두, 뒷골목의 밀수품이 동시에 움직이고, 40명이 넘는 인물이 당신의 모든 행동을 기억합니다. 파티로 함께 도시를 뒤집을 수도 있습니다." },
+              { q: "어떤 게임인가요?", a: "이름 없는 이방인이 되어 낯선 세계에 도착하는 텍스트 RPG입니다. 부패한 항구, 무너진 은광, 별고래가 잠든 극야의 해안 — 지금 4개의 세계가 열려 있고, 세계마다 다른 인물들이 당신의 모든 행동을 기억합니다. 파티로 함께 세계를 뒤집을 수도 있습니다." },
               { q: "무료로 시작할 수 있나요?", a: "가입하면 시작 포인트를 드립니다. PC·모바일 브라우저에서 바로 플레이하고, 이후엔 턴마다 소량의 포인트가 들어요. AI가 실패한 턴에는 차감하지 않습니다." },
               { q: "AI는 어떤 역할을 하나요?", a: "상황의 묘사와 NPC 대사를 매 턴 새로 씁니다. 주사위·스탯·판정 같은 게임 규칙은 전부 서버가 결정합니다. AI는 작가, 서버는 게임 마스터라고 보시면 됩니다." },
               { q: "한 번의 플레이는 얼마나 걸리나요?", a: "한 판은 보통 20~30턴, 30분에서 한 시간 정도입니다. 중간 저장되니 언제든 끊고 돌아오세요. 출신과 선택이 달라지면 도시도 다른 모습으로 열립니다." },
@@ -789,7 +792,7 @@ export default function HomePage() {
             className="text-4xl sm:text-5xl md:text-6xl mb-8 sm:mb-12 text-center max-w-2xl px-4 break-keep"
             style={{ fontFamily: "'Noto Serif KR', 'Noto Serif', serif", color: "#e5e2e1" }}
           >
-            항구는 오늘 밤도 열려 있습니다.
+            세계는 오늘 밤도 열려 있습니다.
           </h2>
           <Link
             href="/play"
@@ -836,7 +839,7 @@ export default function HomePage() {
             className="text-[10px] tracking-[0.2em] mt-6 sm:mt-8 uppercase opacity-50"
             style={{ fontFamily: "'Inter', sans-serif", color: "#9a8f80" }}
           >
-            &copy; 2026 DIMTALE. 잿빛 항구에서 봅시다.
+            &copy; 2026 DIMTALE. 다음 밤에 봅시다.
           </p>
         </div>
       </footer>

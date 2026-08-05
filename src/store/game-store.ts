@@ -83,6 +83,8 @@ export interface GameState {
   locationName: string | null;
   /** architecture/63 ⑥ — 현재 런의 시나리오 팩 ID (HUB 라벨·프리셋 표기용) */
   scenarioId: string | null;
+  /** 팩 인지형 UI 크롬 — 서버 run 응답의 시나리오 표시명 (헤더 타이틀·호외 등) */
+  scenarioName: string | null;
   llmStats: (LlmTokenStats & { model: string | null }) | null;
   llmFailure: { message: string; provider?: string; turnNo: number } | null;
   inventoryChanges: InventoryChanges | null;
@@ -273,6 +275,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   resolveOutcome: null,
   locationName: null,
   scenarioId: null,
+  scenarioName: null,
   llmStats: null,
   llmFailure: null,
   inventoryChanges: null,
@@ -508,7 +511,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       const run = data.run as Record<string, unknown>;
       const runId = run.id as string;
-      set({ scenarioId: (run.scenarioId as string | undefined) ?? null });
+      set({
+        scenarioId: (run.scenarioId as string | undefined) ?? null,
+        scenarioName: (run.scenarioName as string | undefined) ?? null,
+      });
       const currentNode = data.currentNode as
         | Record<string, unknown>
         | undefined;
@@ -657,7 +663,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       const run = data.run as Record<string, unknown>;
       const runId = run.id as string;
-      set({ scenarioId: (run.scenarioId as string | undefined) ?? null });
+      set({
+        scenarioId: (run.scenarioId as string | undefined) ?? null,
+        scenarioName: (run.scenarioName as string | undefined) ?? null,
+      });
       const currentNode = data.currentNode as
         | Record<string, unknown>
         | undefined;

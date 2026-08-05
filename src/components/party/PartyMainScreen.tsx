@@ -264,7 +264,7 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
           파티
         </h1>
         <p className="max-w-xs text-center text-sm text-[var(--text-muted)]">
-          동료와 함께 그레이마르의 음모에 맞서세요.
+          동료와 함께 세계의 음모에 맞서세요.
         </p>
       </div>
 
