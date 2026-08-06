@@ -48,13 +48,16 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
   const programmaticUntilRef = useRef(0);
   const touchingRef = useRef(false);
 
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+  // 추적 스크롤은 항상 instant(auto) — smooth 는 애니메이션이 수백 ms 지속되며
+  // programmaticUntil 창을 계속 갱신해, 그 창 안에서 일어난 사용자 스와이프가
+  // follow 해제 판정에서 무시되는 고착을 만든다 (버그리포트 cdb6742b: 서술 종료
+  // 직후 위로 올려도 하단 복귀 반복). iOS 는 진행 중인 programmatic smooth 를
+  // 터치로 중단하지 못해 체감이 "아예 안 올라감"이 된다.
+  const scrollToBottom = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    // smooth 는 애니메이션이 끝날 때까지 scroll 이벤트를 흘리므로 창을 넉넉히 잡는다.
-    programmaticUntilRef.current =
-      performance.now() + (behavior === 'smooth' ? 500 : 80);
-    el.scrollTo({ top: el.scrollHeight, behavior });
+    programmaticUntilRef.current = performance.now() + 80;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
   }, []);
 
   useEffect(() => {
@@ -102,8 +105,8 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     scrollToBottom();
     if (shouldForceChoiceIntoView) {
       followRef.current = true;
-      const rafId = window.requestAnimationFrame(() => scrollToBottom('auto'));
-      const timeoutId = window.setTimeout(() => scrollToBottom('smooth'), 120);
+      const rafId = window.requestAnimationFrame(() => scrollToBottom());
+      const timeoutId = window.setTimeout(() => scrollToBottom(), 120);
       return () => {
         window.cancelAnimationFrame(rafId);
         window.clearTimeout(timeoutId);
@@ -112,7 +115,6 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
   }, [messages, streamSegments, shouldForceChoiceIntoView, scrollToBottom]);
 
   // 타이핑 애니메이션 중 내용 변화 시에도 스크롤 유지 (사용자 스크롤 존중)
-  //   bug 4749: 항상 smooth 로 통일. 페이지 전환 시 즉시 점프 제거.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -120,7 +122,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     const observer = new MutationObserver(() => {
       if (!followRef.current || touchingRef.current) return;
       if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => scrollToBottom('smooth'));
+      rafId = requestAnimationFrame(() => scrollToBottom());
     });
     observer.observe(el, { childList: true, subtree: true, characterData: true });
     return () => {
@@ -133,6 +135,7 @@ export function NarrativePanel({ messages, onChoiceSelect, onNarrationComplete, 
     <div
       ref={scrollRef}
       id={scrollId}
+      data-narrative-scroll
       className={
         topInset
           ? "flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-3 pb-20 pt-[calc(env(safe-area-inset-top)+5.0625rem)] md:px-6 md:pb-24"

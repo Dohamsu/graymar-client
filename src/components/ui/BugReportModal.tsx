@@ -165,6 +165,16 @@ function collectDomSummary(): Record<string, unknown> {
     docScrollHeight: document.documentElement.scrollHeight,
     viewportHeight: typeof window !== "undefined" ? window.innerHeight : null,
     viewportWidth: typeof window !== "undefined" ? window.innerWidth : null,
+    // 서술 스크롤은 내부 컨테이너에서 일어나므로 문서 scrollY 만으로는 상태 확정
+    // 불가 (버그리포트 cdb6742b 분석 공백). 마운트된 패널 전부(모바일/데스크톱) 수집.
+    narrativeScrolls: Array.from(
+      document.querySelectorAll<HTMLElement>("[data-narrative-scroll]"),
+    ).map((el) => ({
+      id: el.id || null,
+      scrollTop: Math.round(el.scrollTop),
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+    })),
   };
 }
 
