@@ -198,21 +198,24 @@ export function mapResultToMessages(
   }
 
   // 2.5 Resolve outcome (판정 결과 — 시스템 이벤트 후, 내레이터 전)
-  if (result.ui?.resolveOutcome) {
-    messages.push({
-      id: `resolve-${result.turnNo}`,
-      type: 'RESOLVE',
-      text: '',
-      resolveOutcome: result.ui.resolveOutcome as StoryMessage['resolveOutcome'],
-      resolveBreakdown: result.ui.resolveBreakdown ?? undefined,
-    });
-  } else if (result.ui?.resolveSkipped) {
+  // resolveSkipped 우선 (주사위 8 고정 표시 수정 2026-08-06): FREE 자동 성공
+  // 턴은 주사위를 굴리지 않았는데(score 8 하드코딩·diceRoll 없음) 과거 서버가
+  // resolveOutcome도 함께 실어 점수 배너가 항상 이겼다 — 생략 안내가 정본.
+  if (result.ui?.resolveSkipped) {
     // [D2-a — arch/76] FREE 자유 행동 → 주사위 스킵 안내 (판정 투명성)
     messages.push({
       id: `resolve-skip-${result.turnNo}`,
       type: 'RESOLVE',
       text: '',
       resolveSkipped: true,
+    });
+  } else if (result.ui?.resolveOutcome) {
+    messages.push({
+      id: `resolve-${result.turnNo}`,
+      type: 'RESOLVE',
+      text: '',
+      resolveOutcome: result.ui.resolveOutcome as StoryMessage['resolveOutcome'],
+      resolveBreakdown: result.ui.resolveBreakdown ?? undefined,
     });
   }
 
