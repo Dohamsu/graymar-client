@@ -224,6 +224,8 @@ import {
   processTurnResponse,
   applyRunSnapshot,
   applyPartyTurnResult as applyPartyTurnResultHelper,
+  makeSubmitPendingNarrator,
+  stripSubmitPending,
   type RunStateSnapshot,
 } from './game-store.helpers';
 import type { PartyActionResponse } from '@/lib/api-client';
@@ -794,7 +796,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       type: 'PLAYER',
       text,
     };
-    set({ messages: [...get().messages, playerMsg] });
+    // 낙관적 로딩 셸 — 서버 왕복(LOCATION 실측 3.5~8초) 동안 진행감 표시.
+    // processTurnResponse가 정식 NARRATOR로 교체, 실패 경로는 아래 catch가 제거.
+    set({ messages: [...get().messages, playerMsg, makeSubmitPendingNarrator()] });
 
     // arch/84 — 파티 던전이면 파티 엔드포인트로 라우팅 (리더/멤버 공통).
     const partyCtx = get().partyContext;
@@ -808,8 +812,17 @@ export const useGameStore = create<GameState>((set, get) => ({
           partyIdemKey(partyCtx.partyRunId),
         );
         handlePartyActionResponse(resp, set);
+        // 투표 생성/리더 전용 등 즉시 종료 응답이면 로딩 셸 제거
+        // (SSE 대기 케이스는 processPartyTurnResponse가 교체)
+        if (!get().isSubmitting) {
+          set({ messages: stripSubmitPending(get().messages) });
+        }
       } catch (err) {
-        set({ isSubmitting: false, error: extractErrorMessage(err) });
+        set({
+          isSubmitting: false,
+          error: extractErrorMessage(err),
+          messages: stripSubmitPending(get().messages),
+        });
       }
       return;
     }
@@ -844,7 +857,11 @@ export const useGameStore = create<GameState>((set, get) => ({
           processTurnResponse(retryRes, get, set);
           return;
         } catch (retryErr) {
-          set({ isSubmitting: false, error: extractErrorMessage(retryErr) });
+          set({
+            isSubmitting: false,
+            error: extractErrorMessage(retryErr),
+            messages: stripSubmitPending(get().messages),
+          });
           return;
         }
       }
@@ -856,13 +873,16 @@ export const useGameStore = create<GameState>((set, get) => ({
         set({
           isSubmitting: false,
           choices: prevChoices,
-          messages: get().messages.filter((m) => m.id !== playerMsg.id),
+          messages: stripSubmitPending(
+            get().messages.filter((m) => m.id !== playerMsg.id),
+          ),
         });
         return;
       }
       set({
         isSubmitting: false,
         error: extractErrorMessage(err),
+        messages: stripSubmitPending(get().messages),
       });
     }
   },
@@ -901,7 +921,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    set({ isSubmitting: true, error: null, choices: [], messages: updatedMessages });
+    // 낙관적 로딩 셸 — 서버 왕복(LOCATION 실측 3.5~8초) 동안 진행감 표시.
+    // processTurnResponse가 정식 NARRATOR로 교체, 실패 경로는 아래 catch가 제거.
+    set({
+      isSubmitting: true,
+      error: null,
+      choices: [],
+      messages: [...updatedMessages, makeSubmitPendingNarrator()],
+    });
 
     // arch/84 — 파티 던전이면 파티 엔드포인트로 라우팅. CHOICE는 rawInput에
     // choiceId 문자열을 넣는다(서버가 inputType==='CHOICE'로 구분, go_ 접두 검사).
@@ -916,8 +943,17 @@ export const useGameStore = create<GameState>((set, get) => ({
           partyIdemKey(partyCtx.partyRunId),
         );
         handlePartyActionResponse(resp, set);
+        // 투표 생성/리더 전용 등 즉시 종료 응답이면 로딩 셸 제거
+        // (SSE 대기 케이스는 processPartyTurnResponse가 교체)
+        if (!get().isSubmitting) {
+          set({ messages: stripSubmitPending(get().messages) });
+        }
       } catch (err) {
-        set({ isSubmitting: false, error: extractErrorMessage(err) });
+        set({
+          isSubmitting: false,
+          error: extractErrorMessage(err),
+          messages: stripSubmitPending(get().messages),
+        });
       }
       return;
     }
@@ -951,13 +987,18 @@ export const useGameStore = create<GameState>((set, get) => ({
           processTurnResponse(retryRes, get, set);
           return;
         } catch (retryErr) {
-          set({ isSubmitting: false, error: extractErrorMessage(retryErr) });
+          set({
+            isSubmitting: false,
+            error: extractErrorMessage(retryErr),
+            messages: stripSubmitPending(get().messages),
+          });
           return;
         }
       }
       // arch/85 — 포인트 부족(402): 충전 모달 유도 (에러 배너 대신).
       // submit 직전에 choices를 비우고 selectedChoiceId를 박아두므로,
       // 복원하지 않으면 모달을 닫은 뒤 선택지를 다시 누를 수 없다 (실보고).
+      // prevMessages는 로딩 셸 추가 전 스냅샷이라 자연 복원.
       if (err instanceof ApiError && err.status === 402) {
         usePointsStore.getState().openModal('insufficient');
         set({
@@ -970,6 +1011,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({
         isSubmitting: false,
         error: extractErrorMessage(err),
+        messages: stripSubmitPending(get().messages),
       });
     }
   },

@@ -53,6 +53,29 @@ import type { GameState } from './game-store';
 
 const USE_STREAMING = process.env.NEXT_PUBLIC_LLM_STREAMING === 'true';
 
+// ---------------------------------------------------------------------------
+// 제출 즉시 낙관적 로딩 placeholder (레이턴시 점검 2026-08-06)
+// LOCATION 턴 제출 왕복이 3.5~8초 실측 — 서버 응답 전까지 화면이 멈춘 듯
+// 보이던 것을, 클릭 즉시 NARRATOR 로딩 셸을 그려 진행감을 준다.
+// processTurnResponse/processPartyTurnResponse가 정식 메시지로 교체(제거)하고,
+// 제출 실패 경로에서도 반드시 제거한다 (잔류 시 영구 로딩 표시).
+// ---------------------------------------------------------------------------
+
+export const SUBMIT_PENDING_NARRATOR_ID = 'submit-pending-narrator';
+
+export function makeSubmitPendingNarrator(): StoryMessage {
+  return {
+    id: SUBMIT_PENDING_NARRATOR_ID,
+    type: 'NARRATOR',
+    text: '',
+    loading: true,
+  };
+}
+
+export function stripSubmitPending(messages: StoryMessage[]): StoryMessage[] {
+  return messages.filter((m) => m.id !== SUBMIT_PENDING_NARRATOR_ID);
+}
+
 const RARITY_COLORS: Record<string, string> = {
   COMMON: 'var(--text-muted)',
   RARE: 'var(--info-blue)',
@@ -767,7 +790,7 @@ export function processTurnResponse(
     const otherMsgs = newMessages.filter((m) => m.type !== 'NARRATOR' && m.type !== 'RESOLVE' && m.type !== 'CHOICE');
 
     set({
-      messages: [...get().messages, ...immediateMsgs],
+      messages: [...stripSubmitPending(get().messages), ...immediateMsgs],
       pendingMessages: otherMsgs,
       hud: updatedHud,
       inventory: updatedInventory,
@@ -788,7 +811,7 @@ export function processTurnResponse(
   } else {
     // LLM 없음 또는 노드 전이 — 모든 메시지 즉시 표시
     set({
-      messages: [...get().messages, ...newMessages],
+      messages: [...stripSubmitPending(get().messages), ...newMessages],
       pendingMessages: [],
       hud: updatedHud,
       inventory: updatedInventory,
@@ -1234,7 +1257,7 @@ export function applyPartyTurnResult(
   if (runEnded) {
     const endingData = (result.ui as Record<string, unknown> | undefined)?.endingResult as import('@/types/game').EndingResult | undefined;
     set({
-      messages: [...get().messages, ...allMessages.filter((m) => m.type !== 'NARRATOR')],
+      messages: [...stripSubmitPending(get().messages), ...allMessages.filter((m) => m.type !== 'NARRATOR')],
       hud: updatedHud,
       inventory: updatedInventory,
       choices: [],
@@ -1253,7 +1276,7 @@ export function applyPartyTurnResult(
   const hasNarrator = immediateMsgs.some((m) => m.type === 'NARRATOR');
 
   set({
-    messages: [...get().messages, ...immediateMsgs],
+    messages: [...stripSubmitPending(get().messages), ...immediateMsgs],
     pendingMessages: otherMsgs,
     hud: updatedHud,
     inventory: updatedInventory,
