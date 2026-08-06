@@ -65,6 +65,37 @@
   --stat-cha: #C08A9B;
 }
 
+/* ── 스크롤바 테마 (2026-08-07) ──
+   스타일 부재로 브라우저 기본(밝은 트랙)이 다크 테마 위에 그대로 노출되던 것
+   교정 — 서술 본문·사이드패널 등 모든 스크롤 영역 공통. 트랙은 투명,
+   썸은 골드 딤(호버 시 진해짐). Firefox는 scrollbar-color로 동일 톤. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 169, 98, 0.28) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(201, 169, 98, 0.24);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 169, 98, 0.42);
+}
+
 @layer base {
   html, body {
     height: 100%;
