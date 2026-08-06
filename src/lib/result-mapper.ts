@@ -22,6 +22,31 @@ export interface TurnHistoryItem {
   sceneCut?: { id: string; imageUrl: string } | null;
 }
 
+// ---------------------------------------------------------------------------
+// 선택지 매핑 공용 헬퍼 — API 응답 선택지 → 클라 Choice.
+// modifier(예상 보정치 ±배지)·hint(서브 설명)가 매핑처마다 제각각 누락되던 것을
+// 단일 지점으로 수렴 (2026-08-06). hint는 top-level 우선, 구 JSON 모드가
+// payload.hint에 넣던 형태를 fallback으로 흡수.
+// ---------------------------------------------------------------------------
+
+export interface ApiChoiceLike {
+  id: string;
+  label: string;
+  hint?: string;
+  modifier?: number;
+  action?: { type?: string; payload?: Record<string, unknown> };
+}
+
+export function mapApiChoice(c: ApiChoiceLike): Choice {
+  return {
+    id: c.id,
+    label: c.label,
+    affordance: c.action?.payload?.affordance as string | undefined,
+    modifier: c.modifier,
+    hint: c.hint ?? (c.action?.payload?.hint as string | undefined),
+  };
+}
+
 /**
  * 내레이터 텍스트에서 선택지 잔여물을 제거.
  * - [CHOICES]...[/CHOICES] 태그 (정상 닫힘)
@@ -214,13 +239,7 @@ export function mapResultToMessages(
 
   // 4. Choices (if any)
   if (result.choices && result.choices.length > 0) {
-    const mapped: Choice[] = result.choices.map((c) => ({
-      id: c.id,
-      label: c.label,
-      affordance: c.action?.payload?.affordance as string | undefined,
-      modifier: c.modifier,
-      hint: c.hint,
-    }));
+    const mapped: Choice[] = result.choices.map(mapApiChoice);
 
     messages.push({
       id: crypto.randomUUID(),

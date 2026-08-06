@@ -34,6 +34,7 @@ import { adaptPresetsForScenario, PRESET_PORTRAITS } from '@/data/presets';
 import { ITEM_CATALOG } from '@/data/items';
 import { STAT_COLORS } from '@/data/stat-descriptions';
 import {
+  mapApiChoice,
   mapResultToMessages,
   mapTurnHistoryToMessages,
   stripNarratorChoices,
@@ -316,7 +317,7 @@ export function pollForNarrative(
         }
         // LLM 맥락 선택지로 교체
         if (detail.llm.choices && detail.llm.choices.length > 0) {
-          set({ pendingChoices: detail.llm.choices.map(c => ({ id: c.id, label: c.label, affordance: c.action?.payload?.affordance as string | undefined, hint: c.hint })) });
+          set({ pendingChoices: detail.llm.choices.map(mapApiChoice) });
         }
         flushNarrator(
           stripNarratorChoices(detail.llm.output!), turnNo, get, set, false,
@@ -604,14 +605,7 @@ export function streamNarrative(
 
       // 선택지 pending
       if (choices && choices.length > 0) {
-        set({
-          pendingChoices: choices.map(c => ({
-            id: c.id,
-            label: c.label,
-            affordance: c.action?.payload?.affordance as string | undefined,
-            hint: c.hint,
-          })),
-        });
+        set({ pendingChoices: choices.map(mapApiChoice) });
       }
 
       // Phase 2 최종 교체 (bug 4693):
@@ -762,12 +756,7 @@ export function processTurnResponse(
     : null;
 
   // Extract choices from result
-  const newChoices: Choice[] = (result.choices ?? []).map((c) => ({
-    id: c.id,
-    label: c.label,
-    affordance: c.action?.payload?.affordance as string | undefined,
-    hint: c.hint,
-  }));
+  const newChoices: Choice[] = (result.choices ?? []).map(mapApiChoice);
 
   const hasLlmPending = turnRes.llm?.status === 'PENDING' && !hasTransition;
 
@@ -832,7 +821,7 @@ export function processTurnResponse(
       const enterMessages = mapResultToMessages(t.enterResult);
       const enterChoices: Choice[] = (
         t.enterResult.choices ?? []
-      ).map((c) => ({ id: c.id, label: c.label, affordance: c.action?.payload?.affordance as string | undefined, hint: c.hint }));
+      ).map(mapApiChoice);
 
       const narratorMsgs = enterMessages.filter((m) => m.type === 'NARRATOR');
       const systemMsgs = enterMessages.filter((m) => m.type === 'SYSTEM');
@@ -1046,12 +1035,7 @@ export function applyRunSnapshot(
         );
 
     restoredMessages = [...restoredMessages, ...finalLastMessages];
-    restoredChoices = (lastResult.choices ?? []).map((c) => ({
-      id: c.id,
-      label: c.label,
-      affordance: c.action?.payload?.affordance as string | undefined,
-      hint: c.hint,
-    }));
+    restoredChoices = (lastResult.choices ?? []).map(mapApiChoice);
   }
 
   const nodeType = (currentNode?.nodeType as string) ?? null;
@@ -1239,12 +1223,7 @@ export function applyPartyTurnResult(
     : get().inventory;
 
   // 임시 선택지(serverResult) — LLM 선택지 도착 전까지의 placeholder
-  const srChoices: Choice[] = (result.choices ?? []).map((c) => ({
-    id: c.id,
-    label: c.label,
-    affordance: c.action?.payload?.affordance as string | undefined,
-    hint: c.hint,
-  }));
+  const srChoices: Choice[] = (result.choices ?? []).map(mapApiChoice);
 
   // UI 번들 반영 (worldState / 시그널 / 알림 / 아크 / 상점 등)
   applyServerResultUi(result, get, set);
@@ -1324,13 +1303,7 @@ export function pollPartyNarrative(
       if (status === 'DONE' && detail.llm.output) {
         clearInterval(timer);
         if (detail.llm.choices && detail.llm.choices.length > 0) {
-          set({
-            pendingChoices: detail.llm.choices.map((c) => ({
-              id: c.id,
-              label: c.label,
-              affordance: c.action?.payload?.affordance as string | undefined,
-            })),
-          });
+          set({ pendingChoices: detail.llm.choices.map(mapApiChoice) });
         }
         flushNarrator(stripNarratorChoices(detail.llm.output!), turnNo, get, set);
         return;

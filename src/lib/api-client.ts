@@ -261,6 +261,7 @@ export function getTurnDetail(runId: string, turnNo: number) {
         id: string;
         label: string;
         hint?: string;
+        modifier?: number;
         action: { type: string; payload: Record<string, unknown> };
       }> | null;
     };
@@ -745,6 +746,7 @@ export function getPartyTurnDetail(
         id: string;
         label: string;
         hint?: string;
+        modifier?: number;
         action: { type: string; payload: Record<string, unknown> };
       }> | null;
     };

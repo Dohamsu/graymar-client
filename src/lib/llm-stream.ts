@@ -32,7 +32,7 @@ export interface LlmDialogueEvent {
 export interface LlmDoneEvent {
   type: 'done';
   narrative: string;
-  choices?: Array<{ id: string; label: string; hint?: string; action?: { payload?: { affordance?: string } } }>;
+  choices?: Array<{ id: string; label: string; hint?: string; modifier?: number; action?: { payload?: { affordance?: string } } }>;
   /** [arch/96] 장면 컷 — 워커 태그 매칭 결과 */
   sceneCut?: { id: string; imageUrl: string } | null;
 }

@@ -30,7 +30,7 @@ import type {
 import { createRun, getActiveRun, getRun, abortRun as apiAbortRun, submitTurn, retryLlm, generateSceneImage, getSceneImageStatus, listSceneImages, equipItem as apiEquipItem, unequipItem as apiUnequipItem, useItem as apiUseItem, getEndings, getEndingDetail, submitPartyAction as apiSubmitPartyAction, getPartyRunState, type LlmTokenStats } from '@/lib/api-client';
 import { usePartyStore } from '@/store/party-store';
 import { useAuthStore } from '@/store/auth-store';
-import { mapResultToMessages } from '@/lib/result-mapper';
+import { mapApiChoice, mapResultToMessages } from '@/lib/result-mapper';
 import { ApiError } from '@/lib/api-errors';
 import { usePointsStore } from '@/store/points-store';
 import { type StreamOutput } from '@/lib/stream-parser';
@@ -550,12 +550,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       if (serverResult) {
         initialMessages = mapResultToMessages(serverResult);
-        initialChoices = (serverResult.choices ?? []).map((c) => ({
-          id: c.id,
-          label: c.label,
-          affordance: c.action?.payload?.affordance as string | undefined,
-          hint: c.hint,
-        }));
+        initialChoices = (serverResult.choices ?? []).map(mapApiChoice);
       }
 
       // 내레이터 메시지(LLM 대기)와 나머지(시스템/선택지)를 분리
@@ -685,12 +680,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       if (serverResult) {
         initialMessages = mapResultToMessages(serverResult);
-        initialChoices = (serverResult.choices ?? []).map((c) => ({
-          id: c.id,
-          label: c.label,
-          affordance: c.action?.payload?.affordance as string | undefined,
-          hint: c.hint,
-        }));
+        initialChoices = (serverResult.choices ?? []).map(mapApiChoice);
       }
 
       const narratorMsgs = initialMessages.filter((m) => m.type === 'NARRATOR');
