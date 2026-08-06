@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { ResolveOutcome, ResolveBreakdown } from "@/types/game";
 import { STAT_KOREAN_NAMES, STAT_COLORS, STAT_KEY_TO_LABEL } from "@/data/stat-descriptions";
+import { Dice3D, DICE3D_TOTAL_MS } from "./Dice3D";
 
 const OUTCOME_CONFIG: Record<
   ResolveOutcome,
@@ -28,7 +29,8 @@ const OUTCOME_CONFIG: Record<
   },
 };
 
-const ROLL_DURATION_MS = 1200;
+// 3D 큐브 착지(DICE3D_TOTAL_MS) 후 최종 눈을 한 박자 보여주고 결과 공개
+const ROLL_DURATION_MS = DICE3D_TOTAL_MS + 500;
 const BREAKDOWN_DELAY_MS = 200;
 
 /** 인라인 판정 애니메이션 — 주사위 굴림 → 결과 공개 → 주사위 분해 */
@@ -61,7 +63,7 @@ export function ResolveOutcomeInline({
   return (
     <div className="flex flex-col items-center justify-center gap-1 py-3">
       {phase === "rolling" ? (
-        <DiceRolling />
+        <DiceRolling finalValue={breakdown?.diceRoll} />
       ) : (
         <>
           <div
@@ -241,23 +243,18 @@ function BreakdownFormula({
   );
 }
 
-/** 주사위 굴림 애니메이션 */
-function DiceRolling() {
-  const [faceIndex, setFaceIndex] = useState(0);
-  const faces = ["\u2680", "\u2681", "\u2682", "\u2683", "\u2684", "\u2685"];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setFaceIndex((prev) => (prev + 1) % faces.length);
-    }, 100);
-    return () => clearInterval(timer);
-  }, [faces.length]);
+/** 주사위 굴림 애니메이션 — 3D 큐브 텀블 (A안, 2026-08-06).
+ *  실제 굴린 눈(breakdown.diceRoll)으로 착지시켜 연출과 판정이 일치한다.
+ *  breakdown 미제공(구 데이터)이면 표시용 랜덤 눈. */
+function DiceRolling({ finalValue }: { finalValue?: number }) {
+  // 마운트 시 1회 확정 — 리렌더에 눈이 바뀌지 않도록 lazy init
+  const [displayValue] = useState(
+    () => finalValue ?? 1 + Math.floor(Math.random() * 6),
+  );
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-5 py-2.5">
-      <span className="text-xl animate-[diceSpin_0.6s_linear_infinite]">
-        {faces[faceIndex]}
-      </span>
+    <div className="flex flex-col items-center gap-1.5">
+      <Dice3D finalValue={displayValue} />
       <span className="text-sm text-[var(--text-muted)] animate-pulse">
         판정 중...
       </span>
