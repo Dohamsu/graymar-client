@@ -9,6 +9,7 @@ import type {
   ChatMessage,
   PartySearchResult,
   LobbyStateDTO,
+  LobbyLoadout,
   PartyVoteDTO,
   TurnWaitingStatus,
 } from '@/types/party';
@@ -54,6 +55,7 @@ interface PartyState {
 
   // Phase 2 REST actions
   toggleReady: (ready: boolean) => Promise<void>;
+  setLobbyLoadout: (loadout: LobbyLoadout) => Promise<void>;
   startDungeon: () => Promise<void>;
   inviteToRun: () => Promise<void>;
   submitPartyAction: (rawInput: string, inputType?: 'ACTION' | 'CHOICE') => Promise<void>;
@@ -227,6 +229,19 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       set({ lobbyState: state });
     } catch (e) {
       set({ error: extractMsg(e, '준비 상태 변경에 실패했습니다.') });
+    }
+  },
+
+  // 로비 배경 선택 — 솔로 런 이력이 없어도 파티를 시작할 수 있게 한다.
+  setLobbyLoadout: async (loadout) => {
+    const { party } = get();
+    if (!party) return;
+    set({ error: null });
+    try {
+      const state = await api.setLobbyLoadout(party.id, loadout);
+      set({ lobbyState: state });
+    } catch (e) {
+      set({ error: extractMsg(e, '배경 선택에 실패했습니다.') });
     }
   },
 

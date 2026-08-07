@@ -92,6 +92,10 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
   const fetchLobbyState = usePartyStore((s) => s.fetchLobbyState);
 
   const currentUserId = useAuthStore((s) => s.user?.id ?? "");
+  // 내 로비 상태 — 배경 선택 패널의 현재값 표시용
+  const myLobbyState = lobbyState?.members.find(
+    (m) => m.userId === currentUserId,
+  );
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -228,6 +232,14 @@ export function PartyMainScreen({ onBack }: PartyMainScreenProps) {
           onLeave={handleLeave}
           onSendChat={handleSendChat}
           error={error}
+          myPresetId={myLobbyState?.presetId ?? null}
+          myPresetFromLobby={myLobbyState?.presetFromLobby ?? false}
+          myGender={myLobbyState?.gender ?? null}
+          scenarioId={myLobbyState?.scenarioId ?? "graymar_v1"}
+          missingPresetNicknames={lobbyState?.missingPresetNicknames ?? []}
+          onSelectLoadout={(loadout) => {
+            void usePartyStore.getState().setLobbyLoadout(loadout);
+          }}
         />
 
         {/* Modals */}

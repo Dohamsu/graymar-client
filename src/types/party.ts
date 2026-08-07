@@ -53,6 +53,10 @@ export interface LobbyMemberState {
   gender: string | null;
   isReady: boolean;
   isOnline: boolean;
+  /** 로비에서 직접 고른 값인가 (false = 최근 런에서 유추) */
+  presetFromLobby: boolean;
+  /** 로비에서 고른 시나리오 (리더 값이 런 생성에 쓰인다) */
+  scenarioId: string | null;
 }
 
 export interface LobbyStateDTO {
@@ -60,6 +64,15 @@ export interface LobbyStateDTO {
   members: LobbyMemberState[];
   allReady: boolean;
   canStart: boolean;
+  /** 배경 미선택으로 시작을 막고 있는 멤버 닉네임 */
+  missingPresetNicknames: string[];
+}
+
+/** 로비 로드아웃 — 솔로 런 이력 없이 파티를 시작하기 위한 멤버별 선택 */
+export interface LobbyLoadout {
+  presetId: string;
+  gender?: 'male' | 'female';
+  scenarioId?: string | null;
 }
 
 export interface PartyVoteDTO {

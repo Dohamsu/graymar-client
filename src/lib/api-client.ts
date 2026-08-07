@@ -655,6 +655,7 @@ export function getChatMessages(
 
 import type {
   LobbyStateDTO,
+  LobbyLoadout,
   DungeonStartResult,
   PartyVoteDTO,
 } from '@/types/party';
@@ -669,6 +670,17 @@ export function toggleReady(partyId: string, ready: boolean) {
   return request<LobbyStateDTO>(`/v1/parties/${partyId}/lobby/ready`, {
     method: 'POST',
     body: JSON.stringify({ ready }),
+  });
+}
+
+/**
+ * POST /v1/parties/:partyId/lobby/loadout — 로비 배경(프리셋) 선택.
+ * 솔로 런 이력이 없는 유저도 파티를 시작할 수 있게 하는 경로.
+ */
+export function setLobbyLoadout(partyId: string, loadout: LobbyLoadout) {
+  return request<LobbyStateDTO>(`/v1/parties/${partyId}/lobby/loadout`, {
+    method: 'POST',
+    body: JSON.stringify(loadout),
   });
 }
 

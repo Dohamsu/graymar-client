@@ -3,6 +3,8 @@
 import { useState, useCallback } from "react";
 import { Copy, Check, LogOut, Play, Shield, AlertTriangle } from "lucide-react";
 import { PartyMemberCard } from "./PartyMemberCard";
+import { LobbyLoadoutPicker } from "./LobbyLoadoutPicker";
+import type { LobbyLoadout } from "@/types/party";
 import { PartyChatWindow } from "./PartyChatWindow";
 import { PartyChatInput } from "./PartyChatInput";
 
@@ -49,6 +51,18 @@ interface PartyLobbyProps {
   startLoading?: boolean;
   /** 시작 실패 등 store 에러 — 로비에서 무표시로 삼켜지던 것 표시 (2026-08-01 QA) */
   error?: string | null;
+
+  // ── 로비 배경 선택 (arch/84 후속 2026-08-07) ──
+  /** 내 확정 프리셋 (로비 선택 또는 최근 런 유추) */
+  myPresetId?: string | null;
+  /** 내 프리셋이 로비에서 직접 고른 값인가 */
+  myPresetFromLobby?: boolean;
+  myGender?: string | null;
+  /** 배경 목록을 가져올 시나리오 팩 */
+  scenarioId?: string;
+  /** 배경 미선택으로 시작을 막고 있는 멤버 닉네임 (서버 판정) */
+  missingPresetNicknames?: string[];
+  onSelectLoadout?: (loadout: LobbyLoadout) => void;
 }
 
 export function PartyLobby({
@@ -68,6 +82,13 @@ export function PartyLobby({
   chatSending = false,
   startLoading = false,
   error = null,
+  myPresetId = null,
+  myPresetFromLobby = false,
+  myGender = null,
+  // 기본 팩 — 리더가 최근 런의 시나리오를 갖고 있으면 호출부가 넘긴다
+  scenarioId = "graymar_v1",
+  missingPresetNicknames = [],
+  onSelectLoadout,
 }: PartyLobbyProps) {
   const [codeCopied, setCodeCopied] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -80,7 +101,14 @@ export function PartyLobby({
 
   const allReady = members.filter(Boolean).every((m) => m!.isReady);
   const memberCount = members.filter(Boolean).length;
-  const canStart = isLeader && allReady && memberCount >= 2 && !startLoading;
+  // 배경 미선택 멤버가 있으면 시작 불가 — 서버 canStart 와 같은 조건을 클라에도
+  // 둬서, 눌렀다가 400 을 받는 대신 버튼이 아예 잠기고 이유가 보이게 한다.
+  const canStart =
+    isLeader &&
+    allReady &&
+    memberCount >= 2 &&
+    missingPresetNicknames.length === 0 &&
+    !startLoading;
 
   const handleCopyCode = useCallback(async () => {
     try {
@@ -156,6 +184,30 @@ export function PartyLobby({
           />
         </div>
       </div>
+
+      {/* ── 배경 선택 (로비 로드아웃) ── */}
+      {onSelectLoadout && (
+        <div className="border-t border-[var(--border-primary)] px-4 py-3 sm:px-6">
+          <LobbyLoadoutPicker
+            currentPresetId={myPresetId}
+            fromLobby={myPresetFromLobby}
+            currentGender={myGender}
+            scenarioId={scenarioId}
+            onSelect={onSelectLoadout}
+          />
+          {missingPresetNicknames.length > 0 && (
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-[var(--text-muted)]">
+              <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden />
+              <span>
+                배경을 고르지 않은 멤버가 있어 시작할 수 없습니다:{" "}
+                <span className="text-[var(--text-secondary)]">
+                  {missingPresetNicknames.join(", ")}
+                </span>
+              </span>
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ── Error Banner (시작 실패 등) ── */}
       {error && (
