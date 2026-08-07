@@ -29,6 +29,16 @@ export function SidePanel({ character, inventory, gold, inventoryChanges, onClea
     };
   }, []);
 
+  // 인물탭 배경 텍스처 웜업 (UIUX 점검 2026-08-07) — 탭이 전환마다 리마운트되고
+  // 텍스처(각 ~280KB)가 CSS background라 우선순위가 없어, 첫 진입 시
+  // "배경→테두리→초상화" 순차 노출이 보이던 것을 패널 마운트 시점 프리로드로 방지.
+  useEffect(() => {
+    for (const src of ["/textures/tavern-wall.webp", "/textures/wanted-poster.webp"]) {
+      const img = new window.Image();
+      img.src = src;
+    }
+  }, []);
+
   const hasChanges = !!inventoryChanges;
   // [arch/99] 퀘스트 탭 유도 배지 — 단서 발견·단계 전환 시 점등, 열람 시 해제
   const questTabBadge = useGameStore((s) => s.questTabBadge);

@@ -81,7 +81,9 @@ export function CharacterTab({ character }: CharacterTabProps) {
             <span className="text-[10px] font-medium text-[var(--text-muted)]">
               경험치: {character.exp.toLocaleString()} / {character.maxExp.toLocaleString()}
             </span>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--border-primary)]">
+            {/* 트랙을 배경(#141414)과 분리되는 밝기로 — 빈 구간이 안 보여 게이지
+                진행도를 읽기 어렵던 대비 문제 (UIUX 점검 2026-08-07) */}
+            <div className="h-2 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.12)]">
               <div
                 className="h-full rounded-full bg-[var(--gold)]"
                 style={{ width: `${character.maxExp > 0 ? Math.round((character.exp / character.maxExp) * 100) : 0}%` }}

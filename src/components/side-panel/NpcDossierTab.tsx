@@ -31,7 +31,10 @@ const EMOTION_CONFIG: { key: keyof Pick<NpcEmotionalUI, 'trust' | 'fear' | 'resp
 // Sub-components
 // ---------------------------------------------------------------------------
 
-/** Emotion bar with label */
+/** Emotion bar with label
+ *  대비 리튠 (UIUX 점검 2026-08-07): 트랙 15%→32%·바 6→8px·불투명, 라벨/수치
+ *  9→10px. 수치 색은 뮤트 팔레트가 양피지 위에서 흐릿해 짙은 잉크색으로 통일
+ *  (방향·정도는 바 색과 위치가 전달). */
 function EmotionBar({ label, value, color }: { label: string; value: number; color: string }) {
   // Emotion values range from -100 to 100, normalize to 0-100 for display
   const normalized = Math.max(0, Math.min(100, (value + 100) / 2));
@@ -39,12 +42,12 @@ function EmotionBar({ label, value, color }: { label: string; value: number; col
 
   return (
     <div className="flex items-center gap-2">
-      <span className="w-8 shrink-0 text-[9px] font-medium" style={{ color: "#2a1f14" }}>
+      <span className="w-8 shrink-0 text-[10px] font-semibold" style={{ color: "#241a0e" }}>
         {label}
       </span>
-      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[#2a1f14]/15">
+      <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-[#2a1f14]/30">
         {/* Center marker */}
-        <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-[#2a1f14]/20" />
+        <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-[#2a1f14]/40" />
         {value !== 0 && (
           <div
             className="absolute top-0 h-full rounded-full transition-all duration-500"
@@ -52,15 +55,11 @@ function EmotionBar({ label, value, color }: { label: string; value: number; col
               left: isNegative ? `${normalized}%` : "50%",
               width: `${Math.abs(normalized - 50)}%`,
               backgroundColor: color,
-              opacity: 0.85,
             }}
           />
         )}
       </div>
-      <span
-        className="w-6 text-right text-[9px] font-semibold"
-        style={{ color: value > 0 ? color : value < 0 ? "#C0625A" : "#2a1f14" }}
-      >
+      <span className="w-7 text-right text-[10px] font-bold" style={{ color: "#241a0e" }}>
         {value > 0 ? `+${value}` : value}
       </span>
     </div>
@@ -103,6 +102,7 @@ function NpcThumbnail({
             fill
             sizes="56px"
             className="object-cover"
+            loading="eager"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-[#2a1f14]/30">
@@ -142,7 +142,7 @@ export function NpcDossierTab() {
     return (
       <div
         className="flex h-full flex-col items-center justify-center rounded-lg bg-cover bg-center p-6"
-        style={{ backgroundImage: "url('/textures/tavern-wall.webp')" }}
+        style={{ backgroundImage: "url('/textures/tavern-wall.webp')", backgroundColor: "#1e1812" }}
       >
         <div className="flex flex-col items-center gap-3 rounded-lg bg-black/40 px-6 py-8 backdrop-blur-sm">
           <Eye size={32} className="text-[var(--gold)]/60" />
@@ -163,13 +163,16 @@ export function NpcDossierTab() {
   return (
     <div
       className="flex h-full flex-col gap-4 rounded-lg bg-cover bg-center p-3"
-      style={{ backgroundImage: "url('/textures/tavern-wall.webp')" }}
+      // fallback 배경색 — 텍스처 로드 전에도 톤 유지 (순차 노출 체감 완화)
+      style={{ backgroundImage: "url('/textures/tavern-wall.webp')", backgroundColor: "#1e1812" }}
     >
       {/* Selected NPC — Wanted Poster Card */}
       {selectedNpc && (
         <div
           className="relative flex shrink-0 flex-col items-center gap-3 overflow-hidden rounded-lg bg-cover bg-center px-5 py-5 shadow-lg"
-          style={{ backgroundImage: "url('/textures/wanted-poster.webp')" }}
+          // fallback 양피지 톤 — 텍스처 로드 전 다크 배경 위 짙은 잉크색 텍스트가
+          // 안 보이던 대비 붕괴 방지 (UIUX 점검 2026-08-07)
+          style={{ backgroundImage: "url('/textures/wanted-poster.webp')", backgroundColor: "#d6c39a" }}
         >
           {/* Portrait */}
           <div className="relative h-[140px] w-[110px] overflow-hidden rounded border-2 border-[#2a1f14]/30 bg-[#2a1f14]/10 shadow-md">
@@ -180,6 +183,7 @@ export function NpcDossierTab() {
                 fill
                 sizes="110px"
                 className="object-cover"
+                priority
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">

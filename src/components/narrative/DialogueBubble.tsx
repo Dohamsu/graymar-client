@@ -26,6 +26,11 @@ function PortraitLightbox({
   npcName: string;
   onClose: () => void;
 }) {
+  // 확대 이미지(320px 변형)는 말풍선 썸네일(40px 변형)과 다른 최적화 URL이라
+  // 새로 받아온다 — 로드 전 빈 금테만 보이던 것을, 이미 캐시된 40px 변형을
+  // 블러 확대로 즉시 깔고 큰 이미지를 페이드인해 해소 (UIUX 점검 2026-08-07).
+  const [loaded, setLoaded] = useState(false);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
@@ -46,15 +51,26 @@ function PortraitLightbox({
       >
         <div
           className="relative h-[min(16rem,60dvh)] w-[min(16rem,60dvh)] overflow-hidden rounded-2xl shadow-2xl md:h-[min(20rem,60dvh)] md:w-[min(20rem,60dvh)]"
-          style={{ border: "2px solid var(--gold)" }}
+          style={{ border: "2px solid var(--gold)", backgroundColor: "var(--bg-card)" }}
         >
+          {/* 즉시 표시 백드롭 — 썸네일과 동일 props(40px)라 브라우저 캐시 히트 */}
+          <Image
+            src={imageUrl}
+            alt=""
+            aria-hidden="true"
+            width={40}
+            height={40}
+            sizes="40px"
+            className={`absolute inset-0 h-full w-full scale-110 object-cover blur-md transition-opacity duration-300 ${loaded ? "opacity-0" : "opacity-100"}`}
+          />
           <Image
             src={imageUrl}
             alt={npcName}
             fill
             sizes="320px"
-            className="object-cover"
+            className={`object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
             priority
+            onLoad={() => setLoaded(true)}
           />
         </div>
 
