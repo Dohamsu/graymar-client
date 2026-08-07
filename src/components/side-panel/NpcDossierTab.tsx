@@ -32,9 +32,10 @@ const EMOTION_CONFIG: { key: keyof Pick<NpcEmotionalUI, 'trust' | 'fear' | 'resp
 // ---------------------------------------------------------------------------
 
 /** Emotion bar with label
- *  대비 리튠 (UIUX 점검 2026-08-07): 트랙 15%→32%·바 6→8px·불투명, 라벨/수치
- *  9→10px. 수치 색은 뮤트 팔레트가 양피지 위에서 흐릿해 짙은 잉크색으로 통일
- *  (방향·정도는 바 색과 위치가 전달). */
+ *  대비 리튠 2차 (UIUX 점검 2026-08-07): 포스터 텍스처가 밝은 양피지가 아니라
+ *  중간~어두운 갈색 낡은 종이라 잉크색(짙은 갈색) 텍스트가 안 읽히던 것 —
+ *  블록을 반투명 검정 패널(컨테이너 쪽)로 감싸고 텍스트를 밝은 크림으로 반전.
+ *  같은 탭 빈 상태 카드(bg-black/40 + 밝은 텍스트)와 동일 패턴. */
 function EmotionBar({ label, value, color }: { label: string; value: number; color: string }) {
   // Emotion values range from -100 to 100, normalize to 0-100 for display
   const normalized = Math.max(0, Math.min(100, (value + 100) / 2));
@@ -42,12 +43,12 @@ function EmotionBar({ label, value, color }: { label: string; value: number; col
 
   return (
     <div className="flex items-center gap-2">
-      <span className="w-8 shrink-0 text-[10px] font-semibold" style={{ color: "#241a0e" }}>
+      <span className="w-8 shrink-0 text-[10px] font-semibold" style={{ color: "#e9dcbe" }}>
         {label}
       </span>
-      <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-[#2a1f14]/30">
+      <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/15">
         {/* Center marker */}
-        <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-[#2a1f14]/40" />
+        <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-white/30" />
         {value !== 0 && (
           <div
             className="absolute top-0 h-full rounded-full transition-all duration-500"
@@ -59,7 +60,7 @@ function EmotionBar({ label, value, color }: { label: string; value: number; col
           />
         )}
       </div>
-      <span className="w-7 text-right text-[10px] font-bold" style={{ color: "#241a0e" }}>
+      <span className="w-7 text-right text-[10px] font-bold" style={{ color: "#f3e8cd" }}>
         {value > 0 ? `+${value}` : value}
       </span>
     </div>
@@ -232,8 +233,8 @@ export function NpcDossierTab() {
             </div>
           )}
 
-          {/* Emotion Bars */}
-          <div className="mt-1 flex w-full flex-col gap-1.5">
+          {/* Emotion Bars — 반투명 검정 패널로 텍스처 밝기 무관 대비 보장 */}
+          <div className="mt-1 flex w-full flex-col gap-1.5 rounded-md bg-black/35 px-2.5 py-2">
             {EMOTION_CONFIG.map(({ key, label, color }) => (
               <EmotionBar
                 key={key}
