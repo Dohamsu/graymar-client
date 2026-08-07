@@ -19,12 +19,18 @@ const POSTURE_LABELS: Record<string, { label: string; color: string }> = {
   CALCULATING: { label: "계산적", color: "#8FA9C4" },
 };
 
-const EMOTION_CONFIG: { key: keyof Pick<NpcEmotionalUI, 'trust' | 'fear' | 'respect' | 'suspicion' | 'attachment'>; label: string; color: string }[] = [
-  { key: "trust", label: "신뢰", color: "#8FAC7E" },
-  { key: "fear", label: "공포", color: "#C0625A" },
-  { key: "respect", label: "존경", color: "#C9A962" },
-  { key: "suspicion", label: "의심", color: "#A08CC0" },
-  { key: "attachment", label: "유대", color: "#8FA9C4" },
+const EMOTION_CONFIG: {
+  key: keyof Pick<NpcEmotionalUI, 'trust' | 'fear' | 'respect' | 'suspicion' | 'attachment'>;
+  label: string;
+  color: string;
+  /** 양극 축(-100~100, 중앙 기준) 여부 — 서버 CLAMP_BIPOLAR와 동기 */
+  bipolar: boolean;
+}[] = [
+  { key: "trust", label: "신뢰", color: "#8FAC7E", bipolar: true },
+  { key: "fear", label: "공포", color: "#C0625A", bipolar: false },
+  { key: "respect", label: "존경", color: "#C9A962", bipolar: true },
+  { key: "suspicion", label: "의심", color: "#A08CC0", bipolar: false },
+  { key: "attachment", label: "유대", color: "#8FA9C4", bipolar: false },
 ];
 
 // ---------------------------------------------------------------------------
@@ -36,10 +42,24 @@ const EMOTION_CONFIG: { key: keyof Pick<NpcEmotionalUI, 'trust' | 'fear' | 'resp
  *  중간~어두운 갈색 낡은 종이라 잉크색(짙은 갈색) 텍스트가 안 읽히던 것 —
  *  블록을 반투명 검정 패널(컨테이너 쪽)로 감싸고 텍스트를 밝은 크림으로 반전.
  *  같은 탭 빈 상태 카드(bg-black/40 + 밝은 텍스트)와 동일 패턴. */
-function EmotionBar({ label, value, color }: { label: string; value: number; color: string }) {
-  // Emotion values range from -100 to 100, normalize to 0-100 for display
-  const normalized = Math.max(0, Math.min(100, (value + 100) / 2));
+function EmotionBar({
+  label,
+  value,
+  color,
+  bipolar,
+}: {
+  label: string;
+  value: number;
+  color: string;
+  bipolar: boolean;
+}) {
+  // 감정 점검 2026-08-07 — 축별 스케일 분리:
+  // · 단극 축(fear/suspicion/attachment, 서버 0~100): 좌측 기준 값 그대로의 폭.
+  //   기존엔 ±100 정규화를 일괄 적용해 실제 값의 절반 폭으로 렌더되던 버그.
+  // · 양극 축(trust/respect, 서버 -100~100): 중앙 기준, 표시 스케일 ±50 캡 —
+  //   실질 가동 범위(±40 임계가 '깊은 신뢰/경멸')에 맞춰 체감 확대.
   const isNegative = value < 0;
+  const bipolarWidth = Math.min(50, Math.abs(value));
 
   return (
     <div className="flex items-center gap-2">
@@ -47,16 +67,25 @@ function EmotionBar({ label, value, color }: { label: string; value: number; col
         {label}
       </span>
       <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/15">
-        {/* Center marker */}
-        <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-white/30" />
+        {bipolar && (
+          <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-white/30" />
+        )}
         {value !== 0 && (
           <div
             className="absolute top-0 h-full rounded-full transition-all duration-500"
-            style={{
-              left: isNegative ? `${normalized}%` : "50%",
-              width: `${Math.abs(normalized - 50)}%`,
-              backgroundColor: color,
-            }}
+            style={
+              bipolar
+                ? {
+                    left: isNegative ? `${50 - bipolarWidth}%` : "50%",
+                    width: `${bipolarWidth}%`,
+                    backgroundColor: color,
+                  }
+                : {
+                    left: 0,
+                    width: `${Math.max(0, Math.min(100, value))}%`,
+                    backgroundColor: color,
+                  }
+            }
           />
         )}
       </div>
@@ -235,12 +264,13 @@ export function NpcDossierTab() {
 
           {/* Emotion Bars — 반투명 검정 패널로 텍스처 밝기 무관 대비 보장 */}
           <div className="mt-1 flex w-full flex-col gap-1.5 rounded-md bg-black/35 px-2.5 py-2">
-            {EMOTION_CONFIG.map(({ key, label, color }) => (
+            {EMOTION_CONFIG.map(({ key, label, color, bipolar }) => (
               <EmotionBar
                 key={key}
                 label={label}
                 value={selectedNpc[key]}
                 color={color}
+                bipolar={bipolar}
               />
             ))}
           </div>
